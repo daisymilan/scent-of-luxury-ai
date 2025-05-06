@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Bell, Search, Menu, Settings, User } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Bell, Search, Menu, Settings, User, LogOut } from 'lucide-react';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -12,14 +12,72 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 
 const DashboardHeader = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   
   // Helper function to determine if a path is active
   const isActive = (path: string) => {
     return location.pathname === path;
+  };
+
+  // Handle profile actions
+  const handleProfileAction = (action: string) => {
+    switch (action) {
+      case 'profile':
+        toast.info('Navigating to profile page...');
+        // Navigate to profile page when implemented
+        navigate('/profile');
+        break;
+      case 'switch-role':
+        toast.info('Role switching functionality coming soon');
+        // Role switching functionality to be implemented
+        break;
+      case 'preferences':
+        toast.info('Preferences page coming soon');
+        // Navigate to preferences page when implemented
+        navigate('/preferences');
+        break;
+      case 'logout':
+        toast.success('Successfully logged out');
+        // Logout functionality
+        // For now just simulate logout with a toast message
+        setTimeout(() => {
+          navigate('/');
+        }, 1000);
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Handle settings actions
+  const handleSettingsAction = (action: string) => {
+    switch (action) {
+      case 'profile':
+        toast.info('Navigating to profile page...');
+        navigate('/profile');
+        break;
+      case 'system-settings':
+        toast.info('System settings page coming soon');
+        navigate('/settings/system');
+        break;
+      case 'preferences':
+        toast.info('Preferences page coming soon');
+        navigate('/preferences');
+        break;
+      case 'logout':
+        toast.success('Successfully logged out');
+        setTimeout(() => {
+          navigate('/');
+        }, 1000);
+        break;
+      default:
+        break;
+    }
   };
 
   return (
@@ -121,11 +179,11 @@ const DashboardHeader = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>System Settings</DropdownMenuItem>
-                <DropdownMenuItem>Preferences</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleSettingsAction('profile')}>Profile</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleSettingsAction('system-settings')}>System Settings</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleSettingsAction('preferences')}>Preferences</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Log out</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleSettingsAction('logout')}>Log out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             
@@ -143,11 +201,14 @@ const DashboardHeader = () => {
                 <DropdownMenuLabel>Chad Williams</DropdownMenuLabel>
                 <DropdownMenuLabel className="text-xs text-gray-500 font-normal">CEO</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>Switch Role</DropdownMenuItem>
-                <DropdownMenuItem>Preferences</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleProfileAction('profile')}>Profile</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleProfileAction('switch-role')}>Switch Role</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleProfileAction('preferences')}>Preferences</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Log out</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleProfileAction('logout')}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -222,10 +283,35 @@ const DashboardHeader = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                 <Input type="text" placeholder="Search..." className="pl-10 w-full" />
               </div>
-              <a href="#" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Your Profile</a>
-              <a href="#" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Settings</a>
-              <a href="#" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Notifications</a>
-              <a href="#" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Log out</a>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50"
+                onClick={() => handleProfileAction('profile')}
+              >
+                Your Profile
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50"
+                onClick={() => handleSettingsAction('system-settings')}
+              >
+                Settings
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50"
+                onClick={() => toast.info('Notifications panel coming soon')}
+              >
+                Notifications
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50"
+                onClick={() => handleProfileAction('logout')}
+              >
+                <LogOut className="mr-2 h-4 w-4 inline" />
+                Log out
+              </Button>
             </div>
           </div>
         </div>

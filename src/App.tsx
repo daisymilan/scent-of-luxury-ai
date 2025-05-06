@@ -25,6 +25,10 @@ const App = () => (
           <Route path="/marketing" element={<MarketingPage />} />
           <Route path="/inventory" element={<InventoryPage />} />
           <Route path="/reports" element={<ReportsPage />} />
+          {/* These routes will show NotFound for now until their pages are implemented */}
+          <Route path="/profile" element={<NotFound />} />
+          <Route path="/preferences" element={<NotFound />} />
+          <Route path="/settings/system" element={<NotFound />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
