@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useRef } from 'react';
-import { Mic, Play, ChevronDown, X, Volume2, User, PauseCircle, Shield } from 'lucide-react';
+import { Mic, Play, X, Volume2, User, PauseCircle, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 const VoiceAuthComponent = () => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(true);
   const [query, setQuery] = useState('');
   const [response, setResponse] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -23,7 +24,7 @@ const VoiceAuthComponent = () => {
     'Social Media Manager'
   ]);
   
-  const { voiceLogin } = useAuth();
+  const { user, voiceLogin } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -51,7 +52,7 @@ const VoiceAuthComponent = () => {
         const transcript = event.results[0][0].transcript;
         console.log('Voice recognized:', transcript);
         setQuery(transcript);
-        handleVoiceLogin(transcript);
+        processVoiceCommand(transcript);
       };
       
       recognitionRef.current.onerror = (event) => {
@@ -70,6 +71,11 @@ const VoiceAuthComponent = () => {
       };
     }
     
+    // Set initial welcome message if user is logged in
+    if (user) {
+      setResponse(`Welcome back, ${user.name}. How can I assist you?`);
+    }
+    
     // Cleanup on unmount
     return () => {
       if (recognitionRef.current) {
@@ -84,17 +90,17 @@ const VoiceAuthComponent = () => {
         speechSynthesisRef.current.cancel();
       }
     };
-  }, [toast]);
+  }, [user, toast]);
 
   const handleListen = () => {
     if (recognitionRef.current) {
       setIsListening(true);
       try {
         recognitionRef.current.start();
-        setResponse("Listening... Say 'Login as [role]' to authenticate");
+        setResponse("Listening... How can I help you?");
         toast({
           title: "Listening...",
-          description: "Say 'Login as [role]' to authenticate"
+          description: "Say a command or ask a question"
         });
       } catch (e) {
         console.error('Speech recognition error:', e);
@@ -109,7 +115,7 @@ const VoiceAuthComponent = () => {
     } else {
       // Fallback for browsers without speech recognition
       setIsListening(true);
-      setResponse("Voice recognition is not supported in your browser. Please type your login command.");
+      setResponse("Voice recognition is not supported in your browser. Please type your command.");
       toast({
         title: "Voice Recognition Not Supported",
         description: "Your browser doesn't support voice recognition. Please try another browser or use text input.",
@@ -123,26 +129,78 @@ const VoiceAuthComponent = () => {
     }
   };
 
-  const handleVoiceLogin = async (command) => {
+  const processVoiceCommand = async (command) => {
     if (!command) return;
     
     setIsAuthenticating(true);
     console.log("Processing voice command:", command);
     
     try {
-      // Use the voiceLogin from AuthContext
-      await voiceLogin(command);
-      setResponse(`Voice authentication successful. Welcome to MiN NEW YORK dashboard.`);
-      setTimeout(() => {
-        navigate('/');
-      }, 1500);
+      const lowerCommand = command.toLowerCase();
+      
+      // Navigation commands
+      if (lowerCommand.includes('go to') || lowerCommand.includes('navigate to') || lowerCommand.includes('open')) {
+        if (lowerCommand.includes('dashboard') || lowerCommand.includes('home')) {
+          setResponse("Navigating to the dashboard...");
+          setTimeout(() => navigate('/'), 1500);
+          
+        } else if (lowerCommand.includes('b2b') || lowerCommand.includes('business')) {
+          setResponse("Navigating to B2B page...");
+          setTimeout(() => navigate('/b2b'), 1500);
+          
+        } else if (lowerCommand.includes('marketing')) {
+          setResponse("Navigating to Marketing page...");
+          setTimeout(() => navigate('/marketing'), 1500);
+          
+        } else if (lowerCommand.includes('inventory')) {
+          setResponse("Navigating to Inventory page...");
+          setTimeout(() => navigate('/inventory'), 1500);
+          
+        } else if (lowerCommand.includes('reports')) {
+          setResponse("Navigating to Reports page...");
+          setTimeout(() => navigate('/reports'), 1500);
+          
+        } else if (lowerCommand.includes('profile')) {
+          setResponse("Navigating to Profile page...");
+          setTimeout(() => navigate('/profile'), 1500);
+          
+        } else if (lowerCommand.includes('preferences') || lowerCommand.includes('settings')) {
+          setResponse("Navigating to Preferences page...");
+          setTimeout(() => navigate('/preferences'), 1500);
+          
+        } else {
+          setResponse("I'm not sure which page you want to navigate to. Available pages are: Dashboard, B2B, Marketing, Inventory, Reports, Profile, and Preferences.");
+        }
+      } 
+      // Logout command
+      else if (lowerCommand.includes('logout') || lowerCommand.includes('sign out') || lowerCommand.includes('log out')) {
+        setResponse("Logging you out...");
+        setTimeout(() => navigate('/login'), 1500);
+      }
+      // Voice login commands - only process if user is not already logged in
+      else if (lowerCommand.includes('login') && !user) {
+        // Use the voiceLogin from AuthContext
+        await voiceLogin(command);
+        setResponse(`Voice authentication successful. Welcome to MiN NEW YORK dashboard.`);
+        setTimeout(() => {
+          navigate('/');
+        }, 1500);
+      }
+      // Help command
+      else if (lowerCommand.includes('help') || lowerCommand.includes('what can you do')) {
+        setResponse("I can help you navigate to different pages, log out, or provide information. Try saying 'Go to Dashboard', 'Navigate to Reports', or 'Log out'.");
+      }
+      // Default response
+      else {
+        setResponse("I'm not sure how to process that command. Try asking for help or use navigation commands like 'Go to Dashboard'.");
+      }
     } catch (error) {
-      console.error("Voice authentication error:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Voice authentication failed';
-      setResponse(`Authentication failed: ${errorMessage}. Please try again or use traditional login.`);
+      console.error("Voice command processing error:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Voice command processing failed';
+      setResponse(`Error: ${errorMessage}. Please try again.`);
       toast({
-        title: "Authentication Failed",
-        description: "Voice login was unsuccessful. Please try again.",
+        title: "Command Processing Failed",
+        description: "Could not process your voice command. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -193,27 +251,47 @@ const VoiceAuthComponent = () => {
   };
 
   const handleSubmit = () => {
-    handleVoiceLogin(query);
+    processVoiceCommand(query);
   };
 
   const handleClear = () => {
     setQuery('');
   };
 
+  // Toggle the visibility of the component
+  const toggleMinimize = () => {
+    setIsMinimized(!isMinimized);
+  };
+
+  // If minimized, show only a floating button
+  if (isMinimized) {
+    return (
+      <div 
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-primary text-white shadow-lg cursor-pointer flex items-center justify-center z-50 hover:bg-primary/90"
+        onClick={toggleMinimize}
+      >
+        <Mic className="h-6 w-6" />
+      </div>
+    );
+  }
+
   return (
     <div className="fixed bottom-6 right-6 w-96 shadow-xl border border-gray-200 rounded-xl overflow-hidden z-50 bg-white">
       <div className="bg-primary text-white p-3 flex justify-between items-center">
         <h3 className="font-semibold flex items-center">
-          <Shield className="mr-2 h-5 w-5" /> Voice Authentication
+          <Shield className="mr-2 h-5 w-5" /> Voice Assistant
         </h3>
+        <div className="flex items-center space-x-2">
+          <button 
+            onClick={toggleMinimize}
+            className="hover:bg-primary-dark rounded-full h-8 w-8 flex items-center justify-center"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
       </div>
       
       <div className="p-4 h-80 overflow-y-auto bg-gray-50">
-        <div className="mb-4 text-center">
-          <p className="text-sm text-gray-600">Say "Login as [role]" to authenticate with your voice</p>
-          <p className="mt-1 text-xs">Available roles: {availableRoles.join(', ')}</p>
-        </div>
-        
         {response && (
           <div className="mb-4">
             <div className="flex items-start mb-2">
@@ -277,7 +355,7 @@ const VoiceAuthComponent = () => {
             onClick={handleListen}
           >
             <Mic className="h-10 w-10" />
-            <span className="absolute -bottom-8 text-gray-500 text-sm font-medium">Tap to Login with Voice</span>
+            <span className="absolute -bottom-8 text-gray-500 text-sm font-medium">Tap to Speak</span>
           </div>
         </div>
       </div>
@@ -288,7 +366,7 @@ const VoiceAuthComponent = () => {
             <input
               type="text"
               className="w-full px-4 py-2 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Say 'Login as CEO'..."
+              placeholder="Type a command..."
               value={query}
               onChange={handleInputChange}
               onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
@@ -338,12 +416,6 @@ const VoiceAuthComponent = () => {
               </Button>
             </>
           )}
-        </div>
-        
-        <div className="text-center mt-3">
-          <a href="/login" className="text-xs text-primary hover:text-primary/80">
-            Return to traditional login
-          </a>
         </div>
       </div>
     </div>

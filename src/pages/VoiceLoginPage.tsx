@@ -51,7 +51,7 @@ const VoiceLoginPage: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-      <VoiceAuthComponent />
+      {/* The component will be displayed through its own logic */}
     </div>
   );
 };
