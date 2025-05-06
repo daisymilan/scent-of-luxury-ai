@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { callGrokApi, getGrokApiConfig } from '@/utils/grokApi';
 
 const AiAssistant = () => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -16,9 +17,6 @@ const AiAssistant = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  // Grok API Key
-  const grokApiKey = "xai-lgYF3e2MO1TvHnXhq0UCKYSwDtUOBkNmL0fnOEw4FBniTHDnC6KGtY1hlAGZ8ymeQNdacBmucX1HajmY";
-  
   // Reference for speech synthesis
   const speechSynthesisRef = useRef<SpeechSynthesis | null>(null);
   const speechUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -26,8 +24,14 @@ const AiAssistant = () => {
   // Reference for speech recognition
   const recognitionRef = useRef<any>(null);
   
+  // Check if Grok is configured
+  const [isGrokConfigured, setIsGrokConfigured] = useState(false);
+  
   // Initialize speech synthesis and recognition
   useEffect(() => {
+    // Check Grok configuration
+    setIsGrokConfigured(!!getGrokApiConfig());
+    
     // Initialize speech synthesis
     speechSynthesisRef.current = window.speechSynthesis;
     
@@ -76,6 +80,24 @@ const AiAssistant = () => {
       }
     };
   }, [toast]);
+  
+  // Check for Grok config changes
+  useEffect(() => {
+    const checkGrokConfig = () => {
+      setIsGrokConfigured(!!getGrokApiConfig());
+    };
+    
+    // Check initially
+    checkGrokConfig();
+    
+    // Set up event listener for storage changes
+    window.addEventListener('storage', checkGrokConfig);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('storage', checkGrokConfig);
+    };
+  }, []);
 
   const handleListen = () => {
     if (recognitionRef.current) {
@@ -109,74 +131,49 @@ const AiAssistant = () => {
     }
   };
 
-  // Function to call Grok API (currently mocked)
-  const callGrokApi = async (userQuery: string) => {
-    try {
-      // This is a mock implementation
-      // In a production environment, this would make an actual API call to Grok
-      console.log('Would call Grok API with:', userQuery);
-      console.log('Using API key:', grokApiKey);
-      
-      // Simulate different responses based on command
-      const lowerCommand = userQuery.toLowerCase();
-      let responseText = "";
-      
-      if (lowerCommand.includes('sales') || lowerCommand.includes('revenue')) {
-        responseText = `Sales are up 12.4% compared to last month. The best performing product is Dune Fragrance with 128 units sold, generating $22,400 in revenue. Would you like a detailed breakdown by product category or sales channel?`;
-      } else if (lowerCommand.includes('inventory') || lowerCommand.includes('stock')) {
-        responseText = `Current inventory status: Moon Dust: 254 units, Dune: 128 units, Dahab: 89 units. The Las Vegas warehouse is running low on Moon Dust with only 28 units remaining. Should I prepare a reorder report?`;
-      } else if (lowerCommand.includes('order') || lowerCommand.includes('purchase')) {
-        responseText = `Today we've received 37 new orders totaling $8,450. There are 5 pending shipments and 2 orders flagged for review due to potential fraud. Would you like details on those orders?`;
-      } else if (lowerCommand.includes('marketing') || lowerCommand.includes('campaign')) {
-        responseText = `The current Instagram campaign has reached 245,000 impressions with a 3.8% engagement rate. This is 0.7% above our benchmarks. The TikTok campaign is launching tomorrow. Would you like me to schedule a performance report for next week?`;
-      } else {
-        responseText = `I understand you're asking about "${userQuery}". As this is a demonstration, I can provide insights on sales, inventory, orders, and marketing campaigns. Please try asking about one of these areas.`;
-      }
-      
-      return responseText;
-      
-      // Real implementation would look something like:
-      /*
-      const response = await fetch('https://api.grok.x.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${grokApiKey}`
-        },
-        body: JSON.stringify({
-          model: 'grok-1',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a helpful assistant for MiN NEW YORK, a luxury fragrance brand. Provide concise, insightful responses about business metrics.'
-            },
-            {
-              role: 'user',
-              content: userQuery
-            }
-          ]
-        })
-      });
-      
-      const data = await response.json();
-      return data.choices[0].message.content;
-      */
-    } catch (error) {
-      console.error('Error calling Grok API:', error);
-      return "I'm sorry, I couldn't process your request at this time. Please try again later.";
-    }
-  };
-
+  // Function to call Grok API
   const handleQuerySubmit = async (command?: string) => {
     const voiceCommand = command || query;
     if (!voiceCommand) return;
     
     setIsThinking(true);
     
-    // Call the Grok API (or the mock implementation)
-    const responseText = await callGrokApi(voiceCommand);
-    setResponse(responseText);
-    setIsThinking(false);
+    try {
+      let responseText;
+      
+      if (isGrokConfigured) {
+        // Use the Grok API if configured
+        responseText = await callGrokApi(voiceCommand);
+      } else {
+        // Use mock implementation if Grok is not configured
+        // This is the original mock implementation from AiAssistant
+        const lowerCommand = voiceCommand.toLowerCase();
+        
+        if (lowerCommand.includes('sales') || lowerCommand.includes('revenue')) {
+          responseText = `Sales are up 12.4% compared to last month. The best performing product is Dune Fragrance with 128 units sold, generating $22,400 in revenue. Would you like a detailed breakdown by product category or sales channel?`;
+        } else if (lowerCommand.includes('inventory') || lowerCommand.includes('stock')) {
+          responseText = `Current inventory status: Moon Dust: 254 units, Dune: 128 units, Dahab: 89 units. The Las Vegas warehouse is running low on Moon Dust with only 28 units remaining. Should I prepare a reorder report?`;
+        } else if (lowerCommand.includes('order') || lowerCommand.includes('purchase')) {
+          responseText = `Today we've received 37 new orders totaling $8,450. There are 5 pending shipments and 2 orders flagged for review due to potential fraud. Would you like details on those orders?`;
+        } else if (lowerCommand.includes('marketing') || lowerCommand.includes('campaign')) {
+          responseText = `The current Instagram campaign has reached 245,000 impressions with a 3.8% engagement rate. This is 0.7% above our benchmarks. The TikTok campaign is launching tomorrow. Would you like me to schedule a performance report for next week?`;
+        } else {
+          responseText = `I understand you're asking about "${voiceCommand}". As this is a demonstration, I can provide insights on sales, inventory, orders, and marketing campaigns. Please try asking about one of these areas.`;
+        }
+      }
+      
+      setResponse(responseText);
+    } catch (error) {
+      console.error('Error processing query:', error);
+      toast({
+        title: "Query Processing Error",
+        description: error instanceof Error ? error.message : "Failed to process your request",
+        variant: "destructive",
+      });
+      setResponse("I'm sorry, I couldn't process your request at this time. Please try again later.");
+    } finally {
+      setIsThinking(false);
+    }
   };
 
   const handleClear = () => {
@@ -242,7 +239,7 @@ const AiAssistant = () => {
   }
 
   return (
-    <Card className="fixed bottom-6 right-6 w-96 shadow-xl border border-gray-200 rounded-xl overflow-hidden">
+    <Card className="fixed bottom-6 right-6 w-96 shadow-xl border border-gray-200 rounded-xl overflow-hidden z-50">
       <div className="bg-primary text-white p-3 flex justify-between items-center">
         <h3 className="font-semibold">Grok AI Assistant</h3>
         <div className="flex space-x-2">
@@ -266,6 +263,12 @@ const AiAssistant = () => {
       </div>
       
       <div className="p-4 max-h-96 overflow-y-auto bg-gray-50">
+        {!isGrokConfigured && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
+            Grok API is not configured. Using simulated responses. Go to Reports &gt; Integrations &gt; Grok AI to configure the API.
+          </div>
+        )}
+      
         {response && (
           <div className="mb-4">
             <div className="flex items-start mb-2">

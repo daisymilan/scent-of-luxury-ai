@@ -5,16 +5,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import WooCommerceConfig from '@/components/WooCommerceConfig';
+import N8nConfig from '@/components/N8nConfig';
+import GrokConfig from '@/components/GrokConfig';
 import { useWooProducts, useWooOrders, useWooStats, getWooCommerceConfig } from '@/utils/woocommerceApi';
+import { getGrokApiConfig } from '@/utils/grokApi';
+import { getN8nConfig } from '@/components/N8nConfig';
+import { useAuth } from '@/contexts/AuthContext';
+import DataCard from '@/components/ui/DataCard';
+import { ShoppingCart, Search, Zap, Webhook } from 'lucide-react';
 
 const ReportsPage = () => {
   const [activeTab, setActiveTab] = useState("overview");
-  const isConfigured = !!getWooCommerceConfig();
+  const { hasPermission, user } = useAuth();
+  const isWooConfigured = !!getWooCommerceConfig();
+  const isGrokConfigured = !!getGrokApiConfig();
+  const isN8nConfigured = !!getN8nConfig();
   
   // Only fetch data if WooCommerce is configured
-  const { stats, isLoading: isLoadingStats } = isConfigured ? useWooStats() : { stats: null, isLoading: false };
-  const { products, isLoading: isLoadingProducts } = isConfigured ? useWooProducts(5) : { products: [], isLoading: false };
-  const { orders, isLoading: isLoadingOrders } = isConfigured ? useWooOrders(5) : { orders: [], isLoading: false };
+  const { stats, isLoading: isLoadingStats } = isWooConfigured ? useWooStats() : { stats: null, isLoading: false };
+  const { products, isLoading: isLoadingProducts } = isWooConfigured ? useWooProducts(5) : { products: [], isLoading: false };
+  const { orders, isLoading: isLoadingOrders } = isWooConfigured ? useWooOrders(5) : { orders: [], isLoading: false };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -38,19 +48,19 @@ const ReportsPage = () => {
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="products">Products</TabsTrigger>
               <TabsTrigger value="orders">Orders</TabsTrigger>
-              <TabsTrigger value="woo-config">WooCommerce Config</TabsTrigger>
+              <TabsTrigger value="integrations">Integrations</TabsTrigger>
             </TabsList>
             
             <TabsContent value="overview">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                {!isConfigured ? (
+                {!isWooConfigured ? (
                   <Card className="col-span-full">
                     <CardHeader>
                       <CardTitle>WooCommerce Not Configured</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-gray-500">
-                        Please configure your WooCommerce integration to see store analytics.
+                        Please configure your WooCommerce integration in the Integrations tab to see store analytics.
                       </p>
                     </CardContent>
                   </Card>
@@ -88,37 +98,70 @@ const ReportsPage = () => {
                   </>
                 ) : (
                   <>
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Total Revenue</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold">${stats?.totalRevenue || '0.00'}</div>
-                        <p className="text-gray-500">From all orders</p>
-                      </CardContent>
-                    </Card>
+                    <DataCard 
+                      title="Total Revenue" 
+                      value={`$${stats?.totalRevenue || '0.00'}`} 
+                      change={8.4} 
+                      icon={<ShoppingCart className="h-4 w-4" />}
+                    />
                     
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Total Orders</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold">{stats?.totalOrders || 0}</div>
-                        <p className="text-gray-500">From WooCommerce</p>
-                      </CardContent>
-                    </Card>
+                    <DataCard 
+                      title="Total Orders" 
+                      value={stats?.totalOrders || 0} 
+                      change={3.2} 
+                      icon={<ShoppingCart className="h-4 w-4" />}
+                    />
                     
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Active Products</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold">{stats?.totalProducts || 0}</div>
-                        <p className="text-gray-500">In your catalog</p>
-                      </CardContent>
-                    </Card>
+                    <DataCard 
+                      title="Active Products" 
+                      value={stats?.totalProducts || 0} 
+                      change={0} 
+                      icon={<Search className="h-4 w-4" />}
+                    />
                   </>
                 )}
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <DataCard 
+                    title="Integrations Status" 
+                    value={`${(isWooConfigured ? 1 : 0) + (isGrokConfigured ? 1 : 0) + (isN8nConfigured ? 1 : 0)}/3`} 
+                    className="h-full"
+                  />
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between bg-white p-4 rounded-lg border">
+                      <div className="flex items-center">
+                        <ShoppingCart className="h-5 w-5 text-primary mr-2" />
+                        <span>WooCommerce</span>
+                      </div>
+                      <span className={`px-2 py-1 rounded text-xs ${isWooConfigured ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                        {isWooConfigured ? 'Connected' : 'Not Connected'}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between bg-white p-4 rounded-lg border">
+                      <div className="flex items-center">
+                        <Zap className="h-5 w-5 text-primary mr-2" />
+                        <span>Grok AI</span>
+                      </div>
+                      <span className={`px-2 py-1 rounded text-xs ${isGrokConfigured ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                        {isGrokConfigured ? 'Connected' : 'Not Connected'}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between bg-white p-4 rounded-lg border">
+                      <div className="flex items-center">
+                        <Webhook className="h-5 w-5 text-primary mr-2" />
+                        <span>n8n Workflows</span>
+                      </div>
+                      <span className={`px-2 py-1 rounded text-xs ${isN8nConfigured ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                        {isN8nConfigured ? 'Connected' : 'Not Connected'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </TabsContent>
             
@@ -128,7 +171,7 @@ const ReportsPage = () => {
                   <CardTitle>Top Products</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {!isConfigured ? (
+                  {!isWooConfigured ? (
                     <p className="text-gray-500">
                       Please configure your WooCommerce integration to see product data.
                     </p>
@@ -187,7 +230,7 @@ const ReportsPage = () => {
                   <CardTitle>Recent Orders</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {!isConfigured ? (
+                  {!isWooConfigured ? (
                     <p className="text-gray-500">
                       Please configure your WooCommerce integration to see order data.
                     </p>
@@ -248,8 +291,28 @@ const ReportsPage = () => {
               </Card>
             </TabsContent>
             
-            <TabsContent value="woo-config">
-              <WooCommerceConfig />
+            <TabsContent value="integrations">
+              <div className="space-y-6">
+                <Tabs defaultValue="woocommerce">
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="woocommerce">WooCommerce</TabsTrigger>
+                    <TabsTrigger value="grok">Grok AI</TabsTrigger>
+                    <TabsTrigger value="n8n">n8n</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="woocommerce">
+                    <WooCommerceConfig />
+                  </TabsContent>
+                  
+                  <TabsContent value="grok">
+                    <GrokConfig />
+                  </TabsContent>
+                  
+                  <TabsContent value="n8n">
+                    <N8nConfig />
+                  </TabsContent>
+                </Tabs>
+              </div>
             </TabsContent>
           </Tabs>
         </div>

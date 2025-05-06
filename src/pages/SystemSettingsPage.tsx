@@ -1,229 +1,165 @@
 
-import { useState } from "react";
-import DashboardHeader from "@/components/DashboardHeader";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
-import WooCommerceConfig from "@/components/WooCommerceConfig";
-import N8nConfig from "@/components/N8nConfig";
+import { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import DashboardHeader from '@/components/DashboardHeader';
+import N8nConfig from '@/components/N8nConfig';
+import WooCommerceConfig from '@/components/WooCommerceConfig';
+import GrokConfig from '@/components/GrokConfig';
+import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ShoppingCart, Webhook, Zap, Settings } from 'lucide-react';
 
 const SystemSettingsPage = () => {
-  const [apiKeys, setApiKeys] = useState({
-    googleAnalytics: "GA-12345-6",
-    salesforceAPI: "SF-ABCDE-7890",
-    inventorySystem: "INV-XYZ-9876",
-  });
+  const [activeTab, setActiveTab] = useState("integrations");
+  const { user, hasPermission } = useAuth();
   
-  const [integration, setIntegration] = useState({
-    googleAnalytics: true,
-    salesforce: true,
-    shopify: false,
-    mailchimp: true
-  });
-
-  const [backupSchedule, setBackupSchedule] = useState("daily");
-  
-  const handleApiKeyChange = (key: keyof typeof apiKeys, value: string) => {
-    setApiKeys(prev => ({
-      ...prev,
-      [key]: value
-    }));
-  };
-
-  const handleSaveSettings = (section: string) => {
-    toast.success(`${section} settings saved successfully`);
-    // In a real app, these would be saved to a backend
-  };
-
-  const handleToggleIntegration = (key: keyof typeof integration) => {
-    setIntegration(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <DashboardHeader />
-      <main className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <h1 className="text-2xl font-bold mb-6">System Settings</h1>
-        
-        <Tabs defaultValue="integrations" className="space-y-4">
-          <TabsList className="grid w-full md:w-auto md:inline-grid grid-cols-3">
-            <TabsTrigger value="integrations">Integrations</TabsTrigger>
-            <TabsTrigger value="security">Security</TabsTrigger>
-            <TabsTrigger value="backup">Backup</TabsTrigger>
-          </TabsList>
+      
+      <main className="flex-1 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+            <div>
+              <h1 className="text-3xl font-semibold">System Settings</h1>
+              <p className="text-gray-500">
+                Configure system integrations and settings
+                {user?.role && ` (${user.role} permissions)`}
+              </p>
+            </div>
+          </div>
           
-          {/* Integrations Tab */}
-          <TabsContent value="integrations" className="space-y-4">
-            {/* WooCommerce Integration */}
-            <WooCommerceConfig />
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="bg-white border border-gray-200 p-1 rounded-lg">
+              <TabsTrigger value="integrations" className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-md">
+                Integrations
+              </TabsTrigger>
+              <TabsTrigger value="users" className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-md">
+                User Management
+              </TabsTrigger>
+              <TabsTrigger value="backup" className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-md">
+                Backup & Restore
+              </TabsTrigger>
+              <TabsTrigger value="logs" className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-md">
+                System Logs
+              </TabsTrigger>
+            </TabsList>
             
-            {/* n8n Integration */}
-            <N8nConfig />
+            <TabsContent value="integrations">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <Card className="bg-white shadow-sm hover:shadow transition-shadow">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-lg">WooCommerce</CardTitle>
+                    <ShoppingCart className="h-5 w-5 text-primary" />
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="pb-4">
+                      Connect to your WooCommerce store to display product and order data
+                    </CardDescription>
+                    <div className="text-sm text-primary font-medium cursor-pointer" 
+                      onClick={() => setActiveTab("woocommerce")}>
+                      Configure →
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="bg-white shadow-sm hover:shadow transition-shadow">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-lg">n8n Workflows</CardTitle>
+                    <Webhook className="h-5 w-5 text-primary" />
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="pb-4">
+                      Connect to your n8n instance for workflow automation
+                    </CardDescription>
+                    <div className="text-sm text-primary font-medium cursor-pointer"
+                      onClick={() => setActiveTab("n8n")}>
+                      Configure →
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="bg-white shadow-sm hover:shadow transition-shadow">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-lg">Grok AI</CardTitle>
+                    <Zap className="h-5 w-5 text-primary" />
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="pb-4">
+                      Connect to Grok AI API for advanced analytics and insights
+                    </CardDescription>
+                    <div className="text-sm text-primary font-medium cursor-pointer"
+                      onClick={() => setActiveTab("grok")}>
+                      Configure →
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              {activeTab === "woocommerce" && (
+                <WooCommerceConfig />
+              )}
+              
+              {activeTab === "n8n" && (
+                <N8nConfig />
+              )}
+              
+              {activeTab === "grok" && (
+                <GrokConfig />
+              )}
+            </TabsContent>
             
-            <Card>
-              <CardHeader>
-                <CardTitle>API Integrations</CardTitle>
-                <CardDescription>Manage your third-party service connections</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <Label htmlFor="ga-key">Google Analytics</Label>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handleToggleIntegration("googleAnalytics")}
-                    >
-                      {integration.googleAnalytics ? "Disconnect" : "Connect"}
-                    </Button>
-                  </div>
-                  <Input 
-                    id="ga-key"
-                    value={apiKeys.googleAnalytics}
-                    onChange={(e) => handleApiKeyChange("googleAnalytics", e.target.value)}
-                    disabled={!integration.googleAnalytics}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <Label htmlFor="sf-key">Salesforce</Label>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleToggleIntegration("salesforce")}
-                    >
-                      {integration.salesforce ? "Disconnect" : "Connect"}
-                    </Button>
-                  </div>
-                  <Input 
-                    id="sf-key"
-                    value={apiKeys.salesforceAPI}
-                    onChange={(e) => handleApiKeyChange("salesforceAPI", e.target.value)}
-                    disabled={!integration.salesforce}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <Label htmlFor="inv-key">Inventory System</Label>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleToggleIntegration("shopify")}
-                    >
-                      {integration.shopify ? "Disconnect" : "Connect"}
-                    </Button>
-                  </div>
-                  <Input 
-                    id="inv-key"
-                    value={apiKeys.inventorySystem}
-                    onChange={(e) => handleApiKeyChange("inventorySystem", e.target.value)}
-                    disabled={!integration.shopify}
-                  />
-                </div>
-                
-                <div className="pt-4">
-                  <Button onClick={() => handleSaveSettings("API")}>Save API Settings</Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          {/* Security Tab */}
-          <TabsContent value="security" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Security Settings</CardTitle>
-                <CardDescription>Configure account security options</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Input type="checkbox" id="mfa" className="w-4 h-4" />
-                    <Label htmlFor="mfa">Enable Two-Factor Authentication</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Input type="checkbox" id="session-timeout" className="w-4 h-4" defaultChecked />
-                    <Label htmlFor="session-timeout">Auto Session Timeout</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Input type="checkbox" id="ip-restriction" className="w-4 h-4" />
-                    <Label htmlFor="ip-restriction">IP Address Restriction</Label>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="timeout-period">Session Timeout Period (minutes)</Label>
-                    <Input id="timeout-period" type="number" defaultValue="30" />
-                  </div>
-                  
-                  <div className="pt-4">
-                    <Button onClick={() => handleSaveSettings("Security")}>Save Security Settings</Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          {/* Backup Tab */}
-          <TabsContent value="backup" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Backup & Recovery</CardTitle>
-                <CardDescription>Configure system backup options</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="backup-schedule">Backup Schedule</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Button 
-                      variant={backupSchedule === "daily" ? "default" : "outline"} 
-                      onClick={() => setBackupSchedule("daily")}
-                    >
-                      Daily
-                    </Button>
-                    <Button 
-                      variant={backupSchedule === "weekly" ? "default" : "outline"} 
-                      onClick={() => setBackupSchedule("weekly")}
-                    >
-                      Weekly
-                    </Button>
-                    <Button 
-                      variant={backupSchedule === "monthly" ? "default" : "outline"} 
-                      onClick={() => setBackupSchedule("monthly")}
-                    >
-                      Monthly
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="backup-time">Backup Time</Label>
-                  <Input id="backup-time" type="time" defaultValue="02:00" />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="retention-period">Retention Period (days)</Label>
-                  <Input id="retention-period" type="number" defaultValue="30" />
-                </div>
-                
-                <div className="pt-4">
-                  <Button onClick={() => handleSaveSettings("Backup")}>Save Backup Settings</Button>
-                </div>
-                
-                <div className="pt-6">
-                  <Button variant="outline" className="w-full">Trigger Manual Backup</Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="users">
+              <Card>
+                <CardHeader>
+                  <CardTitle>User Management</CardTitle>
+                  <CardDescription>
+                    Manage system users and permissions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600">
+                    This feature will allow you to manage users and their permissions.
+                    Currently available roles: CEO, CCO, Commercial Director, Regional Manager, 
+                    Marketing Manager, Production Manager, Customer Support, and Social Media Manager.
+                  </p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="backup">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Backup & Restore</CardTitle>
+                  <CardDescription>
+                    Backup and restore your system data
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600">
+                    This feature will allow you to create backups of your system data and restore from backups.
+                  </p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="logs">
+              <Card>
+                <CardHeader>
+                  <CardTitle>System Logs</CardTitle>
+                  <CardDescription>
+                    View system logs and activity
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600">
+                    This feature will allow you to view system logs and activity.
+                  </p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
       </main>
     </div>
   );
