@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -853,4 +854,29 @@ const WooCommerceConfig = () => {
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="text-sm font-medium text-gray-500">Total Revenue</div>
-                        <div className="text-3
+                        <div className="text-3xl font-semibold mt-1">${mockStats.totalRevenue}</div>
+                      </div>
+                      <div className="bg-primary/10 p-2 rounded-md">
+                        <ShoppingCart className="h-5 w-5 text-primary" />
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4 text-xs text-gray-500">
+                      <div className="flex items-center">
+                        <ArrowUpRight className="h-3 w-3 mr-1 text-green-500" />
+                        <span className="text-green-500">5.2%</span>
+                        <span className="ml-1">increase compared to last month</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default WooCommerceConfig;
