@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Bell, Search, Menu, Settings, User } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -15,6 +15,12 @@ import { Input } from '@/components/ui/input';
 
 const DashboardHeader = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  
+  // Helper function to determine if a path is active
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
 
   return (
     <header className="bg-white border-b border-gray-100">
@@ -28,11 +34,46 @@ const DashboardHeader = () => {
             
             {/* Main Navigation - Desktop */}
             <nav className="hidden md:ml-10 md:flex md:space-x-8">
-              <Link to="/" className="font-medium text-primary border-b-2 border-primary px-1">Dashboard</Link>
-              <Link to="/b2b" className="font-medium text-gray-500 hover:text-gray-900 px-1">B2B</Link>
-              <Link to="/marketing" className="font-medium text-gray-500 hover:text-gray-900 px-1">Marketing</Link>
-              <Link to="/inventory" className="font-medium text-gray-500 hover:text-gray-900 px-1">Inventory</Link>
-              <Link to="/reports" className="font-medium text-gray-500 hover:text-gray-900 px-1">Reports</Link>
+              <Link 
+                to="/" 
+                className={`font-medium px-1 ${isActive('/') 
+                  ? 'text-primary border-b-2 border-primary' 
+                  : 'text-gray-500 hover:text-gray-900'}`}
+              >
+                Dashboard
+              </Link>
+              <Link 
+                to="/b2b" 
+                className={`font-medium px-1 ${isActive('/b2b') 
+                  ? 'text-primary border-b-2 border-primary' 
+                  : 'text-gray-500 hover:text-gray-900'}`}
+              >
+                B2B
+              </Link>
+              <Link 
+                to="/marketing" 
+                className={`font-medium px-1 ${isActive('/marketing') 
+                  ? 'text-primary border-b-2 border-primary' 
+                  : 'text-gray-500 hover:text-gray-900'}`}
+              >
+                Marketing
+              </Link>
+              <Link 
+                to="/inventory" 
+                className={`font-medium px-1 ${isActive('/inventory') 
+                  ? 'text-primary border-b-2 border-primary' 
+                  : 'text-gray-500 hover:text-gray-900'}`}
+              >
+                Inventory
+              </Link>
+              <Link 
+                to="/reports" 
+                className={`font-medium px-1 ${isActive('/reports') 
+                  ? 'text-primary border-b-2 border-primary' 
+                  : 'text-gray-500 hover:text-gray-900'}`}
+              >
+                Reports
+              </Link>
             </nav>
           </div>
           
@@ -124,11 +165,56 @@ const DashboardHeader = () => {
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white border-b border-gray-100">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <Link to="/" className="block px-3 py-2 rounded-md text-base font-medium text-primary bg-primary/10">Dashboard</Link>
-            <Link to="/b2b" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">B2B</Link>
-            <Link to="/marketing" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Marketing</Link>
-            <Link to="/inventory" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Inventory</Link>
-            <Link to="/reports" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Reports</Link>
+            <Link 
+              to="/" 
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                isActive('/') 
+                  ? 'text-primary bg-primary/10' 
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Dashboard
+            </Link>
+            <Link 
+              to="/b2b" 
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                isActive('/b2b') 
+                  ? 'text-primary bg-primary/10' 
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              B2B
+            </Link>
+            <Link 
+              to="/marketing" 
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                isActive('/marketing') 
+                  ? 'text-primary bg-primary/10' 
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Marketing
+            </Link>
+            <Link 
+              to="/inventory" 
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                isActive('/inventory') 
+                  ? 'text-primary bg-primary/10' 
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Inventory
+            </Link>
+            <Link 
+              to="/reports" 
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                isActive('/reports') 
+                  ? 'text-primary bg-primary/10' 
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Reports
+            </Link>
           </div>
           <div className="pt-4 pb-3 border-t border-gray-200">
             <div className="px-2 space-y-1">
