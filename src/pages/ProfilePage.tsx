@@ -7,17 +7,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ProfilePage = () => {
+  const { user } = useAuth();
+  
   const [userInfo, setUserInfo] = useState({
-    name: "Chad Williams",
-    email: "chad.williams@example.com",
-    role: "CEO",
-    department: "Executive"
+    name: user?.name || "Guest",
+    email: user?.email || "",
+    role: user?.role || "Guest",
+    department: getDepartmentForRole(user?.role)
   });
 
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ ...userInfo });
+
+  function getDepartmentForRole(role?: string): string {
+    switch(role) {
+      case 'CEO':
+      case 'CCO':
+        return 'Executive';
+      case 'Commercial Director':
+        return 'Commercial';
+      case 'Regional Manager':
+        return 'Operations';
+      case 'Marketing Manager':
+        return 'Marketing';
+      default:
+        return '';
+    }
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -35,6 +54,16 @@ const ProfilePage = () => {
     setIsEditing(false);
   };
 
+  // Get initials for avatar fallback
+  const getInitials = () => {
+    if (!userInfo.name) return "?";
+    return userInfo.name
+      .split(' ')
+      .map(name => name[0])
+      .join('')
+      .toUpperCase();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardHeader />
@@ -46,8 +75,8 @@ const ProfilePage = () => {
           <Card>
             <CardContent className="pt-6 flex flex-col items-center">
               <Avatar className="h-24 w-24 mb-4">
-                <AvatarImage src="" />
-                <AvatarFallback className="text-2xl bg-primary text-white">CW</AvatarFallback>
+                <AvatarImage src={user?.avatar || ""} />
+                <AvatarFallback className="text-2xl bg-primary text-white">{getInitials()}</AvatarFallback>
               </Avatar>
               <h2 className="text-xl font-semibold">{userInfo.name}</h2>
               <p className="text-gray-500">{userInfo.role}</p>
