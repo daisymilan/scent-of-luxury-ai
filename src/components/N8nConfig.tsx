@@ -21,7 +21,7 @@ const saveN8nConfig = (config: N8nConfigType) => {
 };
 
 // Get n8n config from localStorage
-const getN8nConfig = (): N8nConfigType | null => {
+export const getN8nConfig = (): N8nConfigType | null => {
   const config = localStorage.getItem('n8n_config');
   return config ? JSON.parse(config) : null;
 };
