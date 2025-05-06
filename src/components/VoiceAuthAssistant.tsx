@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Mic, Play, ChevronDown, X, Volume2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -14,23 +13,96 @@ const VoiceAuthAssistant = () => {
   const [isThinking, setIsThinking] = useState(false);
   const { voiceLogin } = useAuth();
   const { toast } = useToast();
+  
+  // Reference for speech recognition
+  const recognitionRef = useRef<any>(null);
+  
+  // Initialize speech recognition
+  useEffect(() => {
+    // Initialize speech recognition if available
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'en-US';
+      
+      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+        const transcript = event.results[0][0].transcript;
+        console.log('Voice recognized:', transcript);
+        setQuery(transcript);
+        handleQuerySubmit(transcript);
+      };
+      
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        toast({
+          title: "Voice Recognition Error",
+          description: `Could not recognize voice: ${event.error}`,
+          variant: "destructive"
+        });
+      };
+      
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          console.log('Speech recognition was not started');
+        }
+      }
+    };
+  }, [toast]);
 
   const handleListen = () => {
-    setIsListening(true);
-    // Simulate voice recognition
-    setTimeout(() => {
-      const voiceCommands = [
-        "Login as CEO",
-        "Login as CCO",
-        "Login as Commercial Director",
-        "Login as Regional Manager",
-        "Login as Marketing Manager"
-      ];
-      const randomCommand = voiceCommands[Math.floor(Math.random() * voiceCommands.length)];
-      setQuery(randomCommand);
-      setIsListening(false);
-      handleQuerySubmit(randomCommand);
-    }, 2000);
+    if (recognitionRef.current) {
+      setIsListening(true);
+      try {
+        recognitionRef.current.start();
+        toast({
+          title: "Listening...",
+          description: "Say 'Login as [role]' to authenticate"
+        });
+      } catch (e) {
+        console.error('Speech recognition error:', e);
+        setIsListening(false);
+        toast({
+          title: "Voice Recognition Error",
+          description: "Could not start voice recognition",
+          variant: "destructive"
+        });
+      }
+    } else {
+      // Fallback for browsers without speech recognition
+      toast({
+        title: "Voice Recognition Not Supported",
+        description: "Your browser doesn't support voice recognition. Please try another browser or use text input.",
+        variant: "destructive"
+      });
+      
+      // Simulate voice recognition with mock data (for demonstration)
+      setIsListening(true);
+      setTimeout(() => {
+        const voiceCommands = [
+          "Login as CEO",
+          "Login as CCO",
+          "Login as Commercial Director",
+          "Login as Regional Manager",
+          "Login as Marketing Manager"
+        ];
+        const randomCommand = voiceCommands[Math.floor(Math.random() * voiceCommands.length)];
+        setQuery(randomCommand);
+        setIsListening(false);
+        handleQuerySubmit(randomCommand);
+      }, 2000);
+    }
   };
 
   const handleQuerySubmit = async (command?: string) => {
@@ -38,6 +110,7 @@ const VoiceAuthAssistant = () => {
     if (!voiceCommand) return;
     
     setIsThinking(true);
+    console.log("Processing voice command:", voiceCommand);
     
     try {
       // If the query contains login keywords, attempt voice login
@@ -49,6 +122,7 @@ const VoiceAuthAssistant = () => {
         setResponse("I'm sorry, I can only handle login requests at this time. Please say 'Login as [role]' to authenticate.");
       }
     } catch (error) {
+      console.error("Voice authentication error:", error);
       const errorMessage = error instanceof Error ? error.message : 'Voice authentication failed';
       setResponse(`Authentication failed: ${errorMessage}. Please try again or use traditional login.`);
       toast({
@@ -66,6 +140,7 @@ const VoiceAuthAssistant = () => {
     setResponse('');
   };
 
+  // Rest of the component remains the same
   if (!isExpanded) {
     return (
       <Button 
@@ -178,7 +253,16 @@ const VoiceAuthAssistant = () => {
           {isListening ? (
             <Button 
               className="rounded-full bg-red-500 hover:bg-red-600 h-10 w-10 flex-shrink-0" 
-              onClick={() => setIsListening(false)}
+              onClick={() => {
+                if (recognitionRef.current) {
+                  try {
+                    recognitionRef.current.stop();
+                  } catch (e) {
+                    console.log('Recognition already stopped');
+                  }
+                }
+                setIsListening(false);
+              }}
             >
               <X size={20} />
             </Button>
