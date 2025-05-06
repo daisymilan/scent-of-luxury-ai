@@ -59,9 +59,12 @@ export const callGrokApi = async (
     } else if (lowerQuery.includes('marketing') || lowerQuery.includes('campaign')) {
       response = `The current Instagram campaign has reached 245,000 impressions with a 3.8% engagement rate. This is 0.7% above our benchmarks. The TikTok campaign is launching tomorrow.`;
     } else {
-      response = `I understand you're asking about "${query}". As this is a demonstration, I can provide insights on sales, inventory, orders, and marketing campaigns. Please try asking about one of these areas.`;
+      response = `I understand you're asking about "${query}". Based on our data, we've seen positive growth in all business areas this month. Would you like specific information about sales, inventory, orders, or marketing campaigns?`;
     }
 
+    // Add a small delay to simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     return response;
 
     /* In production, the actual API call would look something like this:

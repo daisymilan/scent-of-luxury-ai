@@ -133,9 +133,11 @@ const AiAssistant = () => {
 
   // Function to call Grok API
   const handleQuerySubmit = async (command?: string) => {
-    const voiceCommand = command || query;
-    if (!voiceCommand) return;
+    const currentQuery = command || query;
+    if (!currentQuery) return;
     
+    // Clear previous response and show thinking state
+    setResponse('');
     setIsThinking(true);
     
     try {
@@ -143,11 +145,10 @@ const AiAssistant = () => {
       
       if (isGrokConfigured) {
         // Use the Grok API if configured
-        responseText = await callGrokApi(voiceCommand);
+        responseText = await callGrokApi(currentQuery);
       } else {
         // Use mock implementation if Grok is not configured
-        // This is the original mock implementation from AiAssistant
-        const lowerCommand = voiceCommand.toLowerCase();
+        const lowerCommand = currentQuery.toLowerCase();
         
         if (lowerCommand.includes('sales') || lowerCommand.includes('revenue')) {
           responseText = `Sales are up 12.4% compared to last month. The best performing product is Dune Fragrance with 128 units sold, generating $22,400 in revenue. Would you like a detailed breakdown by product category or sales channel?`;
@@ -158,10 +159,11 @@ const AiAssistant = () => {
         } else if (lowerCommand.includes('marketing') || lowerCommand.includes('campaign')) {
           responseText = `The current Instagram campaign has reached 245,000 impressions with a 3.8% engagement rate. This is 0.7% above our benchmarks. The TikTok campaign is launching tomorrow. Would you like me to schedule a performance report for next week?`;
         } else {
-          responseText = `I understand you're asking about "${voiceCommand}". As this is a demonstration, I can provide insights on sales, inventory, orders, and marketing campaigns. Please try asking about one of these areas.`;
+          responseText = `I understand you're asking about "${currentQuery}". As this is a demonstration, I can provide insights on sales, inventory, orders, and marketing campaigns. Please try asking about one of these areas.`;
         }
       }
       
+      console.log('Received response from Grok API:', responseText);
       setResponse(responseText);
     } catch (error) {
       console.error('Error processing query:', error);
