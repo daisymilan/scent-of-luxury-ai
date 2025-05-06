@@ -12,6 +12,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 const statusColors = {
   'New Lead': 'bg-blue-100 text-blue-800',
@@ -21,8 +25,21 @@ const statusColors = {
 };
 
 const B2BLeadGeneration = () => {
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLead, setSelectedLead] = useState<typeof b2bLeads[0] | null>(null);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [sequenceModalOpen, setSequenceModalOpen] = useState(false);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  
+  // Outreach sequence state
+  const [sequence, setSequence] = useState([
+    { id: 1, name: 'Initial Contact Email', status: 'completed', scheduledDate: 'Sent 2 days ago' },
+    { id: 2, name: 'Follow-up Email', status: 'scheduled', scheduledDate: 'Tomorrow' },
+    { id: 3, name: 'Final Follow-up', status: 'scheduled', scheduledDate: 'Next week' },
+  ]);
   
   const filteredLeads = b2bLeads.filter(lead => 
     lead.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -31,6 +48,79 @@ const B2BLeadGeneration = () => {
   
   const handleLeadSelect = (lead: typeof b2bLeads[0]) => {
     setSelectedLead(lead);
+  };
+  
+  const handleSendCustomEmail = () => {
+    if (!selectedLead) {
+      toast({
+        title: "No lead selected",
+        description: "Please select a lead first",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Pre-fill the email subject and body with template data
+    setEmailSubject(`Exclusive MiN NEW YORK Partnership Opportunity - ${selectedLead.company}`);
+    setEmailBody(`Dear ${selectedLead.contact},\n\nI hope this email finds you well. I'm reaching out regarding an exclusive partnership opportunity between ${selectedLead.company} and MiN NEW YORK.\n\nOur luxury fragrance collection has garnered acclaim worldwide for their exceptional quality and unique compositions. We believe there could be an excellent synergy between our brands.\n\nI'd welcome the opportunity to discuss how a partnership could enhance your customer experience and drive measurable business results.\n\nLooking forward to your response.\n\nBest regards,\nChad Murawczyk\nFounder, MiN NEW YORK`);
+    
+    setEmailModalOpen(true);
+  };
+  
+  const handleEditSequence = () => {
+    if (!selectedLead) {
+      toast({
+        title: "No lead selected",
+        description: "Please select a lead first",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setSequenceModalOpen(true);
+  };
+  
+  const handleSubmitEmail = () => {
+    if (!emailSubject || !emailBody) {
+      toast({
+        title: "Missing fields",
+        description: "Please fill in both subject and message",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsSending(true);
+    
+    // Simulate sending email
+    setTimeout(() => {
+      setIsSending(false);
+      setEmailModalOpen(false);
+      
+      toast({
+        title: "Email sent",
+        description: `Email sent to ${selectedLead?.contact} at ${selectedLead?.email}`,
+      });
+      
+      // Reset form
+      setEmailSubject('');
+      setEmailBody('');
+    }, 1500);
+  };
+  
+  const handleUpdateSequence = () => {
+    setSequenceModalOpen(false);
+    
+    toast({
+      title: "Sequence updated",
+      description: "The outreach sequence has been updated",
+    });
+  };
+  
+  const updateSequenceStep = (id: number, field: string, value: string) => {
+    setSequence(sequence.map(step => 
+      step.id === id ? { ...step, [field]: value } : step
+    ));
   };
   
   return (
@@ -175,10 +265,10 @@ const B2BLeadGeneration = () => {
               </div>
               
               <div className="pt-4 border-t border-gray-100">
-                <Button className="w-full mb-2">
+                <Button className="w-full mb-2" onClick={handleSendCustomEmail}>
                   <Mail size={16} className="mr-2" /> Send Custom Email
                 </Button>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={handleEditSequence}>
                   Edit Sequence
                 </Button>
               </div>
@@ -193,6 +283,98 @@ const B2BLeadGeneration = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Custom Email Modal */}
+      <Dialog open={emailModalOpen} onOpenChange={setEmailModalOpen}>
+        <DialogContent className="sm:max-w-[525px]">
+          <DialogHeader>
+            <DialogTitle>Send Custom Email to {selectedLead?.contact}</DialogTitle>
+            <DialogDescription>
+              Send a personalized email to this lead. This will be sent through your configured email service.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email-to">To</Label>
+              <Input id="email-to" value={selectedLead?.email || ''} disabled />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="email-subject">Subject</Label>
+              <Input 
+                id="email-subject" 
+                value={emailSubject} 
+                onChange={(e) => setEmailSubject(e.target.value)}
+                placeholder="Enter email subject..." 
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="email-body">Message</Label>
+              <Textarea
+                id="email-body"
+                value={emailBody}
+                onChange={(e) => setEmailBody(e.target.value)}
+                placeholder="Enter your message..."
+                className="min-h-[200px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEmailModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubmitEmail} disabled={isSending}>
+              {isSending ? "Sending..." : "Send Email"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Sequence Modal */}
+      <Dialog open={sequenceModalOpen} onOpenChange={setSequenceModalOpen}>
+        <DialogContent className="sm:max-w-[525px]">
+          <DialogHeader>
+            <DialogTitle>Edit Outreach Sequence</DialogTitle>
+            <DialogDescription>
+              Modify the automated outreach sequence for {selectedLead?.company}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {sequence.map((step) => (
+              <div key={step.id} className="grid grid-cols-[auto,1fr] gap-4 items-start">
+                <div className={`h-6 w-6 rounded-full flex items-center justify-center text-sm mt-2 ${
+                  step.status === 'completed' ? 'bg-green-100 text-green-600' :
+                  'bg-blue-100 text-blue-600'
+                }`}>
+                  {step.status === 'completed' ? <Check size={14} /> : step.id}
+                </div>
+                <div className="space-y-2 w-full">
+                  <div>
+                    <Label htmlFor={`step-name-${step.id}`}>Step Name</Label>
+                    <Input
+                      id={`step-name-${step.id}`}
+                      value={step.name}
+                      onChange={(e) => updateSequenceStep(step.id, 'name', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`step-date-${step.id}`}>Schedule/Status</Label>
+                    <Input
+                      id={`step-date-${step.id}`}
+                      value={step.scheduledDate}
+                      onChange={(e) => updateSequenceStep(step.id, 'scheduledDate', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+            <Button variant="outline" className="mt-2">
+              <Plus size={16} className="mr-2" /> Add Step
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSequenceModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleUpdateSequence}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

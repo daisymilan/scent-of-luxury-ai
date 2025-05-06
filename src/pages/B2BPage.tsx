@@ -1,6 +1,8 @@
 
 import DashboardHeader from '@/components/DashboardHeader';
 import B2BLeadGeneration from '@/components/B2BLeadGeneration';
+import N8nConfig from '@/components/N8nConfig';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const B2BPage = () => {
   return (
@@ -20,7 +22,18 @@ const B2BPage = () => {
             </div>
           </div>
           
-          <B2BLeadGeneration />
+          <Tabs defaultValue="leads" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="leads">Lead Management</TabsTrigger>
+              <TabsTrigger value="automation">Automation Config</TabsTrigger>
+            </TabsList>
+            <TabsContent value="leads">
+              <B2BLeadGeneration />
+            </TabsContent>
+            <TabsContent value="automation">
+              <N8nConfig />
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
     </div>
