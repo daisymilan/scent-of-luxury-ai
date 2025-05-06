@@ -13,28 +13,81 @@ import ProfilePage from "./pages/ProfilePage";
 import PreferencesPage from "./pages/PreferencesPage";
 import SystemSettingsPage from "./pages/SystemSettingsPage";
 import NotFound from "./pages/NotFound";
+import LoginPage from "./pages/LoginPage";
+import VoiceLoginPage from "./pages/VoiceLoginPage";
+import UnauthorizedPage from "./pages/UnauthorizedPage";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { AuthProvider } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/b2b" element={<B2BPage />} />
-          <Route path="/marketing" element={<MarketingPage />} />
-          <Route path="/inventory" element={<InventoryPage />} />
-          <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/preferences" element={<PreferencesPage />} />
-          <Route path="/settings/system" element={<SystemSettingsPage />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/voice-login" element={<VoiceLoginPage />} />
+            <Route path="/unauthorized" element={<UnauthorizedPage />} />
+            
+            {/* Protected Routes */}
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/b2b" element={
+              <ProtectedRoute requiredRole={['CEO', 'CCO', 'Commercial Director']}>
+                <B2BPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/marketing" element={
+              <ProtectedRoute requiredRole={['CEO', 'CCO', 'Marketing Manager']}>
+                <MarketingPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/inventory" element={
+              <ProtectedRoute requiredRole={['CEO', 'CCO', 'Commercial Director', 'Regional Manager']}>
+                <InventoryPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/reports" element={
+              <ProtectedRoute requiredRole={['CEO', 'CCO']}>
+                <ReportsPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/preferences" element={
+              <ProtectedRoute>
+                <PreferencesPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/settings/system" element={
+              <ProtectedRoute requiredRole="CEO">
+                <SystemSettingsPage />
+              </ProtectedRoute>
+            } />
+            
+            {/* Catch-all */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </TooltipProvider>
+      </AuthProvider>
     </BrowserRouter>
   </QueryClientProvider>
 );
