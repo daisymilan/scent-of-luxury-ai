@@ -5,12 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { WooCommerceConfig, saveWooCommerceConfig, getWooCommerceConfig } from '@/utils/woocommerceApi';
+import { 
+  WooCommerceConfig as WooCommerceConfigType, 
+  saveWooCommerceConfig, 
+  getWooCommerceConfig 
+} from '@/utils/woocommerceApi';
 
 const WooCommerceConfig = () => {
   const { toast } = useToast();
   const [isConfigured, setIsConfigured] = useState(false);
-  const [config, setConfig] = useState<WooCommerceConfig>({
+  const [config, setConfig] = useState<WooCommerceConfigType>({
     url: '',
     consumerKey: '',
     consumerSecret: '',
