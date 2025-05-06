@@ -7,7 +7,6 @@ import { seoPerformance } from '../lib/mockData';
 import { 
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
@@ -18,18 +17,16 @@ const SEODashboard = () => {
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <div className="flex items-center">
             <CardTitle className="text-lg font-medium">Keyword Rankings</CardTitle>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 ml-1">
-                    <Info size={14} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="max-w-xs text-xs">Rankings are updated daily from Google Search Console data</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 ml-1">
+                  <Info size={14} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="max-w-xs text-xs">Rankings are updated daily from Google Search Console data</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
           <Button className="h-8 text-xs" size="sm" variant="outline">
             <Settings size={14} className="mr-1" /> Configure
