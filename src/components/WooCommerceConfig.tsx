@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,7 +27,8 @@ import { useToast } from '@/hooks/use-toast';
 import { 
   WooCommerceConfig as WooCommerceConfigType, 
   saveWooCommerceConfig, 
-  getWooCommerceConfig 
+  getWooCommerceConfig,
+  HARDCODED_WOO_CONFIG
 } from '@/utils/woocommerceApi';
 
 const WooCommerceConfig = () => {
@@ -187,14 +187,31 @@ const WooCommerceConfig = () => {
     product.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  // Check localStorage for configuration on mount
+  // Check for existing config
   useEffect(() => {
+    // Check for hardcoded config first
     const savedConfig = getWooCommerceConfig();
     if (savedConfig) {
-      setConfig(savedConfig);
-      setIsConfigured(true);
+      if (savedConfig === HARDCODED_WOO_CONFIG) {
+        // Using hardcoded credentials
+        setConfig({
+          ...savedConfig,
+          consumerKey: savedConfig.consumerKey.substring(0, 10) + '...',
+          consumerSecret: savedConfig.consumerSecret.substring(0, 10) + '...'
+        });
+        setIsConfigured(true);
+        
+        toast({
+          title: "Using Hardcoded Configuration",
+          description: "WooCommerce API is configured with hardcoded credentials",
+        });
+      } else {
+        // Using localStorage config
+        setConfig(savedConfig);
+        setIsConfigured(true);
+      }
     }
-  }, []);
+  }, [toast]);
   
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -207,6 +224,16 @@ const WooCommerceConfig = () => {
   
   // Save configuration
   const handleSave = () => {
+    // If using hardcoded config, don't allow changes
+    if (HARDCODED_WOO_CONFIG) {
+      toast({
+        title: "Using Hardcoded Configuration",
+        description: "The API is configured with hardcoded credentials that cannot be changed",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Simple validation
     if (!config.url || !config.consumerKey || !config.consumerSecret) {
       setShowError(true);
@@ -239,12 +266,23 @@ const WooCommerceConfig = () => {
     setIsTestingConnection(true);
     
     try {
+      // Get actual config for testing (not the display version with hidden credentials)
+      const testConfig = HARDCODED_WOO_CONFIG || getWooCommerceConfig();
+      
+      if (!testConfig) {
+        throw new Error("No configuration found");
+      }
+      
+      if (!testConfig.url || testConfig.url === 'https://your-woocommerce-store.com') {
+        throw new Error("Please update the store URL before testing");
+      }
+      
       // Attempt to make a simple request to test the connection
       const response = await fetch(
-        `${config.url}/wp-json/wc/v${config.version}/products?per_page=1`,
+        `${testConfig.url}/wp-json/wc/v${testConfig.version}/products?per_page=1`,
         {
           headers: {
-            'Authorization': `Basic ${btoa(`${config.consumerKey}:${config.consumerSecret}`)}`,
+            'Authorization': `Basic ${btoa(`${testConfig.consumerKey}:${testConfig.consumerSecret}`)}`,
             'Content-Type': 'application/json',
           },
         }
@@ -282,6 +320,15 @@ const WooCommerceConfig = () => {
   
   // Reset configuration
   const handleReset = () => {
+    if (HARDCODED_WOO_CONFIG) {
+      toast({
+        title: "Cannot Reset Hardcoded Configuration",
+        description: "The API is configured with hardcoded credentials that cannot be reset",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     localStorage.removeItem('woocommerce_config');
     setConfig({
       url: '',
@@ -329,7 +376,19 @@ const WooCommerceConfig = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {showSuccess && (
+          {HARDCODED_WOO_CONFIG && (
+            <Alert className="mb-4 bg-green-50 text-green-800 border-green-200">
+              <CheckCircle className="h-4 w-4" />
+              <AlertTitle>Using Hardcoded Credentials</AlertTitle>
+              <AlertDescription>
+                The WooCommerce API is configured with hardcoded credentials for immediate use.
+                <br />
+                <strong>Important:</strong> Please update the store URL below to match your WooCommerce store.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {showSuccess && !HARDCODED_WOO_CONFIG && (
             <Alert className="mb-4 bg-green-50 text-green-800 border-green-200">
               <CheckCircle className="h-4 w-4" />
               <AlertTitle>Success</AlertTitle>
@@ -375,9 +434,12 @@ const WooCommerceConfig = () => {
                     value={config.url}
                     onChange={handleChange}
                     placeholder="https://your-store.com"
+                    disabled={!!HARDCODED_WOO_CONFIG && config.url !== 'https://your-woocommerce-store.com'} 
                   />
                   <p className="text-xs text-gray-500">
-                    Enter the full URL of your WooCommerce store
+                    {HARDCODED_WOO_CONFIG && config.url === 'https://your-woocommerce-store.com' 
+                      ? "Please update with your actual WooCommerce store URL"
+                      : "Enter the full URL of your WooCommerce store"}
                   </p>
                 </div>
                 
@@ -391,7 +453,11 @@ const WooCommerceConfig = () => {
                     value={config.consumerKey}
                     onChange={handleChange}
                     type="password"
+                    disabled={!!HARDCODED_WOO_CONFIG}
                   />
+                  {HARDCODED_WOO_CONFIG && (
+                    <p className="text-xs text-gray-500">Using hardcoded Consumer Key</p>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -404,11 +470,16 @@ const WooCommerceConfig = () => {
                     value={config.consumerSecret}
                     onChange={handleChange}
                     type="password"
+                    disabled={!!HARDCODED_WOO_CONFIG}
                   />
-                  <p className="text-xs text-gray-500">
-                    You can generate API keys in your WooCommerce dashboard under 
-                    WooCommerce &gt; Settings &gt; Advanced &gt; REST API
-                  </p>
+                  {HARDCODED_WOO_CONFIG ? (
+                    <p className="text-xs text-gray-500">Using hardcoded Consumer Secret</p>
+                  ) : (
+                    <p className="text-xs text-gray-500">
+                      You can generate API keys in your WooCommerce dashboard under 
+                      WooCommerce &gt; Settings &gt; Advanced &gt; REST API
+                    </p>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -421,6 +492,7 @@ const WooCommerceConfig = () => {
                     value={config.version}
                     onChange={handleChange}
                     placeholder="3"
+                    disabled={!!HARDCODED_WOO_CONFIG}
                   />
                   <p className="text-xs text-gray-500">
                     Default is v3 for newer WooCommerce installations
@@ -428,9 +500,24 @@ const WooCommerceConfig = () => {
                 </div>
                 
                 <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                  <Button onClick={handleSave}>
-                    Save Configuration
-                  </Button>
+                  {!HARDCODED_WOO_CONFIG && (
+                    <Button onClick={handleSave}>
+                      Save Configuration
+                    </Button>
+                  )}
+                  {(HARDCODED_WOO_CONFIG && config.url === 'https://your-woocommerce-store.com') && (
+                    <Button onClick={() => {
+                      const updatedConfig = { ...config, url: prompt("Enter your WooCommerce store URL:") || config.url };
+                      setConfig(updatedConfig);
+                      
+                      // Update the hardcoded config URL
+                      if (HARDCODED_WOO_CONFIG) {
+                        HARDCODED_WOO_CONFIG.url = updatedConfig.url;
+                      }
+                    }}>
+                      Update Store URL
+                    </Button>
+                  )}
                   <Button 
                     variant="outline" 
                     onClick={handleTest} 
@@ -448,7 +535,7 @@ const WooCommerceConfig = () => {
                       </>
                     )}
                   </Button>
-                  {isConfigured && (
+                  {isConfigured && !HARDCODED_WOO_CONFIG && (
                     <Button variant="destructive" onClick={handleReset}>
                       Reset Configuration
                     </Button>
@@ -766,128 +853,4 @@ const WooCommerceConfig = () => {
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="text-sm font-medium text-gray-500">Total Revenue</div>
-                        <div className="text-3xl font-semibold mt-1">${mockStats.totalRevenue}</div>
-                      </div>
-                      <div className="bg-primary/10 p-2 rounded-md">
-                        <ShoppingCart className="h-5 w-5 text-primary" />
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 text-xs text-gray-500">
-                      <div className="flex items-center">
-                        <ArrowUpRight className="h-3 w-3 mr-1 text-green-500" />
-                        <span className="text-green-500">8.4%</span>
-                        <span className="ml-1">increase from last month</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-              
-              <div className="mt-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Revenue Breakdown</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="py-4">
-                      <div className="space-y-4">
-                        <div>
-                          <div className="flex justify-between mb-1">
-                            <span className="text-sm font-medium">Products</span>
-                            <span className="text-sm font-medium">75%</span>
-                          </div>
-                          <div className="w-full h-2 bg-gray-200 rounded-full">
-                            <div className="h-2 bg-primary rounded-full" style={{ width: '75%' }}></div>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <div className="flex justify-between mb-1">
-                            <span className="text-sm font-medium">Services</span>
-                            <span className="text-sm font-medium">15%</span>
-                          </div>
-                          <div className="w-full h-2 bg-gray-200 rounded-full">
-                            <div className="h-2 bg-primary rounded-full" style={{ width: '15%' }}></div>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <div className="flex justify-between mb-1">
-                            <span className="text-sm font-medium">Subscriptions</span>
-                            <span className="text-sm font-medium">10%</span>
-                          </div>
-                          <div className="w-full h-2 bg-gray-200 rounded-full">
-                            <div className="h-2 bg-primary rounded-full" style={{ width: '10%' }}></div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-6">
-                        <h4 className="text-sm font-medium mb-3">Top 3 Products by Revenue</h4>
-                        <div className="space-y-3">
-                          <div className="flex items-center">
-                            <div className="w-8 h-8 rounded-md flex items-center justify-center bg-primary/10 text-primary mr-3">1</div>
-                            <div className="flex-1">
-                              <div className="flex justify-between">
-                                <span className="font-medium">Dune Eau de Parfum</span>
-                                <span className="font-medium">$32,000</span>
-                              </div>
-                              <div className="w-full h-1.5 bg-gray-200 rounded-full mt-1">
-                                <div className="h-1.5 bg-green-500 rounded-full" style={{ width: '80%' }}></div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center">
-                            <div className="w-8 h-8 rounded-md flex items-center justify-center bg-primary/10 text-primary mr-3">2</div>
-                            <div className="flex-1">
-                              <div className="flex justify-between">
-                                <span className="font-medium">Moon Dust Eau de Parfum</span>
-                                <span className="font-medium">$21,560</span>
-                              </div>
-                              <div className="w-full h-1.5 bg-gray-200 rounded-full mt-1">
-                                <div className="h-1.5 bg-green-500 rounded-full" style={{ width: '65%' }}></div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center">
-                            <div className="w-8 h-8 rounded-md flex items-center justify-center bg-primary/10 text-primary mr-3">3</div>
-                            <div className="flex-1">
-                              <div className="flex justify-between">
-                                <span className="font-medium">Dahab Eau de Parfum</span>
-                                <span className="font-medium">$16,750</span>
-                              </div>
-                              <div className="w-full h-1.5 bg-gray-200 rounded-full mt-1">
-                                <div className="h-1.5 bg-green-500 rounded-full" style={{ width: '50%' }}></div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-              
-              <div className="mt-6 flex justify-end">
-                <Button variant="outline" className="mr-2">
-                  <Download className="mr-2 h-4 w-4" />
-                  Export Report
-                </Button>
-                <Button>
-                  <Check className="mr-2 h-4 w-4" />
-                  Save Analysis
-                </Button>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-export default WooCommerceConfig;
-
+                        <div className="text-3

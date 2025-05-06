@@ -12,14 +12,25 @@ export interface WooCommerceConfig {
   version: string;
 }
 
+// Hardcoded configuration for immediate use
+// In a production environment, this would be loaded from a secure environment variable
+export const HARDCODED_WOO_CONFIG: WooCommerceConfig | null = {
+  url: 'https://your-woocommerce-store.com', // User should update this with their actual store URL
+  consumerKey: 'ck_59d0971533bd5f96218e14f128433353a511056b',
+  consumerSecret: 'cs_e6fcd21c6f4287ac5cd1282aae76bed64c2ead70',
+  version: '3'
+};
+
 // Store credentials in localStorage (temporary solution)
 export const saveWooCommerceConfig = (config: WooCommerceConfig) => {
   localStorage.setItem('woocommerce_config', JSON.stringify(config));
 };
 
 export const getWooCommerceConfig = (): WooCommerceConfig | null => {
-  const config = localStorage.getItem('woocommerce_config');
-  return config ? JSON.parse(config) : null;
+  // Return hardcoded config first, if not available check localStorage
+  return HARDCODED_WOO_CONFIG || 
+    (localStorage.getItem('woocommerce_config') ? 
+      JSON.parse(localStorage.getItem('woocommerce_config')!) : null);
 };
 
 // Types for WooCommerce data
