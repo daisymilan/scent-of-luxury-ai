@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Bell, Search, Menu, Settings, User } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -22,16 +23,16 @@ const DashboardHeader = () => {
           {/* Logo */}
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <h1 className="text-2xl font-semibold">MiN</h1>
+              <Link to="/" className="text-2xl font-semibold">MiN</Link>
             </div>
             
             {/* Main Navigation - Desktop */}
             <nav className="hidden md:ml-10 md:flex md:space-x-8">
-              <a href="#" className="font-medium text-primary border-b-2 border-primary px-1">Dashboard</a>
-              <a href="#" className="font-medium text-gray-500 hover:text-gray-900 px-1">B2B</a>
-              <a href="#" className="font-medium text-gray-500 hover:text-gray-900 px-1">Marketing</a>
-              <a href="#" className="font-medium text-gray-500 hover:text-gray-900 px-1">Inventory</a>
-              <a href="#" className="font-medium text-gray-500 hover:text-gray-900 px-1">Reports</a>
+              <Link to="/" className="font-medium text-primary border-b-2 border-primary px-1">Dashboard</Link>
+              <Link to="/b2b" className="font-medium text-gray-500 hover:text-gray-900 px-1">B2B</Link>
+              <Link to="/marketing" className="font-medium text-gray-500 hover:text-gray-900 px-1">Marketing</Link>
+              <Link to="/inventory" className="font-medium text-gray-500 hover:text-gray-900 px-1">Inventory</Link>
+              <Link to="/reports" className="font-medium text-gray-500 hover:text-gray-900 px-1">Reports</Link>
             </nav>
           </div>
           
@@ -123,11 +124,11 @@ const DashboardHeader = () => {
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white border-b border-gray-100">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <a href="#" className="block px-3 py-2 rounded-md text-base font-medium text-primary bg-primary/10">Dashboard</a>
-            <a href="#" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">B2B</a>
-            <a href="#" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Marketing</a>
-            <a href="#" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Inventory</a>
-            <a href="#" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Reports</a>
+            <Link to="/" className="block px-3 py-2 rounded-md text-base font-medium text-primary bg-primary/10">Dashboard</Link>
+            <Link to="/b2b" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">B2B</Link>
+            <Link to="/marketing" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Marketing</Link>
+            <Link to="/inventory" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Inventory</Link>
+            <Link to="/reports" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Reports</Link>
           </div>
           <div className="pt-4 pb-3 border-t border-gray-200">
             <div className="px-2 space-y-1">
