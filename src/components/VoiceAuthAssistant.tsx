@@ -49,7 +49,8 @@ const VoiceAuthAssistant = () => {
         setResponse("I'm sorry, I can only handle login requests at this time. Please say 'Login as [role]' to authenticate.");
       }
     } catch (error) {
-      setResponse("Voice authentication failed. Please try again or use traditional login.");
+      const errorMessage = error instanceof Error ? error.message : 'Voice authentication failed';
+      setResponse(`Authentication failed: ${errorMessage}. Please try again or use traditional login.`);
       toast({
         title: "Authentication Failed",
         description: "Voice login was unsuccessful. Please try again.",

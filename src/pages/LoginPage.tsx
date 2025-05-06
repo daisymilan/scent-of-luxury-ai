@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +8,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import VoiceAuthAssistant from '@/components/VoiceAuthAssistant';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -20,7 +19,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const LoginPage: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -34,7 +33,9 @@ const LoginPage: React.FC = () => {
   });
 
   const onSubmit = async (data: FormValues) => {
-    setIsLoading(true);
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
     try {
       await login(data.email, data.password);
       toast({
@@ -42,13 +43,14 @@ const LoginPage: React.FC = () => {
         description: "Welcome to MiN NEW YORK dashboard",
       });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Invalid email or password';
       toast({
         title: "Login failed",
-        description: "Invalid email or password",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -94,8 +96,8 @@ const LoginPage: React.FC = () => {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Logging in..." : "Login"}
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? "Logging in..." : "Login"}
                 </Button>
               </form>
             </Form>

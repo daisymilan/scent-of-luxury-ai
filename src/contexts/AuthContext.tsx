@@ -82,62 +82,79 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check for stored user in localStorage
     const storedUser = localStorage.getItem('auth_user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error("Failed to parse stored user:", error);
+        localStorage.removeItem('auth_user');
+      }
     }
+    // Important: Set loading to false after checking localStorage
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const lowercasedEmail = email.toLowerCase();
-    const user = MOCK_USERS[lowercasedEmail];
-    
-    if (user && password === 'password') {
-      setUser(user);
-      localStorage.setItem('auth_user', JSON.stringify(user));
-      navigate('/');
-    } else {
-      throw new Error('Invalid credentials');
+    try {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const lowercasedEmail = email.toLowerCase();
+      const user = MOCK_USERS[lowercasedEmail];
+      
+      if (user && password === 'password') {
+        setUser(user);
+        localStorage.setItem('auth_user', JSON.stringify(user));
+        navigate('/');
+        return Promise.resolve();
+      } else {
+        throw new Error('Invalid credentials');
+      }
+    } catch (error) {
+      setIsLoading(false);
+      return Promise.reject(error);
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
   
   const voiceLogin = async (voiceCommand: string) => {
     setIsLoading(true);
     
-    // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const command = voiceCommand.toLowerCase();
-    
-    // Voice recognition logic
-    let matchedUser: AuthUser | null = null;
-    
-    if (command.includes('ceo') || command.includes('alex morgan')) {
-      matchedUser = MOCK_USERS['ceo@minyork.com'];
-    } else if (command.includes('cco') || command.includes('jamie rivera')) {
-      matchedUser = MOCK_USERS['cco@minyork.com'];
-    } else if (command.includes('commercial director') || command.includes('taylor chen')) {
-      matchedUser = MOCK_USERS['director@minyork.com'];
-    } else if (command.includes('regional manager') || command.includes('jordan smith')) {
-      matchedUser = MOCK_USERS['regional@minyork.com'];
-    } else if (command.includes('marketing manager') || command.includes('casey wong')) {
-      matchedUser = MOCK_USERS['marketing@minyork.com'];
-    }
-    
-    if (matchedUser) {
-      setUser(matchedUser);
-      localStorage.setItem('auth_user', JSON.stringify(matchedUser));
-      navigate('/');
-      return Promise.resolve();
-    } else {
+    try {
+      // Simulate processing time
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const command = voiceCommand.toLowerCase();
+      
+      // Voice recognition logic
+      let matchedUser: AuthUser | null = null;
+      
+      if (command.includes('ceo') || command.includes('alex morgan')) {
+        matchedUser = MOCK_USERS['ceo@minyork.com'];
+      } else if (command.includes('cco') || command.includes('jamie rivera')) {
+        matchedUser = MOCK_USERS['cco@minyork.com'];
+      } else if (command.includes('commercial director') || command.includes('taylor chen')) {
+        matchedUser = MOCK_USERS['director@minyork.com'];
+      } else if (command.includes('regional manager') || command.includes('jordan smith')) {
+        matchedUser = MOCK_USERS['regional@minyork.com'];
+      } else if (command.includes('marketing manager') || command.includes('casey wong')) {
+        matchedUser = MOCK_USERS['marketing@minyork.com'];
+      }
+      
+      if (matchedUser) {
+        setUser(matchedUser);
+        localStorage.setItem('auth_user', JSON.stringify(matchedUser));
+        navigate('/');
+        return Promise.resolve();
+      } else {
+        throw new Error('Voice authentication failed');
+      }
+    } catch (error) {
+      return Promise.reject(error);
+    } finally {
       setIsLoading(false);
-      return Promise.reject(new Error('Voice authentication failed'));
     }
   };
   
