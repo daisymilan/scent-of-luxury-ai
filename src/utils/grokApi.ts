@@ -1,4 +1,3 @@
-
 /**
  * Grok AI API utility for interacting with the Grok API
  */
@@ -71,6 +70,10 @@ export const callGrokApi = async (
       response = `Current production capacity is at 82% utilization. The new Moon Dust batch will be completed by May 15th. Production costs have decreased by 3.2% due to bulk ordering of essential oils. We need to address a potential delay with our glass bottle supplier.`;
     } else if (lowerQuery.includes('forecast') || lowerQuery.includes('predict')) {
       response = `Based on current trends, we forecast a 22% revenue increase for Q2 2025. The summer collection is projected to drive 35% of this growth. Key markets showing the strongest growth potential are UAE (+28%), US (+18%), and France (+15%).`;
+    } else if (lowerQuery.includes('woocommerce') || lowerQuery.includes('store')) {
+      response = `The WooCommerce store has processed 127 orders in the last 7 days with an average order value of $175. Top selling products are Dune Fragrance (38 units), Moon Dust (27 units), and Dahab (19 units). Cart abandonment rate is 32%, which is 5% lower than last month.`;
+    } else if (lowerQuery.includes('b2b') || lowerQuery.includes('wholesale')) {
+      response = `We currently have 24 active B2B accounts, with 3 new wholesale inquiries this week. The average B2B order value is $3,750, which is 21.5x higher than our direct consumer average. The Dubai market is showing the strongest B2B growth at 34% month-over-month.`;
     } else {
       response = `I understand you're asking about "${query}". Here's a high-level overview of our current business performance: Sales are trending up 12.4% month-over-month, with Dune Fragrance as our top seller. Inventory levels are balanced except for Moon Dust in Las Vegas (low) and Coda in Riyadh (high). Our Instagram and TikTok campaigns are performing above benchmarks. Would you like specific details on any of these areas?`;
     }
@@ -335,6 +338,66 @@ export const getProductRecommendations = async (
     return customerType === 'new' ? [1, 2, 3] : [3, 4, 5];
   } catch (error) {
     console.error('Error getting product recommendations:', error);
+    throw error;
+  }
+};
+
+// New function for performing WooCommerce-specific analysis
+export const analyzeWooCommerceData = async (
+  dataType: 'sales' | 'inventory' | 'customers' | 'orders',
+  timeRange: 'day' | 'week' | 'month' | 'quarter' = 'week',
+  productId?: number
+): Promise<string> => {
+  try {
+    console.log(`Analyzing WooCommerce ${dataType} data for ${timeRange} timeframe`);
+    
+    // Simulate API call with mock response
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // Generate response based on data type requested
+    switch (dataType) {
+      case 'sales':
+        return `Sales Analysis (${timeRange}): 
+          - Total Revenue: $32,450 (${timeRange === 'day' ? '+5.2%' : timeRange === 'week' ? '+12.4%' : '+18.7%'} vs previous ${timeRange})
+          - Units Sold: ${timeRange === 'day' ? '42' : timeRange === 'week' ? '187' : '745'}
+          - Average Order Value: $${timeRange === 'day' ? '172' : timeRange === 'week' ? '175' : '182'}
+          - Top Product: ${productId ? `Product #${productId}` : 'Dune Fragrance'} (${timeRange === 'day' ? '12' : timeRange === 'week' ? '38' : '145'} units)
+          - Best Performing Location: ${timeRange === 'day' ? 'Dubai' : 'Las Vegas'}
+          - Most Effective Channel: ${timeRange === 'day' ? 'Direct Website' : timeRange === 'week' ? 'Instagram Shop' : 'Wholesale B2B'}`;
+        
+      case 'inventory':
+        return `Inventory Analysis (current):
+          - Total SKUs: 27
+          - Total Units: 2,345
+          - Low Stock Alerts: Moon Dust (Las Vegas - 28 units)
+          - Excess Stock: Coda (Riyadh - 312 units)
+          - Recommended Restock: Moon Dust (Las Vegas) - order 100 units
+          - Recommended Redistribution: Move 100 units of Coda from Riyadh to Dubai
+          ${productId ? `- Product #${productId} Status: 175 units across all locations` : ''}`;
+          
+      case 'customers':
+        return `Customer Analysis (${timeRange}):
+          - New Customers: ${timeRange === 'day' ? '8' : timeRange === 'week' ? '34' : '128'}
+          - Repeat Customers: ${timeRange === 'day' ? '12' : timeRange === 'week' ? '53' : '196'}
+          - Average LTV: $${timeRange === 'day' ? '450' : timeRange === 'week' ? '475' : '520'}
+          - Customer Growth: ${timeRange === 'day' ? '+4.2%' : timeRange === 'week' ? '+8.7%' : '+15.3%'} vs previous ${timeRange}
+          - Top Customer Segment: ${timeRange === 'day' ? 'Urban Professionals' : 'Luxury Enthusiasts'}
+          - Retention Rate: ${timeRange === 'day' ? '71%' : timeRange === 'week' ? '75%' : '78%'}`;
+          
+      case 'orders':
+        return `Order Analysis (${timeRange}):
+          - Total Orders: ${timeRange === 'day' ? '24' : timeRange === 'week' ? '127' : '485'}
+          - Pending Shipments: ${timeRange === 'day' ? '5' : timeRange === 'week' ? '12' : '24'}
+          - Average Processing Time: ${timeRange === 'day' ? '1.2' : timeRange === 'week' ? '1.4' : '1.5'} days
+          - Order Growth: ${timeRange === 'day' ? '+3.8%' : timeRange === 'week' ? '+7.2%' : '+12.5%'} vs previous ${timeRange}
+          - Rush Orders: ${timeRange === 'day' ? '3' : timeRange === 'week' ? '15' : '48'}
+          ${productId ? `- Orders with Product #${productId}: ${timeRange === 'day' ? '7' : timeRange === 'week' ? '22' : '78'} orders` : ''}`;
+          
+      default:
+        return `No analysis available for the requested data type: ${dataType}`;
+    }
+  } catch (error) {
+    console.error(`Error analyzing WooCommerce ${dataType} data:`, error);
     throw error;
   }
 };

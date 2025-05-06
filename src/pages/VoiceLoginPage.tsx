@@ -3,7 +3,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import VoiceAuthComponent from '@/components/VoiceAuthComponent';
 import { Mic } from 'lucide-react';
 
 const VoiceLoginPage: React.FC = () => {
@@ -51,7 +50,7 @@ const VoiceLoginPage: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-      {/* The component will be displayed through its own logic */}
+      {/* The VoiceAuthComponent will now be displayed through the route structure */}
     </div>
   );
 };
