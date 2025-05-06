@@ -3,7 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import VoiceAuthAssistant from '@/components/VoiceAuthAssistant';
+import VoiceAuthComponent from '@/components/VoiceAuthComponent';
 import { Mic } from 'lucide-react';
 
 const VoiceLoginPage: React.FC = () => {
@@ -21,7 +21,7 @@ const VoiceLoginPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-center mb-6">
-              <p className="mb-4">Use your voice to authenticate with the Grok AI Assistant.</p>
+              <p className="mb-4">Use your voice to authenticate with the AI Assistant.</p>
               <p className="text-sm text-gray-500">Say "Login as [role]" to authenticate</p>
               <p className="text-xs text-gray-500 mb-2">Available roles: CEO, CCO, Commercial Director, Regional Manager, Marketing Manager</p>
               <div className="p-2 bg-amber-50 rounded-md text-xs text-amber-800 mb-4">
@@ -51,7 +51,7 @@ const VoiceLoginPage: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-      <VoiceAuthAssistant />
+      <VoiceAuthComponent />
     </div>
   );
 };
