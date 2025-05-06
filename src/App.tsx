@@ -9,6 +9,9 @@ import B2BPage from "./pages/B2BPage";
 import MarketingPage from "./pages/MarketingPage";
 import InventoryPage from "./pages/InventoryPage";
 import ReportsPage from "./pages/ReportsPage";
+import ProfilePage from "./pages/ProfilePage";
+import PreferencesPage from "./pages/PreferencesPage";
+import SystemSettingsPage from "./pages/SystemSettingsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,10 +28,9 @@ const App = () => (
           <Route path="/marketing" element={<MarketingPage />} />
           <Route path="/inventory" element={<InventoryPage />} />
           <Route path="/reports" element={<ReportsPage />} />
-          {/* These routes will show NotFound for now until their pages are implemented */}
-          <Route path="/profile" element={<NotFound />} />
-          <Route path="/preferences" element={<NotFound />} />
-          <Route path="/settings/system" element={<NotFound />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/preferences" element={<PreferencesPage />} />
+          <Route path="/settings/system" element={<SystemSettingsPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
