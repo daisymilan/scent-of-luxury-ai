@@ -1,8 +1,7 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export type UserRole = 'CEO' | 'CCO' | 'Commercial Director' | 'Regional Manager' | 'Marketing Manager' | 'Guest';
+export type UserRole = 'CEO' | 'CCO' | 'Commercial Director' | 'Regional Manager' | 'Marketing Manager' | 'Production Manager' | 'Customer Support' | 'Social Media Manager' | 'Guest';
 
 interface AuthUser {
   id: string;
@@ -60,6 +59,27 @@ const MOCK_USERS: Record<string, AuthUser> = {
     email: 'marketing@minyork.com',
     role: 'Marketing Manager',
     avatar: '/avatar-5.png'
+  },
+  'production@minyork.com': {
+    id: '6',
+    name: 'Morgan Lee',
+    email: 'production@minyork.com',
+    role: 'Production Manager',
+    avatar: '/avatar-6.png'
+  },
+  'support@minyork.com': {
+    id: '7',
+    name: 'Riley Johnson',
+    email: 'support@minyork.com',
+    role: 'Customer Support',
+    avatar: '/avatar-7.png'
+  },
+  'social@minyork.com': {
+    id: '8',
+    name: 'Avery Garcia',
+    email: 'social@minyork.com',
+    role: 'Social Media Manager',
+    avatar: '/avatar-8.png'
   }
 };
 
@@ -69,7 +89,10 @@ const ROLE_HIERARCHY: Record<UserRole, number> = {
   'CCO': 90,
   'Commercial Director': 80,
   'Regional Manager': 70,
-  'Marketing Manager': 60,
+  'Marketing Manager': 65,
+  'Production Manager': 60,
+  'Social Media Manager': 55,
+  'Customer Support': 50,
   'Guest': 10
 };
 
@@ -141,6 +164,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         matchedUser = MOCK_USERS['regional@minyork.com'];
       } else if (command.includes('marketing manager') || command.includes('casey wong')) {
         matchedUser = MOCK_USERS['marketing@minyork.com'];
+      } else if (command.includes('production manager') || command.includes('morgan lee')) {
+        matchedUser = MOCK_USERS['production@minyork.com'];
+      } else if (command.includes('customer support') || command.includes('riley johnson')) {
+        matchedUser = MOCK_USERS['support@minyork.com'];
+      } else if (command.includes('social media') || command.includes('avery garcia')) {
+        matchedUser = MOCK_USERS['social@minyork.com'];
       }
       
       if (matchedUser) {

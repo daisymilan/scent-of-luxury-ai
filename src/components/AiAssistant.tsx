@@ -1,33 +1,136 @@
 
-import { useState } from 'react';
-import { Mic, Play, ChevronDown, ChevronUp, X, Volume2, Type } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Mic, Play, ChevronDown, X, Volume2, Type, User, PauseCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AiAssistant = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [query, setQuery] = useState('');
   const [response, setResponse] = useState('');
   const [isThinking, setIsThinking] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  // Reference for speech synthesis
+  const speechSynthesisRef = useRef<SpeechSynthesis | null>(null);
+  const speechUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  
+  // Reference for speech recognition
+  const recognitionRef = useRef<any>(null);
+  
+  // Initialize speech synthesis and recognition
+  useEffect(() => {
+    // Initialize speech synthesis
+    speechSynthesisRef.current = window.speechSynthesis;
+    
+    // Initialize speech recognition if available
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'en-US';
+      
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        console.log('Voice recognized:', transcript);
+        setQuery(transcript);
+        handleQuerySubmit(transcript);
+      };
+      
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        toast({
+          title: "Voice Recognition Error",
+          description: `Could not recognize voice: ${event.error}`,
+          variant: "destructive"
+        });
+      };
+      
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          console.log('Speech recognition was not started');
+        }
+      }
+      
+      if (speechSynthesisRef.current && speechUtteranceRef.current) {
+        speechSynthesisRef.current.cancel();
+      }
+    };
+  }, [toast]);
 
   const handleListen = () => {
-    setIsListening(true);
-    // Simulate voice recognition
-    setTimeout(() => {
-      setQuery('How are sales performing this month compared to last month?');
-      setIsListening(false);
-      handleQuerySubmit();
-    }, 2000);
+    if (recognitionRef.current) {
+      setIsListening(true);
+      try {
+        recognitionRef.current.start();
+        toast({
+          title: "Listening...",
+          description: "Speak now to interact with the assistant"
+        });
+      } catch (e) {
+        console.error('Speech recognition error:', e);
+        setIsListening(false);
+      }
+    } else {
+      // Fallback for browsers without speech recognition
+      setIsListening(true);
+      // Simulate voice recognition with mock data
+      setTimeout(() => {
+        const randomQueries = [
+          "How are sales performing this month?",
+          "What's our inventory status?",
+          "Show me today's revenue",
+          "How many orders came in today?"
+        ];
+        const randomQuery = randomQueries[Math.floor(Math.random() * randomQueries.length)];
+        setQuery(randomQuery);
+        setIsListening(false);
+        handleQuerySubmit(randomQuery);
+      }, 2000);
+    }
   };
 
-  const handleQuerySubmit = () => {
-    if (!query) return;
+  const handleQuerySubmit = (command?: string) => {
+    const voiceCommand = command || query;
+    if (!voiceCommand) return;
     
     setIsThinking(true);
-    // Simulate AI response
+    
+    // Process different types of commands
+    let responseText = "";
+    const lowerCommand = voiceCommand.toLowerCase();
+    
+    // Simulate different responses based on command
     setTimeout(() => {
-      setResponse("Sales are up 12.4% compared to last month. The best performing product is Dune Fragrance with 128 units sold, generating $22,400 in revenue. Would you like a detailed breakdown by product category or sales channel?");
+      if (lowerCommand.includes('sales') || lowerCommand.includes('revenue')) {
+        responseText = `Sales are up 12.4% compared to last month. The best performing product is Dune Fragrance with 128 units sold, generating $22,400 in revenue. Would you like a detailed breakdown by product category or sales channel?`;
+      } else if (lowerCommand.includes('inventory') || lowerCommand.includes('stock')) {
+        responseText = `Current inventory status: Moon Dust: 254 units, Dune: 128 units, Dahab: 89 units. The Las Vegas warehouse is running low on Moon Dust with only 28 units remaining. Should I prepare a reorder report?`;
+      } else if (lowerCommand.includes('order') || lowerCommand.includes('purchase')) {
+        responseText = `Today we've received 37 new orders totaling $8,450. There are 5 pending shipments and 2 orders flagged for review due to potential fraud. Would you like details on those orders?`;
+      } else if (lowerCommand.includes('marketing') || lowerCommand.includes('campaign')) {
+        responseText = `The current Instagram campaign has reached 245,000 impressions with a 3.8% engagement rate. This is 0.7% above our benchmarks. The TikTok campaign is launching tomorrow. Would you like me to schedule a performance report for next week?`;
+      } else {
+        responseText = `I understand you're asking about "${voiceCommand}". As this is a demonstration, I can provide insights on sales, inventory, orders, and marketing campaigns. Please try asking about one of these areas.`;
+      }
+      
+      setResponse(responseText);
       setIsThinking(false);
     }, 3000);
   };
@@ -35,6 +138,52 @@ const AiAssistant = () => {
   const handleClear = () => {
     setQuery('');
     setResponse('');
+    if (speechSynthesisRef.current) {
+      speechSynthesisRef.current.cancel();
+    }
+    setIsSpeaking(false);
+  };
+
+  const handleReadAloud = () => {
+    if (!response) return;
+    
+    if (speechSynthesisRef.current) {
+      if (isSpeaking) {
+        speechSynthesisRef.current.cancel();
+        setIsSpeaking(false);
+        return;
+      }
+      
+      speechUtteranceRef.current = new SpeechSynthesisUtterance(response);
+      
+      // Get available voices and choose a good one
+      const voices = speechSynthesisRef.current.getVoices();
+      const preferredVoice = voices.find(voice => 
+        voice.name.includes('Google') && voice.name.includes('Female') ||
+        voice.name.includes('Samantha') ||
+        voice.name.includes('Karen')
+      );
+      
+      if (preferredVoice) {
+        speechUtteranceRef.current.voice = preferredVoice;
+      }
+      
+      speechUtteranceRef.current.rate = 0.9; // Slightly slower than default
+      speechUtteranceRef.current.pitch = 1.1; // Slightly higher pitch
+      
+      speechUtteranceRef.current.onend = () => {
+        setIsSpeaking(false);
+      };
+      
+      setIsSpeaking(true);
+      speechSynthesisRef.current.speak(speechUtteranceRef.current);
+    } else {
+      toast({
+        title: "Not Supported",
+        description: "Text-to-speech is not supported in your browser",
+        variant: "destructive"
+      });
+    }
   };
 
   if (!isExpanded) {
@@ -84,8 +233,21 @@ const AiAssistant = () => {
               </div>
             </div>
             <div className="flex justify-start ml-10 space-x-2">
-              <Button size="sm" variant="outline" className="h-8 text-xs">
-                <Volume2 size={14} className="mr-1" /> Read Aloud
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="h-8 text-xs flex items-center"
+                onClick={handleReadAloud}
+              >
+                {isSpeaking ? (
+                  <>
+                    <PauseCircle size={14} className="mr-1" /> Stop Reading
+                  </>
+                ) : (
+                  <>
+                    <Volume2 size={14} className="mr-1" /> Read Aloud
+                  </>
+                )}
               </Button>
               <Button size="sm" variant="ghost" className="h-8 text-xs">
                 See Details
@@ -119,6 +281,11 @@ const AiAssistant = () => {
             </div>
           </div>
         )}
+
+        <div className="mb-2 text-center text-sm text-gray-600">
+          <p>Try asking about: sales, inventory, orders, or marketing campaigns</p>
+          {user?.role === 'CEO' && <p className="mt-1 text-xs opacity-75">Premium insights available for CEO role</p>}
+        </div>
       </div>
       
       <div className="p-3 border-t border-gray-200 bg-white">
@@ -147,7 +314,16 @@ const AiAssistant = () => {
           {isListening ? (
             <Button 
               className="rounded-full bg-red-500 hover:bg-red-600 h-10 w-10 flex-shrink-0" 
-              onClick={() => setIsListening(false)}
+              onClick={() => {
+                if (recognitionRef.current) {
+                  try {
+                    recognitionRef.current.stop();
+                  } catch (e) {
+                    console.log('Recognition already stopped');
+                  }
+                }
+                setIsListening(false);
+              }}
             >
               <X size={20} />
             </Button>
@@ -161,7 +337,7 @@ const AiAssistant = () => {
               </Button>
               <Button 
                 className="rounded-full bg-primary hover:bg-primary/90 h-10 w-10 flex-shrink-0"
-                onClick={handleQuerySubmit}
+                onClick={() => handleQuerySubmit()}
                 disabled={!query}
               >
                 <Play size={20} />
@@ -178,24 +354,5 @@ const AiAssistant = () => {
     </Card>
   );
 };
-
-// Need to add User icon which is missing from the imports
-const User = ({ size = 24, ...props }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
-    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
-  </svg>
-);
 
 export default AiAssistant;
