@@ -1,6 +1,5 @@
-
 import { useState, useRef, useEffect } from 'react';
-import { Mic, Play, ChevronDown, X, Volume2, Type, User, PauseCircle } from 'lucide-react';
+import { Mic, Play, ChevronDown, X, Volume2, PauseCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -15,6 +14,9 @@ const AiAssistant = () => {
   const [isThinking, setIsThinking] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  // Grok API Key
+  const grokApiKey = "xai-lgYF3e2MO1TvHnXhq0UCKYSwDtUOBkNmL0fnOEw4FBniTHDnC6KGtY1hlAGZ8ymeQNdacBmucX1HajmY";
   
   // Reference for speech synthesis
   const speechSynthesisRef = useRef<SpeechSynthesis | null>(null);
@@ -106,18 +108,18 @@ const AiAssistant = () => {
     }
   };
 
-  const handleQuerySubmit = (command?: string) => {
-    const voiceCommand = command || query;
-    if (!voiceCommand) return;
-    
-    setIsThinking(true);
-    
-    // Process different types of commands
-    let responseText = "";
-    const lowerCommand = voiceCommand.toLowerCase();
-    
-    // Simulate different responses based on command
-    setTimeout(() => {
+  // Function to call Grok API (currently mocked)
+  const callGrokApi = async (userQuery: string) => {
+    try {
+      // This is a mock implementation
+      // In a production environment, this would make an actual API call to Grok
+      console.log('Would call Grok API with:', userQuery);
+      console.log('Using API key:', grokApiKey);
+      
+      // Simulate different responses based on command
+      const lowerCommand = userQuery.toLowerCase();
+      let responseText = "";
+      
       if (lowerCommand.includes('sales') || lowerCommand.includes('revenue')) {
         responseText = `Sales are up 12.4% compared to last month. The best performing product is Dune Fragrance with 128 units sold, generating $22,400 in revenue. Would you like a detailed breakdown by product category or sales channel?`;
       } else if (lowerCommand.includes('inventory') || lowerCommand.includes('stock')) {
@@ -127,12 +129,53 @@ const AiAssistant = () => {
       } else if (lowerCommand.includes('marketing') || lowerCommand.includes('campaign')) {
         responseText = `The current Instagram campaign has reached 245,000 impressions with a 3.8% engagement rate. This is 0.7% above our benchmarks. The TikTok campaign is launching tomorrow. Would you like me to schedule a performance report for next week?`;
       } else {
-        responseText = `I understand you're asking about "${voiceCommand}". As this is a demonstration, I can provide insights on sales, inventory, orders, and marketing campaigns. Please try asking about one of these areas.`;
+        responseText = `I understand you're asking about "${userQuery}". As this is a demonstration, I can provide insights on sales, inventory, orders, and marketing campaigns. Please try asking about one of these areas.`;
       }
       
-      setResponse(responseText);
-      setIsThinking(false);
-    }, 3000);
+      return responseText;
+      
+      // Real implementation would look something like:
+      /*
+      const response = await fetch('https://api.grok.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${grokApiKey}`
+        },
+        body: JSON.stringify({
+          model: 'grok-1',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a helpful assistant for MiN NEW YORK, a luxury fragrance brand. Provide concise, insightful responses about business metrics.'
+            },
+            {
+              role: 'user',
+              content: userQuery
+            }
+          ]
+        })
+      });
+      
+      const data = await response.json();
+      return data.choices[0].message.content;
+      */
+    } catch (error) {
+      console.error('Error calling Grok API:', error);
+      return "I'm sorry, I couldn't process your request at this time. Please try again later.";
+    }
+  };
+
+  const handleQuerySubmit = async (command?: string) => {
+    const voiceCommand = command || query;
+    if (!voiceCommand) return;
+    
+    setIsThinking(true);
+    
+    // Call the Grok API (or the mock implementation)
+    const responseText = await callGrokApi(voiceCommand);
+    setResponse(responseText);
+    setIsThinking(false);
   };
 
   const handleClear = () => {
