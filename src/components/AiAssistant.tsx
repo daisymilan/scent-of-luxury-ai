@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Mic, Play, ChevronDown, X, Volume2, PauseCircle, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -165,6 +164,11 @@ const AiAssistant = () => {
       
       console.log('Received response from Grok API:', responseText);
       setResponse(responseText);
+      
+      // Clear the input field after submission if it was typed (not voice)
+      if (!command) {
+        setQuery('');
+      }
     } catch (error) {
       console.error('Error processing query:', error);
       toast({
