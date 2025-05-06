@@ -1,5 +1,5 @@
 
-import { Clock, Mail, MoreHorizontal, ShoppingCart, Smartphone, Zap } from 'lucide-react';
+import { Clock, Mail, MoreHorizontal, Plus, ShoppingCart, Smartphone, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
