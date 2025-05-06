@@ -32,7 +32,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
   
   if (requiredRole && !hasPermission(requiredRole)) {
-    return <Navigate to="/unauthorized" state={{ from: location }} replace />;
+    return <Navigate to="/unauthorized" replace />;
   }
   
   return <>{children}</>;
