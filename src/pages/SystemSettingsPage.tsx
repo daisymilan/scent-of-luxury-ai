@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import WooCommerceConfig from "@/components/WooCommerceConfig";
+import N8nConfig from "@/components/N8nConfig";
 
 const SystemSettingsPage = () => {
   const [apiKeys, setApiKeys] = useState({
@@ -58,6 +60,12 @@ const SystemSettingsPage = () => {
           
           {/* Integrations Tab */}
           <TabsContent value="integrations" className="space-y-4">
+            {/* WooCommerce Integration */}
+            <WooCommerceConfig />
+            
+            {/* n8n Integration */}
+            <N8nConfig />
+            
             <Card>
               <CardHeader>
                 <CardTitle>API Integrations</CardTitle>
