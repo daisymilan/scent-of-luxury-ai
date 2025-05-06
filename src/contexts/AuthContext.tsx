@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -16,7 +17,6 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  voiceLogin: (voiceCommand: string) => Promise<void>;
   logout: () => void;
   hasPermission: (requiredRole: UserRole | UserRole[]) => boolean;
 }
@@ -142,51 +142,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  const voiceLogin = async (voiceCommand: string) => {
-    setIsLoading(true);
-    
-    try {
-      // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const command = voiceCommand.toLowerCase();
-      
-      // Voice recognition logic
-      let matchedUser: AuthUser | null = null;
-      
-      if (command.includes('ceo') || command.includes('alex morgan')) {
-        matchedUser = MOCK_USERS['ceo@minyork.com'];
-      } else if (command.includes('cco') || command.includes('jamie rivera')) {
-        matchedUser = MOCK_USERS['cco@minyork.com'];
-      } else if (command.includes('commercial director') || command.includes('taylor chen')) {
-        matchedUser = MOCK_USERS['director@minyork.com'];
-      } else if (command.includes('regional manager') || command.includes('jordan smith')) {
-        matchedUser = MOCK_USERS['regional@minyork.com'];
-      } else if (command.includes('marketing manager') || command.includes('casey wong')) {
-        matchedUser = MOCK_USERS['marketing@minyork.com'];
-      } else if (command.includes('production manager') || command.includes('morgan lee')) {
-        matchedUser = MOCK_USERS['production@minyork.com'];
-      } else if (command.includes('customer support') || command.includes('riley johnson')) {
-        matchedUser = MOCK_USERS['support@minyork.com'];
-      } else if (command.includes('social media') || command.includes('avery garcia')) {
-        matchedUser = MOCK_USERS['social@minyork.com'];
-      }
-      
-      if (matchedUser) {
-        setUser(matchedUser);
-        localStorage.setItem('auth_user', JSON.stringify(matchedUser));
-        navigate('/');
-        return Promise.resolve();
-      } else {
-        throw new Error('Voice authentication failed');
-      }
-    } catch (error) {
-      return Promise.reject(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
   const logout = () => {
     setUser(null);
     localStorage.removeItem('auth_user');
@@ -212,7 +167,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user, 
         isLoading, 
         login, 
-        voiceLogin, 
         logout, 
         hasPermission 
       }}

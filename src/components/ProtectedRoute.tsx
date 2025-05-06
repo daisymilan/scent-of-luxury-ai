@@ -3,7 +3,6 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import VoiceAuthComponent from '@/components/VoiceAuthComponent';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -49,7 +48,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   return (
     <>
       {children}
-      <VoiceAuthComponent />
     </>
   );
 };

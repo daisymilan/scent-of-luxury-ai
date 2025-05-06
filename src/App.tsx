@@ -14,7 +14,6 @@ import PreferencesPage from "./pages/PreferencesPage";
 import SystemSettingsPage from "./pages/SystemSettingsPage";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/LoginPage";
-import VoiceLoginPage from "./pages/VoiceLoginPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -29,7 +28,6 @@ const App = () => (
           <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/voice-login" element={<VoiceLoginPage />} />
             <Route path="/unauthorized" element={<UnauthorizedPage />} />
             
             {/* Protected Routes */}

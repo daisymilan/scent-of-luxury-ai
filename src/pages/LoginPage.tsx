@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -101,15 +101,6 @@ const LoginPage: React.FC = () => {
                 </Button>
               </form>
             </Form>
-            
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-500 mb-2">Or use voice authentication</p>
-              <div className="flex justify-center">
-                <Button variant="outline" onClick={() => navigate('/voice-login')}>
-                  Voice Login
-                </Button>
-              </div>
-            </div>
           </CardContent>
           <CardFooter className="flex flex-col text-center text-xs text-gray-500">
             <p className="mb-2">Available test accounts:</p>
