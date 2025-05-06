@@ -12,6 +12,7 @@ import {
   saveGrokApiConfig, 
   getGrokApiConfig, 
   DEFAULT_GROK_CONFIG,
+  HARDCODED_GROK_CONFIG,
   callGrokApi
 } from '@/utils/grokApi';
 
@@ -25,12 +26,25 @@ const GrokConfig = () => {
   });
 
   useEffect(() => {
-    const savedConfig = getGrokApiConfig();
-    if (savedConfig) {
-      setConfig(savedConfig);
+    // Check for hardcoded config first
+    if (HARDCODED_GROK_CONFIG) {
+      setConfig({
+        ...HARDCODED_GROK_CONFIG,
+        apiKey: HARDCODED_GROK_CONFIG.apiKey.substring(0, 12) + '...' // Show only part of API key for security
+      });
       setIsConfigured(true);
+      toast({
+        title: "Using Hardcoded Configuration",
+        description: "Grok API is configured with hardcoded credentials",
+      });
+    } else {
+      const savedConfig = getGrokApiConfig();
+      if (savedConfig) {
+        setConfig(savedConfig);
+        setIsConfigured(true);
+      }
     }
-  }, []);
+  }, [toast]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -49,7 +63,7 @@ const GrokConfig = () => {
 
   const handleSave = () => {
     // Simple validation
-    if (!config.apiKey) {
+    if (!config.apiKey && !HARDCODED_GROK_CONFIG) {
       toast({
         title: "Validation Error",
         description: "Please provide a Grok API key",
@@ -58,8 +72,10 @@ const GrokConfig = () => {
       return;
     }
 
-    // Save config to localStorage
-    saveGrokApiConfig(config);
+    // Save config to localStorage if not using hardcoded
+    if (!HARDCODED_GROK_CONFIG) {
+      saveGrokApiConfig(config);
+    }
     setIsConfigured(true);
     
     toast({
@@ -93,6 +109,15 @@ const GrokConfig = () => {
   };
 
   const handleReset = () => {
+    if (HARDCODED_GROK_CONFIG) {
+      toast({
+        title: "Cannot Reset Hardcoded Configuration",
+        description: "The API is configured with hardcoded credentials that cannot be reset",
+        variant: "warning",
+      });
+      return;
+    }
+    
     localStorage.removeItem('grok_api_config');
     setConfig(DEFAULT_GROK_CONFIG);
     setIsConfigured(false);
@@ -108,7 +133,9 @@ const GrokConfig = () => {
         <div>
           <CardTitle>Grok AI Integration</CardTitle>
           <CardDescription>
-            Connect to Grok AI API for advanced analytics and insights
+            {HARDCODED_GROK_CONFIG 
+              ? "Using hardcoded Grok API credentials for immediate use" 
+              : "Connect to Grok AI API for advanced analytics and insights"}
           </CardDescription>
         </div>
         <Zap className="h-5 w-5 text-primary" />
@@ -123,15 +150,22 @@ const GrokConfig = () => {
             onChange={handleChange}
             type="password"
             placeholder="xai-lgYF3e2MO1TvHnXhq0UCKYSwDtUOBkNmL0fnOEw4FBniTHDnC6KG..."
+            disabled={!!HARDCODED_GROK_CONFIG}
           />
           <p className="text-xs text-gray-500">
-            Enter your Grok API key to enable AI-powered insights
+            {HARDCODED_GROK_CONFIG 
+              ? "Using hardcoded API key" 
+              : "Enter your Grok API key to enable AI-powered insights"}
           </p>
         </div>
         
         <div className="space-y-2">
           <Label htmlFor="model">Model</Label>
-          <Select value={config.model} onValueChange={handleModelChange}>
+          <Select 
+            value={config.model} 
+            onValueChange={handleModelChange}
+            disabled={!!HARDCODED_GROK_CONFIG}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select a model" />
             </SelectTrigger>
@@ -142,12 +176,18 @@ const GrokConfig = () => {
             </SelectContent>
           </Select>
           <p className="text-xs text-gray-500">
-            Select the Grok model to use for queries
+            {HARDCODED_GROK_CONFIG 
+              ? "Using hardcoded model selection" 
+              : "Select the Grok model to use for queries"}
           </p>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3 pt-4">
-          <Button onClick={handleSave}>Save Configuration</Button>
+          {!HARDCODED_GROK_CONFIG && (
+            <Button onClick={handleSave} disabled={!!HARDCODED_GROK_CONFIG}>
+              Save Configuration
+            </Button>
+          )}
           <Button 
             variant="outline" 
             onClick={handleTest} 
@@ -155,12 +195,19 @@ const GrokConfig = () => {
           >
             {isTesting ? "Testing..." : "Test Connection"}
           </Button>
-          {isConfigured && (
+          {isConfigured && !HARDCODED_GROK_CONFIG && (
             <Button variant="destructive" onClick={handleReset}>
               Reset Configuration
             </Button>
           )}
         </div>
+        
+        {HARDCODED_GROK_CONFIG && (
+          <div className="p-3 bg-green-50 border border-green-200 rounded-md text-sm text-green-800">
+            <p className="font-medium">Using hardcoded Grok API configuration</p>
+            <p className="mt-1">The API is ready to use with pre-configured credentials.</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

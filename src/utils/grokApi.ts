@@ -15,8 +15,8 @@ export const saveGrokApiConfig = (config: GrokApiConfig) => {
 };
 
 export const getGrokApiConfig = (): GrokApiConfig | null => {
-  const config = localStorage.getItem('grok_api_config');
-  return config ? JSON.parse(config) : null;
+  // Return hardcoded config first, if not available check localStorage
+  return HARDCODED_GROK_CONFIG || localStorage.getItem('grok_api_config') ? JSON.parse(localStorage.getItem('grok_api_config')!) : null;
 };
 
 // Default configuration
@@ -25,12 +25,19 @@ export const DEFAULT_GROK_CONFIG: GrokApiConfig = {
   model: 'grok-1',
 };
 
+// Hardcoded configuration for immediate use
+export const HARDCODED_GROK_CONFIG: GrokApiConfig = {
+  apiKey: 'xai-lgYF3e2MO1TvHnXhq0UCKYSwDtUOBkNmL0fnOEw4FBniTHDnC6KG',
+  model: 'grok-3',
+};
+
 // Call Grok API function
 export const callGrokApi = async (
   query: string,
   systemPrompt: string = 'You are a helpful assistant for MiN NEW YORK, a luxury fragrance brand. Provide concise, insightful responses about business metrics.'
 ): Promise<string> => {
-  const config = getGrokApiConfig();
+  // Always use hardcoded config if available
+  const config = HARDCODED_GROK_CONFIG || getGrokApiConfig();
   if (!config || !config.apiKey) {
     throw new Error('Grok API key not configured');
   }
