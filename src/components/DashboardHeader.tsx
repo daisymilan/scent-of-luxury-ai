@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -39,7 +40,7 @@ const DashboardHeader = () => {
         <div className="flex items-center">
           <Link to="/" className="flex items-center mr-10">
             <img 
-              src="https://min.com/cdn/shop/files/MiN_NEW_YORK_LOGO_35f89307-9201-4d71-a283-d2318c9fa162_235x.png?v=1678383084" 
+              src="/lovable-uploads/e6e84936-32d0-4228-be3a-6432509ca2b9.png" 
               alt="MiN NEW YORK" 
               className="h-8 mr-2"
             />
@@ -121,7 +122,7 @@ const DashboardHeader = () => {
               <SheetHeader className="mb-6">
                 <SheetTitle className="flex justify-center">
                   <img 
-                    src="https://min.com/cdn/shop/files/MiN_NEW_YORK_LOGO_35f89307-9201-4d71-a283-d2318c9fa162_235x.png?v=1678383084" 
+                    src="/lovable-uploads/e6e84936-32d0-4228-be3a-6432509ca2b9.png" 
                     alt="MiN NEW YORK" 
                     className="h-6"
                   />
