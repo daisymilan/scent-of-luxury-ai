@@ -47,6 +47,20 @@ const DashboardHeader = () => {
                   </Link>
                 </li>
               )}
+              {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Marketing Manager' || user?.role === 'Social Media Manager') && (
+                <li>
+                  <Link to="/social-media-ads" className="text-gray-600 hover:text-gray-900">
+                    Social Ads
+                  </Link>
+                </li>
+              )}
+              {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Marketing Manager' || user?.role === 'Customer Support') && (
+                <li>
+                  <Link to="/reorder-reminder" className="text-gray-600 hover:text-gray-900">
+                    Reorder Reminders
+                  </Link>
+                </li>
+              )}
               {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Commercial Director' || user?.role === 'Regional Manager') && (
                 <li>
                   <Link to="/inventory" className="text-gray-600 hover:text-gray-900">

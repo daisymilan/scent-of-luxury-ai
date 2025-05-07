@@ -17,6 +17,8 @@ import LoginPage from "./pages/LoginPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
+import SocialMediaAdsPage from "./pages/SocialMediaAdsPage";
+import ReorderReminderPage from "./pages/ReorderReminderPage";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +48,18 @@ const App = () => (
             <Route path="/marketing" element={
               <ProtectedRoute requiredRole={['CEO', 'CCO', 'Marketing Manager']}>
                 <MarketingPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/social-media-ads" element={
+              <ProtectedRoute requiredRole={['CEO', 'CCO', 'Marketing Manager', 'Social Media Manager']}>
+                <SocialMediaAdsPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/reorder-reminder" element={
+              <ProtectedRoute requiredRole={['CEO', 'CCO', 'Marketing Manager', 'Customer Support']}>
+                <ReorderReminderPage />
               </ProtectedRoute>
             } />
             
