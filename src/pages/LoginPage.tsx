@@ -67,10 +67,13 @@ const LoginPage: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-white">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-serif mb-2">Login</h1>
-          <p className="text-sm text-gray-600">
-            Access your dashboard using credentials or voice recognition
-          </p>
+          <div className="flex flex-col items-center justify-center">
+            <div className="w-16 h-16 mb-3 bg-black rounded-full flex items-center justify-center">
+              <span className="font-serif text-white text-lg">MiN</span>
+            </div>
+            <h1 className="text-3xl font-serif mb-1">MiN NEW YORK</h1>
+            <p className="text-sm text-gray-600">Luxury Fragrances</p>
+          </div>
         </div>
         
         <Card className="w-full shadow-sm border-gray-100">          
