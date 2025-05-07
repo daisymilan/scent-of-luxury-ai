@@ -64,25 +64,16 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-white">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <img 
-            src="/lovable-uploads/e6e84936-32d0-4228-be3a-6432509ca2b9.png" 
-            alt="MiN NEW YORK" 
-            className="h-10 mx-auto mb-4"
-          />
-          <p className="text-sm uppercase tracking-widest font-light text-gray-500 mt-2">Command Center</p>
+          <h1 className="text-2xl font-normal mb-2 font-serif">Login</h1>
+          <p className="text-sm text-gray-600">
+            Access your dashboard using credentials or voice recognition
+          </p>
         </div>
         
-        <Card className="w-full shadow-lg border-gray-200">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center font-normal">Login</CardTitle>
-            <CardDescription className="text-center">
-              Access your dashboard using credentials or voice recognition
-            </CardDescription>
-          </CardHeader>
-          
+        <Card className="w-full shadow-sm border-gray-100">          
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-2 w-full">
               <TabsTrigger value="password" className="text-xs uppercase tracking-wider font-light">
@@ -149,7 +140,7 @@ const LoginPage: React.FC = () => {
                         </FormItem>
                       )}
                     />
-                    <Button type="submit" className="w-full font-light" disabled={isSubmitting}>
+                    <Button type="submit" className="w-full font-light bg-black hover:bg-gray-900" disabled={isSubmitting}>
                       <LogIn className="mr-1" size={16} />
                       {isSubmitting ? "Logging in..." : "Login"}
                     </Button>
