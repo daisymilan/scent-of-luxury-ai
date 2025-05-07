@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -159,24 +158,6 @@ const VoiceAuthComponent: React.FC = () => {
     });
   };
   
-  // This function would be used to simulate a webhook response for testing
-  const simulateWebhookResponse = async () => {
-    // In production, this would be replaced by the actual webhook callback
-    const mockResponse = {
-      success: true,
-      message: 'Voice authentication successful',
-      sessionToken: 'mock-jwt-token-' + Math.random().toString(36).substring(2),
-      user: {
-        id: '1',
-        name: 'Alex Morgan',
-        role: 'CEO'
-      },
-      command: 'Show me today\'s sales figures'
-    };
-    
-    await handleAuthResponse(mockResponse);
-  };
-  
   return (
     <div className="space-y-4">
       <Card>
@@ -205,15 +186,7 @@ const VoiceAuthComponent: React.FC = () => {
           {!authState.isAuthenticated ? (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">Please authenticate using your voice through the n8n voice interface.</p>
-              <div className="flex justify-center">
-                <Button 
-                  onClick={simulateWebhookResponse} 
-                  variant="outline"
-                  className="text-xs"
-                >
-                  Simulate Authentication (Testing Only)
-                </Button>
-              </div>
+              <p className="text-xs text-gray-500 italic">Say "Login as [role]" to authenticate using the microphone button above.</p>
             </div>
           ) : (
             <div className="space-y-4">

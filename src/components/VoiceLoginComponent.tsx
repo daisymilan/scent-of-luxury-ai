@@ -215,7 +215,7 @@ const VoiceLoginComponent: React.FC = () => {
         </div>
       </div>
       
-      {/* Add the VoiceAuthComponent here */}
+      {/* Voice Authentication Component */}
       <VoiceAuthComponent />
     </div>
   );
