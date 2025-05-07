@@ -185,7 +185,7 @@ const VoiceAuthComponent: React.FC = () => {
           
           {!authState.isAuthenticated ? (
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">Please authenticate using your voice through the n8n voice interface.</p>
+              <p className="text-sm text-muted-foreground">Please authenticate using your voice through the microphone button above.</p>
               <p className="text-xs text-gray-500 italic">Say "Login as [role]" to authenticate using the microphone button above.</p>
             </div>
           ) : (
