@@ -12,6 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import VoiceLoginComponent from '@/components/VoiceLoginComponent';
+import { Eye, EyeOff, Lock, LogIn, User } from 'lucide-react';
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -23,6 +24,7 @@ type FormValues = z.infer<typeof formSchema>;
 const LoginPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("password");
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -57,24 +59,38 @@ const LoginPage: React.FC = () => {
     }
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold">MiN NEW YORK</h1>
-          <p className="text-gray-500 mt-2">Command Center</p>
+          <img 
+            src="/lovable-uploads/e6e84936-32d0-4228-be3a-6432509ca2b9.png" 
+            alt="MiN NEW YORK" 
+            className="h-10 mx-auto mb-4"
+          />
+          <p className="text-sm uppercase tracking-widest font-light text-gray-500 mt-2">Command Center</p>
         </div>
         
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle>Login</CardTitle>
-            <CardDescription>Access your dashboard using credentials or voice recognition</CardDescription>
+        <Card className="w-full shadow-lg border-gray-200">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl text-center font-normal">Login</CardTitle>
+            <CardDescription className="text-center">
+              Access your dashboard using credentials or voice recognition
+            </CardDescription>
           </CardHeader>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-2 w-full">
-              <TabsTrigger value="password">Password</TabsTrigger>
-              <TabsTrigger value="voice">Voice</TabsTrigger>
+              <TabsTrigger value="password" className="text-xs uppercase tracking-wider font-light">
+                Password
+              </TabsTrigger>
+              <TabsTrigger value="voice" className="text-xs uppercase tracking-wider font-light">
+                Voice
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="password" className="space-y-4 mt-4">
@@ -86,10 +102,17 @@ const LoginPage: React.FC = () => {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input placeholder="email@example.com" {...field} />
-                          </FormControl>
+                          <FormLabel className="text-xs uppercase tracking-wider font-light">Email</FormLabel>
+                          <div className="relative">
+                            <User className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                            <FormControl>
+                              <Input 
+                                placeholder="email@example.com" 
+                                className="pl-8" 
+                                {...field} 
+                              />
+                            </FormControl>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -99,15 +122,35 @@ const LoginPage: React.FC = () => {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="••••••••" {...field} />
-                          </FormControl>
+                          <FormLabel className="text-xs uppercase tracking-wider font-light">Password</FormLabel>
+                          <div className="relative">
+                            <Lock className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                            <FormControl>
+                              <Input 
+                                type={showPassword ? "text" : "password"} 
+                                placeholder="••••••••" 
+                                className="pl-8" 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <button 
+                              type="button"
+                              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                              onClick={togglePasswordVisibility}
+                            >
+                              {showPassword ? (
+                                <EyeOff size={16} />
+                              ) : (
+                                <Eye size={16} />
+                              )}
+                            </button>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    <Button type="submit" className="w-full font-light" disabled={isSubmitting}>
+                      <LogIn className="mr-1" size={16} />
                       {isSubmitting ? "Logging in..." : "Login"}
                     </Button>
                   </form>
@@ -123,14 +166,14 @@ const LoginPage: React.FC = () => {
           </Tabs>
           
           <CardFooter className="flex flex-col text-center text-xs text-gray-500 pt-6">
-            <p className="mb-2">Available test accounts:</p>
+            <p className="mb-2 text-xs uppercase tracking-wide font-light">Available test accounts:</p>
             <div className="grid grid-cols-2 gap-x-6 gap-y-1 w-full">
-              <div>CEO: ceo@minyork.com</div>
-              <div>CCO: cco@minyork.com</div>
-              <div>Director: director@minyork.com</div>
-              <div>Regional: regional@minyork.com</div>
-              <div>Marketing: marketing@minyork.com</div>
-              <div className="col-span-2 mt-1">Password: password</div>
+              <div className="text-gray-600">CEO: ceo@minyork.com</div>
+              <div className="text-gray-600">CCO: cco@minyork.com</div>
+              <div className="text-gray-600">Director: director@minyork.com</div>
+              <div className="text-gray-600">Regional: regional@minyork.com</div>
+              <div className="text-gray-600">Marketing: marketing@minyork.com</div>
+              <div className="col-span-2 mt-1 font-medium">Password: password</div>
             </div>
           </CardFooter>
         </Card>
