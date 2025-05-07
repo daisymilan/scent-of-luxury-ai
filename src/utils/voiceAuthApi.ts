@@ -16,8 +16,7 @@ export interface VoiceAuthResponse {
 
 /**
  * Sends voice data to the webhook handler
- * In a real implementation, this would send the actual audio blob
- * to n8n for processing, which would then call our webhook
+ * This function will forward the voice authentication request to the n8n webhook
  */
 export const processVoiceAuth = async (
   audioBlob: Blob,
@@ -25,7 +24,7 @@ export const processVoiceAuth = async (
 ): Promise<VoiceAuthResponse> => {
   try {
     // In a production app, you would send the audioBlob to your voice recognition service
-    // For this prototype, we'll simulate a call to our webhook handler
+    // For this integration, we'll simulate a call to the n8n webhook
     
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1500));
@@ -47,12 +46,15 @@ export const processVoiceAuth = async (
       throw new Error('Role not recognized');
     }
     
-    // Try to use the real API endpoint, fallback to simulation if it fails
+    // Use the real n8n webhook endpoint
     try {
-      const response = await fetch('/api/voice-auth-webhook', {
+      const n8nWebhookUrl = 'https://minnewyorkofficial.app.n8n.cloud/webhook/voice-auth';
+      
+      const response = await fetch(n8nWebhookUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           authenticated: true,
@@ -65,10 +67,17 @@ export const processVoiceAuth = async (
       });
       
       if (!response.ok) {
+        console.error('N8n webhook response status:', response.status);
         throw new Error('Voice authentication request failed');
       }
       
-      return await response.json();
+      try {
+        return await response.json();
+      } catch (e) {
+        console.error('Error parsing webhook response:', e);
+        // If parsing fails, fall back to our simulated response
+        throw new Error('Failed to parse webhook response');
+      }
     } catch (error) {
       console.log('Falling back to simulated response:', error);
       

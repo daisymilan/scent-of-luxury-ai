@@ -4,6 +4,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bodyParser = require('body-parser');
+const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
@@ -11,6 +12,7 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Middleware
+app.use(cors()); // Enable CORS for all routes
 app.use(bodyParser.json());
 
 // Authentication middleware
@@ -114,9 +116,10 @@ app.get('/api/dashboard-data', authenticateToken, (req, res) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Voice authentication webhook handler running on port ${PORT}`);
+// For handling routes in a SPA
+app.use(express.static('dist'));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../dist/index.html'));
 });
 
-module.exports = app; // For testing purposes
+module.exports = app;
