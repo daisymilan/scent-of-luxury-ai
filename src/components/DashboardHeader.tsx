@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -38,8 +37,12 @@ const DashboardHeader = () => {
     <header className="bg-white border-b border-gray-100 sticky top-0 z-30 backdrop-blur-sm bg-white/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         <div className="flex items-center">
-          <Link to="/" className="text-2xl font-serif tracking-wider mr-10 text-gray-900">
-            MiN NEW YORK
+          <Link to="/" className="flex items-center mr-10">
+            <img 
+              src="https://min.com/cdn/shop/files/MiN_NEW_YORK_LOGO_35f89307-9201-4d71-a283-d2318c9fa162_235x.png?v=1678383084" 
+              alt="MiN NEW YORK" 
+              className="h-8 mr-2"
+            />
           </Link>
           
           {/* Desktop Navigation Menu */}
@@ -47,14 +50,14 @@ const DashboardHeader = () => {
             <NavigationMenu>
               <NavigationMenuList className="space-x-1">
                 <NavigationMenuItem>
-                  <Link to="/" className={navigationMenuTriggerStyle() + " font-light"}>
+                  <Link to="/" className={navigationMenuTriggerStyle() + " font-light uppercase text-xs tracking-wider"}>
                     Dashboard
                   </Link>
                 </NavigationMenuItem>
                 
                 {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Commercial Director') && (
                   <NavigationMenuItem>
-                    <Link to="/b2b" className={navigationMenuTriggerStyle() + " font-light"}>
+                    <Link to="/b2b" className={navigationMenuTriggerStyle() + " font-light uppercase text-xs tracking-wider"}>
                       B2B
                     </Link>
                   </NavigationMenuItem>
@@ -62,7 +65,7 @@ const DashboardHeader = () => {
                 
                 {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Marketing Manager') && (
                   <NavigationMenuItem>
-                    <Link to="/marketing" className={navigationMenuTriggerStyle() + " font-light"}>
+                    <Link to="/marketing" className={navigationMenuTriggerStyle() + " font-light uppercase text-xs tracking-wider"}>
                       Marketing
                     </Link>
                   </NavigationMenuItem>
@@ -70,7 +73,7 @@ const DashboardHeader = () => {
                 
                 {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Marketing Manager' || user?.role === 'Social Media Manager') && (
                   <NavigationMenuItem>
-                    <Link to="/social-media-ads" className={navigationMenuTriggerStyle() + " font-light"}>
+                    <Link to="/social-media-ads" className={navigationMenuTriggerStyle() + " font-light uppercase text-xs tracking-wider"}>
                       Social Ads
                     </Link>
                   </NavigationMenuItem>
@@ -78,7 +81,7 @@ const DashboardHeader = () => {
                 
                 {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Marketing Manager' || user?.role === 'Customer Support') && (
                   <NavigationMenuItem>
-                    <Link to="/reorder-reminder" className={navigationMenuTriggerStyle() + " font-light"}>
+                    <Link to="/reorder-reminder" className={navigationMenuTriggerStyle() + " font-light uppercase text-xs tracking-wider"}>
                       Reorder Reminders
                     </Link>
                   </NavigationMenuItem>
@@ -86,7 +89,7 @@ const DashboardHeader = () => {
                 
                 {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Commercial Director' || user?.role === 'Regional Manager') && (
                   <NavigationMenuItem>
-                    <Link to="/inventory" className={navigationMenuTriggerStyle() + " font-light"}>
+                    <Link to="/inventory" className={navigationMenuTriggerStyle() + " font-light uppercase text-xs tracking-wider"}>
                       Inventory
                     </Link>
                   </NavigationMenuItem>
@@ -94,7 +97,7 @@ const DashboardHeader = () => {
                 
                 {(user?.role === 'CEO' || user?.role === 'CCO') && (
                   <NavigationMenuItem>
-                    <Link to="/reports" className={navigationMenuTriggerStyle() + " font-light"}>
+                    <Link to="/reports" className={navigationMenuTriggerStyle() + " font-light uppercase text-xs tracking-wider"}>
                       Reports
                     </Link>
                   </NavigationMenuItem>
@@ -114,47 +117,53 @@ const DashboardHeader = () => {
                 <Menu size={24} className="text-gray-700" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72">
+            <SheetContent side="left" className="w-72 bg-white">
               <SheetHeader className="mb-6">
-                <SheetTitle className="text-xl font-serif tracking-wide">MiN NEW YORK</SheetTitle>
+                <SheetTitle className="flex justify-center">
+                  <img 
+                    src="https://min.com/cdn/shop/files/MiN_NEW_YORK_LOGO_35f89307-9201-4d71-a283-d2318c9fa162_235x.png?v=1678383084" 
+                    alt="MiN NEW YORK" 
+                    className="h-6"
+                  />
+                </SheetTitle>
               </SheetHeader>
               <div className="flex flex-col space-y-3">
-                <Link to="/" className="px-3 py-2 rounded-md text-base font-light text-gray-700 hover:text-primary hover:bg-gray-50">
+                <Link to="/" className="px-3 py-2 rounded-md text-xs uppercase tracking-wider font-light text-gray-700 hover:text-primary hover:bg-gray-50">
                   Dashboard
                 </Link>
                 
                 {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Commercial Director') && (
-                  <Link to="/b2b" className="px-3 py-2 rounded-md text-base font-light text-gray-700 hover:text-primary hover:bg-gray-50">
+                  <Link to="/b2b" className="px-3 py-2 rounded-md text-xs uppercase tracking-wider font-light text-gray-700 hover:text-primary hover:bg-gray-50">
                     B2B
                   </Link>
                 )}
                 
                 {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Marketing Manager') && (
-                  <Link to="/marketing" className="px-3 py-2 rounded-md text-base font-light text-gray-700 hover:text-primary hover:bg-gray-50">
+                  <Link to="/marketing" className="px-3 py-2 rounded-md text-xs uppercase tracking-wider font-light text-gray-700 hover:text-primary hover:bg-gray-50">
                     Marketing
                   </Link>
                 )}
                 
                 {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Marketing Manager' || user?.role === 'Social Media Manager') && (
-                  <Link to="/social-media-ads" className="px-3 py-2 rounded-md text-base font-light text-gray-700 hover:text-primary hover:bg-gray-50">
+                  <Link to="/social-media-ads" className="px-3 py-2 rounded-md text-xs uppercase tracking-wider font-light text-gray-700 hover:text-primary hover:bg-gray-50">
                     Social Ads
                   </Link>
                 )}
                 
                 {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Marketing Manager' || user?.role === 'Customer Support') && (
-                  <Link to="/reorder-reminder" className="px-3 py-2 rounded-md text-base font-light text-gray-700 hover:text-primary hover:bg-gray-50">
+                  <Link to="/reorder-reminder" className="px-3 py-2 rounded-md text-xs uppercase tracking-wider font-light text-gray-700 hover:text-primary hover:bg-gray-50">
                     Reorder Reminders
                   </Link>
                 )}
                 
                 {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Commercial Director' || user?.role === 'Regional Manager') && (
-                  <Link to="/inventory" className="px-3 py-2 rounded-md text-base font-light text-gray-700 hover:text-primary hover:bg-gray-50">
+                  <Link to="/inventory" className="px-3 py-2 rounded-md text-xs uppercase tracking-wider font-light text-gray-700 hover:text-primary hover:bg-gray-50">
                     Inventory
                   </Link>
                 )}
                 
                 {(user?.role === 'CEO' || user?.role === 'CCO') && (
-                  <Link to="/reports" className="px-3 py-2 rounded-md text-base font-light text-gray-700 hover:text-primary hover:bg-gray-50">
+                  <Link to="/reports" className="px-3 py-2 rounded-md text-xs uppercase tracking-wider font-light text-gray-700 hover:text-primary hover:bg-gray-50">
                     Reports
                   </Link>
                 )}
