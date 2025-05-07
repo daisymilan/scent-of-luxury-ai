@@ -5,6 +5,7 @@ import { Mic, MicOff, Volume2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { processVoiceAuth } from '@/utils/voiceAuthApi';
 
 const VoiceLoginComponent: React.FC = () => {
   const [isListening, setIsListening] = useState(false);
@@ -121,40 +122,43 @@ const VoiceLoginComponent: React.FC = () => {
   };
   
   const processVoice = async () => {
-    // Simulate voice recognition process
+    // Create audio blob from recorded chunks
+    const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+    
     try {
-      // Create audio blob from recorded chunks
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      // Call our voice auth API utility
+      const authResponse = await processVoiceAuth(audioBlob);
       
-      // In a real app, you would send this blob to a voice recognition service
-      // For this prototype, we'll simulate recognition with predefined phrases
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // For demo purposes, randomly select a role to simulate voice recognition
-      const roles = [
-        { email: 'ceo@minyork.com', role: 'CEO' },
-        { email: 'cco@minyork.com', role: 'CCO' },
-        { email: 'director@minyork.com', role: 'Commercial Director' },
-        { email: 'regional@minyork.com', role: 'Regional Manager' },
-        { email: 'marketing@minyork.com', role: 'Marketing Manager' },
-        { email: 'production@minyork.com', role: 'Production Manager' },
-        { email: 'support@minyork.com', role: 'Customer Support' },
-        { email: 'social@minyork.com', role: 'Social Media Manager' }
-      ];
-      
-      const randomRole = roles[Math.floor(Math.random() * roles.length)];
-      
-      setSpeechText(`Voice recognized: "${randomRole.role}"`);
-      
-      // Login with the recognized role credentials
-      await login(randomRole.email, 'password');
-      
-      toast({
-        title: 'Voice Login Successful',
-        description: `Welcome, ${randomRole.role}`,
-      });
+      if (authResponse.success && authResponse.user) {
+        setSpeechText(`Voice recognized: "${authResponse.user.role}"`);
+        
+        // Find the email for the recognized role
+        const roles = [
+          { email: 'ceo@minyork.com', role: 'CEO' },
+          { email: 'cco@minyork.com', role: 'CCO' },
+          { email: 'director@minyork.com', role: 'Commercial Director' },
+          { email: 'regional@minyork.com', role: 'Regional Manager' },
+          { email: 'marketing@minyork.com', role: 'Marketing Manager' }
+        ];
+        
+        const matchedRole = roles.find(r => 
+          r.role.toLowerCase() === authResponse.user?.role.toLowerCase()
+        );
+        
+        if (matchedRole) {
+          // Login with the recognized role credentials
+          await login(matchedRole.email, 'password');
+          
+          toast({
+            title: 'Voice Login Successful',
+            description: `Welcome, ${authResponse.user.role}`,
+          });
+        } else {
+          throw new Error(`Unrecognized role: ${authResponse.user.role}`);
+        }
+      } else {
+        throw new Error(authResponse.error || 'Voice recognition failed');
+      }
     } catch (error) {
       console.error('Voice processing error:', error);
       toast({
