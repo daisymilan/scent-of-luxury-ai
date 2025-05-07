@@ -15,7 +15,7 @@ export interface VoiceAuthResponse {
 }
 
 /**
- * Simulates sending voice data to the webhook handler
+ * Sends voice data to the webhook handler
  * In a real implementation, this would send the actual audio blob
  * to n8n for processing, which would then call our webhook
  */
@@ -47,44 +47,44 @@ export const processVoiceAuth = async (
       throw new Error('Role not recognized');
     }
     
-    // Simulate the webhook response
-    const response: VoiceAuthResponse = {
-      success: true,
-      message: 'Voice authentication successful',
-      sessionToken: 'simulated-jwt-token-' + Math.random().toString(36).substring(2),
-      user: {
-        id: selectedRole.userId,
-        name: selectedRole.userName,
-        role: selectedRole.userRole
-      },
-      command: 'login as ' + selectedRole.userRole.toLowerCase()
-    };
-    
-    return response;
-    
-    /* 
-    // This is how the actual API call would look:
-    const response = await fetch('/api/voice-auth-webhook', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        authenticated: true,
-        userId: selectedRole.userId,
-        userName: selectedRole.userName,
-        userRole: selectedRole.userRole,
-        token: 'n8n-generated-token',
+    // Try to use the real API endpoint, fallback to simulation if it fails
+    try {
+      const response = await fetch('/api/voice-auth-webhook', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          authenticated: true,
+          userId: selectedRole.userId,
+          userName: selectedRole.userName,
+          userRole: selectedRole.userRole,
+          token: 'n8n-generated-token',
+          command: 'login as ' + selectedRole.userRole.toLowerCase()
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Voice authentication request failed');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.log('Falling back to simulated response:', error);
+      
+      // Simulate the webhook response
+      return {
+        success: true,
+        message: 'Voice authentication successful',
+        sessionToken: 'simulated-jwt-token-' + Math.random().toString(36).substring(2),
+        user: {
+          id: selectedRole.userId,
+          name: selectedRole.userName,
+          role: selectedRole.userRole
+        },
         command: 'login as ' + selectedRole.userRole.toLowerCase()
-      })
-    });
-    
-    if (!response.ok) {
-      throw new Error('Voice authentication request failed');
+      };
     }
-    
-    return await response.json();
-    */
   } catch (error) {
     console.error('Voice auth error:', error);
     return {

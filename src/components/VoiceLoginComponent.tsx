@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { processVoiceAuth } from '@/utils/voiceAuthApi';
+import VoiceAuthComponent from '@/components/VoiceAuthComponent';
 
 const VoiceLoginComponent: React.FC = () => {
   const [isListening, setIsListening] = useState(false);
@@ -172,45 +173,50 @@ const VoiceLoginComponent: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col items-center space-y-6 p-4">
-      <div className="flex items-center justify-center w-24 h-24 rounded-full bg-primary/10 relative">
-        {isListening ? (
-          <div className="absolute inset-0 rounded-full animate-pulse bg-primary/20 flex items-center justify-center">
-            <Mic size={36} className="text-primary animate-pulse" />
-          </div>
-        ) : (
-          <Volume2 size={36} className="text-primary" />
-        )}
-      </div>
-      
-      {(isListening || isProcessing) && (
-        <div className="w-full space-y-2">
-          <Progress value={audioLevel} className="h-2" />
-          <p className="text-center text-sm">{speechText}</p>
+    <div className="flex flex-col space-y-6">
+      <div className="flex flex-col items-center space-y-6 p-4">
+        <div className="flex items-center justify-center w-24 h-24 rounded-full bg-primary/10 relative">
+          {isListening ? (
+            <div className="absolute inset-0 rounded-full animate-pulse bg-primary/20 flex items-center justify-center">
+              <Mic size={36} className="text-primary animate-pulse" />
+            </div>
+          ) : (
+            <Volume2 size={36} className="text-primary" />
+          )}
         </div>
-      )}
-      
-      <div className="space-x-4">
-        {!isListening && !isProcessing ? (
-          <Button 
-            onClick={startListening} 
-            className="bg-primary hover:bg-primary/90"
-            disabled={isProcessing}
-          >
-            <Mic className="mr-2 h-4 w-4" />
-            Speak to Login
-          </Button>
-        ) : (
-          <Button 
-            onClick={stopListening} 
-            variant="destructive"
-            disabled={isProcessing}
-          >
-            <MicOff className="mr-2 h-4 w-4" />
-            Stop Listening
-          </Button>
+        
+        {(isListening || isProcessing) && (
+          <div className="w-full space-y-2">
+            <Progress value={audioLevel} className="h-2" />
+            <p className="text-center text-sm">{speechText}</p>
+          </div>
         )}
+        
+        <div className="space-x-4">
+          {!isListening && !isProcessing ? (
+            <Button 
+              onClick={startListening} 
+              className="bg-primary hover:bg-primary/90"
+              disabled={isProcessing}
+            >
+              <Mic className="mr-2 h-4 w-4" />
+              Speak to Login
+            </Button>
+          ) : (
+            <Button 
+              onClick={stopListening} 
+              variant="destructive"
+              disabled={isProcessing}
+            >
+              <MicOff className="mr-2 h-4 w-4" />
+              Stop Listening
+            </Button>
+          )}
+        </div>
       </div>
+      
+      {/* Add the VoiceAuthComponent here */}
+      <VoiceAuthComponent />
     </div>
   );
 };

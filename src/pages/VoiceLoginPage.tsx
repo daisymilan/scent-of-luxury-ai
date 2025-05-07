@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic } from 'lucide-react';
+import VoiceAuthComponent from '@/components/VoiceAuthComponent';
 
 const VoiceLoginPage: React.FC = () => {
   return (
@@ -35,12 +36,14 @@ const VoiceLoginPage: React.FC = () => {
                   Click Below
                 </div>
                 <div className="absolute -top-10 w-40 text-xs text-center text-gray-500">
-                  Voice authentication panel is at the bottom of the screen
+                  Voice authentication panel is below
                 </div>
               </div>
             </div>
             
-            <div className="text-center">
+            <VoiceAuthComponent />
+            
+            <div className="text-center mt-4">
               <Link to="/login">
                 <Button variant="ghost" size="sm">
                   Back to traditional login
@@ -50,7 +53,6 @@ const VoiceLoginPage: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-      {/* The VoiceAuthComponent will now be displayed through the route structure */}
     </div>
   );
 };
