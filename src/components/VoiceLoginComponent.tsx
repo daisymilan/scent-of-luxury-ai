@@ -127,6 +127,7 @@ const VoiceLoginComponent: React.FC = () => {
     const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
     
     try {
+      setIsProcessing(true);
       // Call our voice auth API utility
       const authResponse = await processVoiceAuth(audioBlob);
       
@@ -175,13 +176,13 @@ const VoiceLoginComponent: React.FC = () => {
   return (
     <div className="flex flex-col space-y-6">
       <div className="flex flex-col items-center space-y-6 p-4">
-        <div className="flex items-center justify-center w-24 h-24 rounded-full bg-primary/10 relative">
+        <div className="flex items-center justify-center w-24 h-24 rounded-full bg-gray-100 relative">
           {isListening ? (
-            <div className="absolute inset-0 rounded-full animate-pulse bg-primary/20 flex items-center justify-center">
-              <Mic size={36} className="text-primary animate-pulse" />
+            <div className="absolute inset-0 rounded-full animate-pulse bg-gray-200 flex items-center justify-center">
+              <Mic size={36} className="text-black animate-pulse" />
             </div>
           ) : (
-            <Volume2 size={36} className="text-primary" />
+            <Volume2 size={36} className="text-black" />
           )}
         </div>
         
@@ -196,7 +197,7 @@ const VoiceLoginComponent: React.FC = () => {
           {!isListening && !isProcessing ? (
             <Button 
               onClick={startListening} 
-              className="bg-primary hover:bg-primary/90"
+              className="bg-black hover:bg-gray-800 text-white font-light rounded-none"
               disabled={isProcessing}
             >
               <Mic className="mr-2 h-4 w-4" />
@@ -206,6 +207,7 @@ const VoiceLoginComponent: React.FC = () => {
             <Button 
               onClick={stopListening} 
               variant="destructive"
+              className="rounded-none"
               disabled={isProcessing}
             >
               <MicOff className="mr-2 h-4 w-4" />
