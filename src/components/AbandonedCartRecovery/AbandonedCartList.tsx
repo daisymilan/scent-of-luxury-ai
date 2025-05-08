@@ -8,6 +8,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AbandonedCart } from './utils';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface AbandonedCartListProps {
   carts: AbandonedCart[];
@@ -25,50 +33,50 @@ const AbandonedCartList = ({ carts }: AbandonedCartListProps) => {
 
   return (
     <div className="rounded-md border overflow-hidden">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-gray-50 border-b">
-            <th className="py-3 px-4 text-left font-medium text-gray-500">Customer</th>
-            <th className="py-3 px-4 text-left font-medium text-gray-500">Products</th>
-            <th className="py-3 px-4 text-left font-medium text-gray-500">Cart Value</th>
-            <th className="py-3 px-4 text-left font-medium text-gray-500">Abandoned</th>
-            <th className="py-3 px-4 text-left font-medium text-gray-500">Status</th>
-            <th className="py-3 px-4 text-left font-medium text-gray-500">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Customer</TableHead>
+            <TableHead>Products</TableHead>
+            <TableHead>Cart Value</TableHead>
+            <TableHead>Abandoned</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {carts.map((cart) => (
-            <tr key={cart.id} className="border-b last:border-b-0 hover:bg-gray-50">
-              <td className="py-3 px-4">
+            <TableRow key={cart.id}>
+              <TableCell>
                 <div>
                   <p className="font-medium">{cart.customer}</p>
                   <p className="text-xs text-gray-500">{cart.email}</p>
                 </div>
-              </td>
-              <td className="py-3 px-4">
+              </TableCell>
+              <TableCell>
                 {cart.products.map((product, index) => (
                   <span key={index}>
                     {product}
                     {index < cart.products.length - 1 ? ', ' : ''}
                   </span>
                 ))}
-              </td>
-              <td className="py-3 px-4">
+              </TableCell>
+              <TableCell>
                 ${typeof cart.value === 'number' ? cart.value.toFixed(2) : cart.value}
-              </td>
-              <td className="py-3 px-4">
+              </TableCell>
+              <TableCell>
                 <div className="flex items-center text-gray-500">
                   <Clock size={14} className="mr-1" />
                   <span>{cart.time}</span>
                 </div>
-              </td>
-              <td className="py-3 px-4">
+              </TableCell>
+              <TableCell>
                 <div className="flex items-center">
                   <div className="h-2 w-2 rounded-full bg-yellow-400 mr-2"></div>
                   <span>Recovery in progress</span>
                 </div>
-              </td>
-              <td className="py-3 px-4">
+              </TableCell>
+              <TableCell>
                 <div className="flex space-x-2">
                   <Button variant="ghost" size="icon" className="h-8 w-8">
                     <Mail size={16} />
@@ -90,11 +98,11 @@ const AbandonedCartList = ({ carts }: AbandonedCartListProps) => {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 };
