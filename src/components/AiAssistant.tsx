@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Mic, Play, ChevronDown, X, Volume2, PauseCircle, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -62,6 +61,7 @@ const AiAssistant = () => {
         const transcript = event.results[0][0].transcript;
         console.log('Voice recognized:', transcript);
         setQuery(transcript);
+        // Immediately submit the query after voice recognition
         handleQuerySubmit(transcript);
       };
       
@@ -230,10 +230,8 @@ const AiAssistant = () => {
       console.log('Final AI response:', responseText);
       setResponse(responseText);
       
-      // Clear the input field after submission if it was typed (not voice)
-      if (!command) {
-        setQuery('');
-      }
+      // Clear the input field after submission whether it was typed or voice
+      setQuery('');
     } catch (error) {
       console.error('Error processing query:', error);
       toast({
@@ -242,6 +240,9 @@ const AiAssistant = () => {
         variant: "destructive",
       });
       setResponse("I'm sorry, I couldn't process your request at this time. Please try again later.");
+      
+      // Clear the input field even on error
+      setQuery('');
     } finally {
       setIsThinking(false);
     }
