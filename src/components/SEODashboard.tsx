@@ -10,7 +10,18 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const SEODashboard = () => {
+// Define the props interface for SEODashboard
+interface SEODashboardProps {
+  categories?: any[];
+  productsWithSEO?: any[];
+}
+
+const SEODashboard = ({ categories, productsWithSEO }: SEODashboardProps) => {
+  // We can use the passed data for enhanced functionality later
+  // For now, we'll log it to verify we're receiving it correctly
+  console.log('Categories received:', categories?.length);
+  console.log('Products with SEO received:', productsWithSEO?.length);
+
   return (
     <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
       <Card className="col-span-full lg:col-span-1">
