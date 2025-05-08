@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import DashboardHeader from '@/components/DashboardHeader';
@@ -9,9 +8,9 @@ import { Loader2 } from 'lucide-react';
 import { WooCustomer, WooOrder, WooProduct } from '@/lib/mockData';
 import { useToast } from '@/hooks/use-toast';
 
-// WooCommerce API endpoints
-const API_BASE_URL = 'https://min.com/int/wp-json/wc/v3';
-const API_CREDENTIALS = 'Basic ' + btoa('ck_8448b85f1bb94d4dd33539f9533fd338d50e781c:cs_703141faee85294cdddd88fd14dc2151d00a7aab');
+// WooCommerce API endpoints - updated to staging environment
+const API_BASE_URL = 'https://staging.min.com/int/wp-json/wc/v3';
+const API_CREDENTIALS = 'Basic ' + btoa('ck_83b6276178dfd425fb2618461bfb02aad3fd6d67:cs_a9ffe2c31156740acaa6dc82c50489717cb6d4d7');
 
 // Column mapping for B2B leads import
 export const B2BColumnMapping = {
