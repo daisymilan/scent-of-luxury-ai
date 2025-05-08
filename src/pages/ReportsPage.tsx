@@ -10,7 +10,7 @@ import { useWooProducts, useWooOrders, useWooStats, getWooCommerceConfig } from 
 import { getGrokApiConfig } from '@/utils/grokApi';
 import { getN8nConfig } from '@/components/N8nConfig';
 import { useAuth } from '@/contexts/AuthContext';
-import DataCard from '@/components/ui/DataCard';
+import KpiOverview from '@/components/KpiOverview';
 import { ShoppingCart, Search, Zap, Webhook } from 'lucide-react';
 
 const ReportsPage = () => {
@@ -21,7 +21,7 @@ const ReportsPage = () => {
   const isN8nConfigured = !!getN8nConfig();
   
   // Only fetch data if WooCommerce is configured
-  const { stats, isLoading: isLoadingStats } = isWooConfigured ? useWooStats() : { stats: null, isLoading: false };
+  const { stats, isLoading: isLoadingStats } = isWooConfigured ? useWooStats('week') : { stats: null, isLoading: false };
   const { products, isLoading: isLoadingProducts } = isWooConfigured ? useWooProducts(5) : { products: [], isLoading: false };
   const { orders, isLoading: isLoadingOrders } = isWooConfigured ? useWooOrders(5) : { orders: [], isLoading: false };
 
@@ -51,116 +51,61 @@ const ReportsPage = () => {
             </TabsList>
             
             <TabsContent value="overview">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                {!isWooConfigured ? (
-                  <Card className="col-span-full">
-                    <CardHeader>
-                      <CardTitle>WooCommerce Connected</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-500">
-                        Connected to MIN NEW YORK WooCommerce store. View your data in the Products and Orders tabs.
-                      </p>
-                    </CardContent>
-                  </Card>
-                ) : isLoadingStats ? (
-                  <>
-                    <Card>
-                      <CardHeader>
-                        <CardTitle><Skeleton className="h-4 w-32" /></CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Skeleton className="h-8 w-16 mb-2" />
-                        <Skeleton className="h-4 w-24" />
-                      </CardContent>
-                    </Card>
-                    
-                    <Card>
-                      <CardHeader>
-                        <CardTitle><Skeleton className="h-4 w-32" /></CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Skeleton className="h-8 w-16 mb-2" />
-                        <Skeleton className="h-4 w-24" />
-                      </CardContent>
-                    </Card>
-                    
-                    <Card>
-                      <CardHeader>
-                        <CardTitle><Skeleton className="h-4 w-32" /></CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Skeleton className="h-8 w-16 mb-2" />
-                        <Skeleton className="h-4 w-24" />
-                      </CardContent>
-                    </Card>
-                  </>
-                ) : (
-                  <>
-                    <DataCard 
-                      title="Total Revenue" 
-                      value={`$${stats?.totalRevenue || '0.00'}`} 
-                      change={8.4} 
-                      icon={<ShoppingCart className="h-4 w-4" />}
-                    />
-                    
-                    <DataCard 
-                      title="Total Orders" 
-                      value={stats?.totalOrders || 0} 
-                      change={3.2} 
-                      icon={<ShoppingCart className="h-4 w-4" />}
-                    />
-                    
-                    <DataCard 
-                      title="Active Products" 
-                      value={stats?.totalProducts || 0} 
-                      change={0} 
-                      icon={<Search className="h-4 w-4" />}
-                    />
-                  </>
-                )}
-              </div>
+              {isWooConfigured ? (
+                <KpiOverview />
+              ) : (
+                <Card className="col-span-full">
+                  <CardHeader>
+                    <CardTitle>WooCommerce Integration Required</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-500">
+                      Please configure WooCommerce integration to see MIN NEW YORK sales data.
+                      Go to the Integrations tab to set up your WooCommerce connection.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
 
-              <div className="grid grid-cols-1 gap-6 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <DataCard 
-                    title="Integrations Status" 
-                    value={`${(isWooConfigured ? 1 : 0) + (isGrokConfigured ? 1 : 0) + (isN8nConfigured ? 1 : 0)}/3`} 
-                    className="h-full"
-                  />
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between bg-white p-4 rounded-lg border">
-                      <div className="flex items-center">
-                        <ShoppingCart className="h-5 w-5 text-primary mr-2" />
-                        <span>MIN NEW YORK WooCommerce</span>
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="col-span-full md:col-span-1">
+                  <CardHeader>
+                    <CardTitle>Integrations Status</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between bg-white p-4 rounded-lg border">
+                        <div className="flex items-center">
+                          <ShoppingCart className="h-5 w-5 text-primary mr-2" />
+                          <span>MIN NEW YORK WooCommerce</span>
+                        </div>
+                        <span className={`px-2 py-1 rounded text-xs ${isWooConfigured ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                          {isWooConfigured ? 'Connected' : 'Not Connected'}
+                        </span>
                       </div>
-                      <span className={`px-2 py-1 rounded text-xs ${isWooConfigured ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                        {isWooConfigured ? 'Connected' : 'Not Connected'}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between bg-white p-4 rounded-lg border">
-                      <div className="flex items-center">
-                        <Zap className="h-5 w-5 text-primary mr-2" />
-                        <span>Grok AI</span>
+                      
+                      <div className="flex items-center justify-between bg-white p-4 rounded-lg border">
+                        <div className="flex items-center">
+                          <Zap className="h-5 w-5 text-primary mr-2" />
+                          <span>Grok AI</span>
+                        </div>
+                        <span className={`px-2 py-1 rounded text-xs ${isGrokConfigured ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                          {isGrokConfigured ? 'Connected' : 'Not Connected'}
+                        </span>
                       </div>
-                      <span className={`px-2 py-1 rounded text-xs ${isGrokConfigured ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                        {isGrokConfigured ? 'Connected' : 'Not Connected'}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between bg-white p-4 rounded-lg border">
-                      <div className="flex items-center">
-                        <Webhook className="h-5 w-5 text-primary mr-2" />
-                        <span>n8n Workflows</span>
+                      
+                      <div className="flex items-center justify-between bg-white p-4 rounded-lg border">
+                        <div className="flex items-center">
+                          <Webhook className="h-5 w-5 text-primary mr-2" />
+                          <span>n8n Workflows</span>
+                        </div>
+                        <span className={`px-2 py-1 rounded text-xs ${isN8nConfigured ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                          {isN8nConfigured ? 'Connected' : 'Not Connected'}
+                        </span>
                       </div>
-                      <span className={`px-2 py-1 rounded text-xs ${isN8nConfigured ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                        {isN8nConfigured ? 'Connected' : 'Not Connected'}
-                      </span>
                     </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               </div>
             </TabsContent>
             
