@@ -1,4 +1,3 @@
-
 /**
  * WooCommerce API utility for interacting with the WooCommerce REST API
  */
@@ -12,12 +11,11 @@ export interface WooCommerceConfig {
   version: string;
 }
 
-// Hardcoded configuration for immediate use
-// In a production environment, this would be loaded from a secure environment variable
+// Hardcoded configuration for immediate use with Min.com
 export const HARDCODED_WOO_CONFIG: WooCommerceConfig | null = {
-  url: 'https://your-woocommerce-store.com', // User should update this with their actual store URL
-  consumerKey: 'ck_59d0971533bd5f96218e14f128433353a511056b',
-  consumerSecret: 'cs_e6fcd21c6f4287ac5cd1282aae76bed64c2ead70',
+  url: 'https://min.com/int',
+  consumerKey: 'ck_8448b85f1bb94d4dd33539f9533fd338d50e781c',
+  consumerSecret: 'cs_703141faee85294cdddd88fd14dc2151d00a7aab',
   version: '3'
 };
 

@@ -4,6 +4,7 @@ import DataCard from './ui/DataCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import LineChart from './ui/LineChart';
 import { salesData, topProducts } from '../lib/mockData';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
 const KpiOverview = () => {
   const dailyChartData = salesData.daily.labels.map((label, index) => ({

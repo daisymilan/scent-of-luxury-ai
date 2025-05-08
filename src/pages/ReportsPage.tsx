@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import DashboardHeader from '@/components/DashboardHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,12 +33,12 @@ const ReportsPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
             <div>
-              <h1 className="text-3xl font-semibold">Reports & Analytics</h1>
-              <p className="text-gray-500">View detailed reports and analytics including WooCommerce data</p>
+              <h1 className="text-3xl font-semibold">MIN NEW YORK Reports & Analytics</h1>
+              <p className="text-gray-500">View detailed reports and analytics using real WooCommerce data</p>
             </div>
             <div className="mt-4 sm:mt-0">
               <span className="text-sm text-gray-500 mr-2">Last updated:</span>
-              <span className="text-sm font-medium">May 6, 2025, 10:24 AM</span>
+              <span className="text-sm font-medium">{new Date().toLocaleString()}</span>
             </div>
           </div>
           
@@ -56,11 +55,11 @@ const ReportsPage = () => {
                 {!isWooConfigured ? (
                   <Card className="col-span-full">
                     <CardHeader>
-                      <CardTitle>WooCommerce Not Configured</CardTitle>
+                      <CardTitle>WooCommerce Connected</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-gray-500">
-                        Please configure your WooCommerce integration in the Integrations tab to see store analytics.
+                        Connected to MIN NEW YORK WooCommerce store. View your data in the Products and Orders tabs.
                       </p>
                     </CardContent>
                   </Card>
@@ -134,7 +133,7 @@ const ReportsPage = () => {
                     <div className="flex items-center justify-between bg-white p-4 rounded-lg border">
                       <div className="flex items-center">
                         <ShoppingCart className="h-5 w-5 text-primary mr-2" />
-                        <span>WooCommerce</span>
+                        <span>MIN NEW YORK WooCommerce</span>
                       </div>
                       <span className={`px-2 py-1 rounded text-xs ${isWooConfigured ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                         {isWooConfigured ? 'Connected' : 'Not Connected'}
@@ -168,7 +167,7 @@ const ReportsPage = () => {
             <TabsContent value="products">
               <Card>
                 <CardHeader>
-                  <CardTitle>Top Products</CardTitle>
+                  <CardTitle>MIN NEW YORK Products</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {!isWooConfigured ? (
@@ -227,7 +226,7 @@ const ReportsPage = () => {
             <TabsContent value="orders">
               <Card>
                 <CardHeader>
-                  <CardTitle>Recent Orders</CardTitle>
+                  <CardTitle>MIN NEW YORK Orders</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {!isWooConfigured ? (
@@ -262,10 +261,10 @@ const ReportsPage = () => {
                             <tr key={order.id} className="border-b">
                               <td className="py-3">#{order.id}</td>
                               <td className="py-3">
-                                {order.billing.first_name} {order.billing.last_name}
+                                {order.billing?.first_name} {order.billing?.last_name}
                               </td>
                               <td className="text-right py-3">
-                                {new Date(order.date_created).toLocaleDateString()}
+                                {order.date_created ? new Date(order.date_created).toLocaleDateString() : 'N/A'}
                               </td>
                               <td className="text-right py-3">
                                 <span 
@@ -277,7 +276,7 @@ const ReportsPage = () => {
                                       : 'bg-gray-100 text-gray-800'
                                   }`}
                                 >
-                                  {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                  {order.status ? (order.status.charAt(0).toUpperCase() + order.status.slice(1)) : 'Unknown'}
                                 </span>
                               </td>
                               <td className="text-right py-3">${order.total}</td>

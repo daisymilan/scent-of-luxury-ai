@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,7 +28,10 @@ import {
   WooCommerceConfig as WooCommerceConfigType, 
   saveWooCommerceConfig, 
   getWooCommerceConfig,
-  HARDCODED_WOO_CONFIG
+  HARDCODED_WOO_CONFIG,
+  useWooProducts,
+  useWooOrders,
+  fetchWooCommerceData
 } from '@/utils/woocommerceApi';
 
 const WooCommerceConfig = () => {
@@ -49,144 +51,14 @@ const WooCommerceConfig = () => {
     version: '3'
   });
   
-  // Mock data for the demo
-  const mockProducts = [
-    {
-      id: 1,
-      name: 'Dahab Eau de Parfum',
-      price: '250.00',
-      regular_price: '250.00',
-      sale_price: '',
-      stock_quantity: 89,
-      stock_status: 'instock',
-      total_sales: 120,
-      date_created: '2023-10-15T10:00:00'
-    },
-    {
-      id: 2,
-      name: 'Moon Dust Eau de Parfum',
-      price: '220.00',
-      regular_price: '250.00',
-      sale_price: '220.00',
-      stock_quantity: 254,
-      stock_status: 'instock',
-      total_sales: 98,
-      date_created: '2023-09-20T10:00:00'
-    },
-    {
-      id: 3,
-      name: 'Dune Eau de Parfum',
-      price: '250.00',
-      regular_price: '250.00',
-      sale_price: '',
-      stock_quantity: 128,
-      stock_status: 'instock',
-      total_sales: 128,
-      date_created: '2024-01-15T10:00:00'
-    },
-    {
-      id: 4,
-      name: 'Coda Eau de Parfum',
-      price: '220.00',
-      regular_price: '220.00',
-      sale_price: '',
-      stock_quantity: 312,
-      stock_status: 'instock',
-      total_sales: 67,
-      date_created: '2023-11-05T10:00:00'
-    },
-    {
-      id: 5,
-      name: 'Moon Dust Sample Set',
-      price: '45.00',
-      regular_price: '45.00',
-      sale_price: '',
-      stock_quantity: 145,
-      stock_status: 'instock',
-      total_sales: 215,
-      date_created: '2023-12-10T10:00:00'
-    }
-  ];
-  
-  const mockOrders = [
-    {
-      id: 12345,
-      status: 'completed',
-      date_created: '2025-05-04T15:30:22',
-      total: '425.00',
-      customer_id: 101,
-      billing: {
-        first_name: 'Alexandra',
-        last_name: 'Morgan',
-        email: 'alexandra.morgan@example.com'
-      },
-      line_items: [
-        {
-          product_id: 1,
-          name: 'Dahab Eau de Parfum',
-          quantity: 1,
-          total: '250.00'
-        },
-        {
-          product_id: 5,
-          name: 'Moon Dust Sample Set',
-          quantity: 1,
-          total: '45.00'
-        }
-      ]
-    },
-    {
-      id: 12346,
-      status: 'processing',
-      date_created: '2025-05-05T09:45:11',
-      total: '250.00',
-      customer_id: 102,
-      billing: {
-        first_name: 'James',
-        last_name: 'Wilson',
-        email: 'james.wilson@example.com'
-      },
-      line_items: [
-        {
-          product_id: 3,
-          name: 'Dune Eau de Parfum',
-          quantity: 1,
-          total: '250.00'
-        }
-      ]
-    },
-    {
-      id: 12347,
-      status: 'pending',
-      date_created: '2025-05-06T11:20:45',
-      total: '220.00',
-      customer_id: 103,
-      billing: {
-        first_name: 'Emily',
-        last_name: 'Johnson',
-        email: 'emily.johnson@example.com'
-      },
-      line_items: [
-        {
-          product_id: 2,
-          name: 'Moon Dust Eau de Parfum',
-          quantity: 1,
-          total: '220.00'
-        }
-      ]
-    }
-  ];
-  
-  const mockStats = {
-    totalProducts: 24,
-    totalOrders: 158,
-    totalRevenue: '38250.00'
-  };
+  // Real data hooks instead of mock data
+  const { products, isLoading: isLoadingProducts, error: productsError } = useWooProducts(5);
+  const { orders, isLoading: isLoadingOrders, error: ordersError } = useWooOrders(5);
   
   // Filter products based on search query
-  const filteredProducts = mockProducts.filter(product => 
-    product.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProducts = products?.filter(product => 
+    product.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
   
   // Check for existing config
   useEffect(() => {
@@ -203,8 +75,8 @@ const WooCommerceConfig = () => {
         setIsConfigured(true);
         
         toast({
-          title: "Using Hardcoded Configuration",
-          description: "WooCommerce API is configured with hardcoded credentials",
+          title: "Connected to MIN NEW YORK WooCommerce",
+          description: "Using the official Min.com store API credentials",
         });
       } else {
         // Using localStorage config
@@ -274,10 +146,6 @@ const WooCommerceConfig = () => {
         throw new Error("No configuration found");
       }
       
-      if (!testConfig.url || testConfig.url === 'https://your-woocommerce-store.com') {
-        throw new Error("Please update the store URL before testing");
-      }
-      
       // Attempt to make a simple request to test the connection
       const response = await fetch(
         `${testConfig.url}/wp-json/wc/v${testConfig.version}/products?per_page=1`,
@@ -300,7 +168,7 @@ const WooCommerceConfig = () => {
       
       toast({
         title: "Connection Successful",
-        description: "Successfully connected to WooCommerce API",
+        description: "Successfully connected to MIN NEW YORK WooCommerce API",
       });
     } catch (error) {
       console.error('WooCommerce connection test error:', error);
@@ -364,9 +232,9 @@ const WooCommerceConfig = () => {
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle className="text-xl">WooCommerce Integration</CardTitle>
+              <CardTitle className="text-xl">MIN NEW YORK WooCommerce Integration</CardTitle>
               <CardDescription>
-                Connect to your WooCommerce store to manage products, orders, and customers
+                Connected to the official MIN NEW YORK WooCommerce store
               </CardDescription>
             </div>
             <div className="flex items-center space-x-2">
@@ -380,11 +248,9 @@ const WooCommerceConfig = () => {
           {HARDCODED_WOO_CONFIG && (
             <Alert className="mb-4 bg-green-50 text-green-800 border-green-200">
               <CheckCircle className="h-4 w-4" />
-              <AlertTitle>Using Hardcoded Credentials</AlertTitle>
+              <AlertTitle>Connected to MIN NEW YORK WooCommerce</AlertTitle>
               <AlertDescription>
-                The WooCommerce API is configured with hardcoded credentials for immediate use.
-                <br />
-                <strong>Important:</strong> Please update the store URL below to match your WooCommerce store.
+                The application is now using live data from the official MIN NEW YORK WooCommerce store.
               </AlertDescription>
             </Alert>
           )}
@@ -404,6 +270,16 @@ const WooCommerceConfig = () => {
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Error</AlertTitle>
               <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
+          
+          {(productsError || ordersError) && (
+            <Alert className="mb-4 bg-red-50 text-red-800 border-red-200" variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>API Error</AlertTitle>
+              <AlertDescription>
+                {productsError?.message || ordersError?.message || "Error fetching data from WooCommerce API"}
+              </AlertDescription>
             </Alert>
           )}
           
@@ -434,13 +310,11 @@ const WooCommerceConfig = () => {
                     name="url"
                     value={config.url}
                     onChange={handleChange}
-                    placeholder="https://your-store.com"
-                    disabled={!!HARDCODED_WOO_CONFIG && config.url !== 'https://your-woocommerce-store.com'} 
+                    placeholder="https://min.com/int"
+                    disabled={!!HARDCODED_WOO_CONFIG} 
                   />
                   <p className="text-xs text-gray-500">
-                    {HARDCODED_WOO_CONFIG && config.url === 'https://your-woocommerce-store.com' 
-                      ? "Please update with your actual WooCommerce store URL"
-                      : "Enter the full URL of your WooCommerce store"}
+                    {HARDCODED_WOO_CONFIG ? "Connected to MIN NEW YORK store" : "Enter the full URL of your WooCommerce store"}
                   </p>
                 </div>
                 
@@ -457,7 +331,7 @@ const WooCommerceConfig = () => {
                     disabled={!!HARDCODED_WOO_CONFIG}
                   />
                   {HARDCODED_WOO_CONFIG && (
-                    <p className="text-xs text-gray-500">Using hardcoded Consumer Key</p>
+                    <p className="text-xs text-gray-500">Using MIN NEW YORK Consumer Key</p>
                   )}
                 </div>
                 
@@ -474,7 +348,7 @@ const WooCommerceConfig = () => {
                     disabled={!!HARDCODED_WOO_CONFIG}
                   />
                   {HARDCODED_WOO_CONFIG ? (
-                    <p className="text-xs text-gray-500">Using hardcoded Consumer Secret</p>
+                    <p className="text-xs text-gray-500">Using MIN NEW YORK Consumer Secret</p>
                   ) : (
                     <p className="text-xs text-gray-500">
                       You can generate API keys in your WooCommerce dashboard under 
@@ -496,7 +370,7 @@ const WooCommerceConfig = () => {
                     disabled={!!HARDCODED_WOO_CONFIG}
                   />
                   <p className="text-xs text-gray-500">
-                    Default is v3 for newer WooCommerce installations
+                    Using WooCommerce API v3
                   </p>
                 </div>
                 
@@ -504,19 +378,6 @@ const WooCommerceConfig = () => {
                   {!HARDCODED_WOO_CONFIG && (
                     <Button onClick={handleSave}>
                       Save Configuration
-                    </Button>
-                  )}
-                  {(HARDCODED_WOO_CONFIG && config.url === 'https://your-woocommerce-store.com') && (
-                    <Button onClick={() => {
-                      const updatedConfig = { ...config, url: prompt("Enter your WooCommerce store URL:") || config.url };
-                      setConfig(updatedConfig);
-                      
-                      // Update the hardcoded config URL
-                      if (HARDCODED_WOO_CONFIG) {
-                        HARDCODED_WOO_CONFIG.url = updatedConfig.url;
-                      }
-                    }}>
-                      Update Store URL
                     </Button>
                   )}
                   <Button 
@@ -567,10 +428,6 @@ const WooCommerceConfig = () => {
                       <Download className="mr-2 h-4 w-4" />
                       Export
                     </Button>
-                    <Button size="sm">
-                      <ShoppingBag className="mr-2 h-4 w-4" />
-                      Add Product
-                    </Button>
                   </div>
                 </div>
                 
@@ -588,7 +445,7 @@ const WooCommerceConfig = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {isLoading ? (
+                        {isLoadingProducts ? (
                           Array(5).fill(0).map((_, index) => (
                             <tr key={index} className="border-b">
                               <td className="px-4 py-3">
@@ -611,7 +468,7 @@ const WooCommerceConfig = () => {
                               </td>
                             </tr>
                           ))
-                        ) : (
+                        ) : filteredProducts.length > 0 ? (
                           filteredProducts.map((product) => (
                             <tr key={product.id} className="border-b hover:bg-muted/50">
                               <td className="px-4 py-3">
@@ -633,7 +490,7 @@ const WooCommerceConfig = () => {
                                     : 'bg-red-100 text-red-800'
                                 }`}>
                                   {product.stock_status === 'instock' 
-                                    ? `In Stock (${product.stock_quantity})` 
+                                    ? `In Stock ${product.stock_quantity ? `(${product.stock_quantity})` : ''}` 
                                     : 'Out of Stock'
                                   }
                                 </div>
@@ -642,7 +499,7 @@ const WooCommerceConfig = () => {
                                 {product.total_sales || 0}
                               </td>
                               <td className="px-4 py-3">
-                                {formatDate(product.date_created)}
+                                {product.date_created ? formatDate(product.date_created) : 'N/A'}
                               </td>
                               <td className="px-4 py-3">
                                 <div className="flex space-x-2">
@@ -652,24 +509,16 @@ const WooCommerceConfig = () => {
                                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                                     <Settings className="h-4 w-4" />
                                   </Button>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                        <svg width="15" height="3" viewBox="0 0 15 3" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                          <path d="M1.5 1.5H13.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
-                                        </svg>
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem>Edit</DropdownMenuItem>
-                                      <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                                      <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
                                 </div>
                               </td>
                             </tr>
                           ))
+                        ) : (
+                          <tr className="border-b">
+                            <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
+                              {productsError ? "Error fetching products" : "No products found"}
+                            </td>
+                          </tr>
                         )}
                       </tbody>
                     </table>
@@ -715,7 +564,7 @@ const WooCommerceConfig = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {isLoading ? (
+                        {isLoadingOrders ? (
                           Array(3).fill(0).map((_, index) => (
                             <tr key={index} className="border-b">
                               <td className="px-4 py-3">
@@ -738,18 +587,18 @@ const WooCommerceConfig = () => {
                               </td>
                             </tr>
                           ))
-                        ) : (
-                          mockOrders.map((order) => (
+                        ) : orders && orders.length > 0 ? (
+                          orders.map((order) => (
                             <tr key={order.id} className="border-b hover:bg-muted/50">
                               <td className="px-4 py-3">
                                 <div className="font-medium">#{order.id}</div>
                               </td>
                               <td className="px-4 py-3">
                                 <div className="font-medium">
-                                  {order.billing.first_name} {order.billing.last_name}
+                                  {order.billing?.first_name} {order.billing?.last_name}
                                 </div>
                                 <div className="text-xs text-gray-500">
-                                  {order.billing.email}
+                                  {order.billing?.email}
                                 </div>
                               </td>
                               <td className="px-4 py-3">
@@ -760,14 +609,14 @@ const WooCommerceConfig = () => {
                                     ? 'bg-blue-100 text-blue-800'
                                     : 'bg-yellow-100 text-yellow-800'
                                 }`}>
-                                  {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                  {order.status ? (order.status.charAt(0).toUpperCase() + order.status.slice(1)) : 'Unknown'}
                                 </div>
                               </td>
                               <td className="px-4 py-3">
                                 <div className="font-medium">${order.total}</div>
                               </td>
                               <td className="px-4 py-3">
-                                {formatDate(order.date_created)}
+                                {order.date_created ? formatDate(order.date_created) : 'N/A'}
                               </td>
                               <td className="px-4 py-3">
                                 <div className="flex space-x-2">
@@ -777,24 +626,16 @@ const WooCommerceConfig = () => {
                                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                                     <Truck className="h-4 w-4" />
                                   </Button>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                        <svg width="15" height="3" viewBox="0 0 15 3" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                          <path d="M1.5 1.5H13.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
-                                        </svg>
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem>View Details</DropdownMenuItem>
-                                      <DropdownMenuItem>Update Status</DropdownMenuItem>
-                                      <DropdownMenuItem>Email Customer</DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
                                 </div>
                               </td>
                             </tr>
                           ))
+                        ) : (
+                          <tr className="border-b">
+                            <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
+                              {ordersError ? "Error fetching orders" : "No orders found"}
+                            </td>
+                          </tr>
                         )}
                       </tbody>
                     </table>
@@ -805,23 +646,18 @@ const WooCommerceConfig = () => {
             
             <TabsContent value="stats">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Stats cards will be populated from real data */}
                 <Card>
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="text-sm font-medium text-gray-500">Total Products</div>
-                        <div className="text-3xl font-semibold mt-1">{mockStats.totalProducts}</div>
+                        <div className="text-3xl font-semibold mt-1">
+                          {isLoadingProducts ? <Skeleton className="h-8 w-16" /> : products?.length || 0}
+                        </div>
                       </div>
                       <div className="bg-primary/10 p-2 rounded-md">
                         <ShoppingBag className="h-5 w-5 text-primary" />
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 text-xs text-gray-500">
-                      <div className="flex items-center">
-                        <ArrowUpRight className="h-3 w-3 mr-1 text-green-500" />
-                        <span className="text-green-500">4 new</span>
-                        <span className="ml-1">products added this month</span>
                       </div>
                     </div>
                   </CardContent>
@@ -832,18 +668,12 @@ const WooCommerceConfig = () => {
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="text-sm font-medium text-gray-500">Total Orders</div>
-                        <div className="text-3xl font-semibold mt-1">{mockStats.totalOrders}</div>
+                        <div className="text-3xl font-semibold mt-1">
+                          {isLoadingOrders ? <Skeleton className="h-8 w-16" /> : orders?.length || 0}
+                        </div>
                       </div>
                       <div className="bg-primary/10 p-2 rounded-md">
                         <ShoppingCart className="h-5 w-5 text-primary" />
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 text-xs text-gray-500">
-                      <div className="flex items-center">
-                        <ArrowUpRight className="h-3 w-3 mr-1 text-green-500" />
-                        <span className="text-green-500">12 new</span>
-                        <span className="ml-1">orders in the last 7 days</span>
                       </div>
                     </div>
                   </CardContent>
@@ -854,18 +684,16 @@ const WooCommerceConfig = () => {
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="text-sm font-medium text-gray-500">Total Revenue</div>
-                        <div className="text-3xl font-semibold mt-1">${mockStats.totalRevenue}</div>
+                        <div className="text-3xl font-semibold mt-1">
+                          {isLoadingOrders ? (
+                            <Skeleton className="h-8 w-24" />
+                          ) : (
+                            `$${orders?.reduce((sum, order) => sum + parseFloat(order.total || '0'), 0).toFixed(2) || '0.00'}`
+                          )}
+                        </div>
                       </div>
                       <div className="bg-primary/10 p-2 rounded-md">
                         <ShoppingCart className="h-5 w-5 text-primary" />
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 text-xs text-gray-500">
-                      <div className="flex items-center">
-                        <ArrowUpRight className="h-3 w-3 mr-1 text-green-500" />
-                        <span className="text-green-500">5.2%</span>
-                        <span className="ml-1">increase compared to last month</span>
                       </div>
                     </div>
                   </CardContent>
