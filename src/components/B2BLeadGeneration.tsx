@@ -18,6 +18,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import B2BLeadImport from './B2BLeadImport';
 import { B2BLead, mergeLeadSources } from '@/utils/b2bUtils';
 
@@ -25,15 +33,29 @@ import { B2BLead, mergeLeadSources } from '@/utils/b2bUtils';
 interface B2BLeadDisplay {
   id: number;
   company: string;
+  brand?: string;
+  linkedInProfileUrl?: string;
   contact: string;
+  firstName?: string;
+  lastName?: string;
+  jobTitle?: string;
   email: string;
+  linkedInCompanyUrl?: string;
+  linkedInCompanyId?: string;
+  website?: string;
+  domain?: string;
+  employeeCount?: string;
+  industry?: string;
+  companyHQ?: string;
+  location?: string;
+  openProfile?: boolean;
+  premiumLinkedIn?: boolean;
+  geoTag?: string;
   status: string;
   score: number;
   lastOrder?: string | null;
   totalSpent?: number;
   notes?: string;
-  industry?: string;
-  location?: string;
   productInterests?: string[];
 }
 
@@ -66,6 +88,15 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
   const [isSending, setIsSending] = useState(false);
   const [leads, setLeads] = useState<B2BLeadDisplay[]>([]);
   const [leadDetailsTab, setLeadDetailsTab] = useState('overview');
+  const [visibleColumns, setVisibleColumns] = useState({
+    company: true,
+    contact: true,
+    email: true,
+    industry: true,
+    location: true,
+    status: true,
+    score: true,
+  });
   
   // Outreach sequence state
   const [sequence, setSequence] = useState([
@@ -169,11 +200,12 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
   }, [wooCustomers, wooOrders, toast]);
   
   const filteredLeads = leads.filter(lead => 
-    lead.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    lead.contact.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    lead.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    lead.industry?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    lead.location?.toLowerCase().includes(searchQuery.toLowerCase())
+    (lead.company?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (lead.contact?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (lead.email?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (lead.industry?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (lead.location?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (lead.brand?.toLowerCase().includes(searchQuery.toLowerCase()))
   );
   
   const handleLeadSelect = (lead: B2BLeadDisplay) => {
@@ -276,13 +308,27 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
       return {
         id: Date.now() + index, // Generate unique id
         company: lead.companyName || 'Unknown Company',
+        brand: lead.tags?.[0] || '',
+        linkedInProfileUrl: lead.linkedInUrl,
         contact: lead.contactName || 'Unknown Contact',
+        firstName: lead.firstName,
+        lastName: lead.lastName,
+        jobTitle: lead.jobTitle,
         email: lead.contactEmail || '',
+        linkedInCompanyUrl: lead.linkedInCompanyUrl,
+        linkedInCompanyId: lead.linkedInCompanyId,
+        website: lead.website,
+        domain: lead.domain,
+        employeeCount: lead.employeeCount,
+        industry: lead.industry || 'Retail',
+        companyHQ: lead.companyHQ,
+        location: lead.location || 'Unknown',
+        openProfile: lead.hasOpenProfile,
+        premiumLinkedIn: lead.hasPremiumLinkedIn,
+        geoTag: lead.geoTag,
         status: 'New Lead',
         score: lead.score || 50,
         notes: lead.notes || '',
-        industry: lead.industry || 'Retail',
-        location: lead.location || 'Unknown',
         productInterests: [],
       } as B2BLeadDisplay;
     });
@@ -295,6 +341,31 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
       description: `${newLeads.length} leads have been imported successfully`,
     });
   };
+
+  // Column definitions for the leads table
+  const columnDefinitions = [
+    { id: 'company', name: 'Company Name' },
+    { id: 'brand', name: 'Brand' },
+    { id: 'contact', name: 'Contact Name' },
+    { id: 'firstName', name: 'First Name' },
+    { id: 'lastName', name: 'Last Name' },
+    { id: 'jobTitle', name: 'Job Title' },
+    { id: 'email', name: 'Email' },
+    { id: 'linkedInProfileUrl', name: 'LinkedIn Profile' },
+    { id: 'linkedInCompanyUrl', name: 'Company LinkedIn' },
+    { id: 'linkedInCompanyId', name: 'LinkedIn Company ID' },
+    { id: 'website', name: 'Website' },
+    { id: 'domain', name: 'Domain' },
+    { id: 'employeeCount', name: 'Employee Count' },
+    { id: 'industry', name: 'Industry' },
+    { id: 'companyHQ', name: 'Company HQ' },
+    { id: 'location', name: 'Location' },
+    { id: 'openProfile', name: 'Open Profile' },
+    { id: 'premiumLinkedIn', name: 'Premium LinkedIn' },
+    { id: 'geoTag', name: 'Geo Tag' },
+    { id: 'status', name: 'Status' },
+    { id: 'score', name: 'Score' },
+  ];
   
   return (
     <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
@@ -321,34 +392,50 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          
-          <div className="rounded-md border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b">
-                  <th className="py-3 px-4 text-left font-medium text-gray-500">Company</th>
-                  <th className="py-3 px-4 text-left font-medium text-gray-500">Contact</th>
-                  <th className="py-3 px-4 text-left font-medium text-gray-500">Status</th>
-                  <th className="py-3 px-4 text-left font-medium text-gray-500">Score</th>
-                  <th className="py-3 px-4 text-left font-medium text-gray-500">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+
+          <div className="rounded-md border overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[180px]">Company</TableHead>
+                  <TableHead className="w-[100px]">Brand</TableHead>
+                  <TableHead className="w-[160px]">Contact</TableHead>
+                  <TableHead className="w-[150px]">Job Title</TableHead>
+                  <TableHead className="w-[150px]">Email</TableHead>
+                  <TableHead className="w-[120px]">LinkedIn</TableHead>
+                  <TableHead className="w-[150px]">Location</TableHead>
+                  <TableHead className="w-[100px]">Status</TableHead>
+                  <TableHead className="w-[80px]">Score</TableHead>
+                  <TableHead className="w-[100px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {filteredLeads.length > 0 ? (
                   filteredLeads.map((lead) => (
-                    <tr 
+                    <TableRow 
                       key={lead.id} 
-                      className={`border-b last:border-b-0 hover:bg-gray-50 cursor-pointer ${selectedLead?.id === lead.id ? 'bg-gray-50' : ''}`}
+                      className={`cursor-pointer ${selectedLead?.id === lead.id ? 'bg-gray-50' : ''}`}
                       onClick={() => handleLeadSelect(lead)}
                     >
-                      <td className="py-3 px-4">{lead.company}</td>
-                      <td className="py-3 px-4">{lead.contact}</td>
-                      <td className="py-3 px-4">
+                      <TableCell className="font-medium">{lead.company}</TableCell>
+                      <TableCell>{lead.brand || '-'}</TableCell>
+                      <TableCell>{lead.contact}</TableCell>
+                      <TableCell>{lead.jobTitle || '-'}</TableCell>
+                      <TableCell>{lead.email}</TableCell>
+                      <TableCell>
+                        {lead.linkedInProfileUrl ? (
+                          <a href={lead.linkedInProfileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline" onClick={(e) => e.stopPropagation()}>
+                            View Profile
+                          </a>
+                        ) : '-'}
+                      </TableCell>
+                      <TableCell>{lead.location || '-'}</TableCell>
+                      <TableCell>
                         <Badge variant="outline" className={`${statusColors[lead.status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}>
                           {lead.status}
                         </Badge>
-                      </td>
-                      <td className="py-3 px-4">
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center">
                           <div className="w-10 bg-gray-200 rounded-full h-1.5 mr-2">
                             <div 
@@ -361,8 +448,8 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
                           </div>
                           <span>{lead.score}</span>
                         </div>
-                      </td>
-                      <td className="py-3 px-4">
+                      </TableCell>
+                      <TableCell>
                         <div className="flex space-x-2">
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {
                             e.stopPropagation();
@@ -393,18 +480,18 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 ) : (
-                  <tr>
-                    <td colSpan={5} className="py-6 text-center text-gray-500">
+                  <TableRow>
+                    <TableCell colSpan={10} className="h-24 text-center text-gray-500">
                       {searchQuery ? 'No leads match your search criteria.' : 'No leads available.'}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
