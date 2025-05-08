@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { Mic, Play, ChevronDown, X, Volume2, PauseCircle, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ const AiAssistant = () => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [query, setQuery] = useState('');
+  const [displayedQuery, setDisplayedQuery] = useState(''); // New state for displayed query
   const [response, setResponse] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const { user } = useAuth();
@@ -61,6 +63,7 @@ const AiAssistant = () => {
         const transcript = event.results[0][0].transcript;
         console.log('Voice recognized:', transcript);
         setQuery(transcript);
+        setDisplayedQuery(transcript); // Set the displayed query
         // Immediately submit the query after voice recognition
         handleQuerySubmit(transcript);
       };
@@ -146,6 +149,7 @@ const AiAssistant = () => {
         ];
         const randomQuery = randomQueries[Math.floor(Math.random() * randomQueries.length)];
         setQuery(randomQuery);
+        setDisplayedQuery(randomQuery); // Set the displayed query
         setIsListening(false);
         handleQuerySubmit(randomQuery);
       }, 2000);
@@ -156,6 +160,9 @@ const AiAssistant = () => {
   const handleQuerySubmit = async (command?: string) => {
     const currentQuery = command || query;
     if (!currentQuery) return;
+    
+    // Set the displayed query
+    setDisplayedQuery(currentQuery);
     
     // Clear previous response and show thinking state
     setResponse('');
@@ -168,24 +175,30 @@ const AiAssistant = () => {
       if (n8nWebhookUrl) {
         try {
           console.log('Calling n8n webhook with query:', currentQuery);
+          console.log('Webhook URL:', n8nWebhookUrl);
+          
+          const webhookPayload = {
+            query: currentQuery,
+            user: user ? {
+              role: user.role,
+              id: user.id,
+              name: user.name
+            } : {
+              role: 'Guest',
+              id: 'guest',
+              name: 'Guest User'
+            },
+            timestamp: new Date().toISOString()
+          };
+          
+          console.log('Webhook payload:', JSON.stringify(webhookPayload, null, 2));
+          
           const response = await fetch(n8nWebhookUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              query: currentQuery,
-              user: user ? {
-                role: user.role,
-                id: user.id,
-                name: user.name
-              } : {
-                role: 'Guest',
-                id: 'guest',
-                name: 'Guest User'
-              },
-              timestamp: new Date().toISOString()
-            })
+            body: JSON.stringify(webhookPayload)
           });
 
           if (response.ok) {
@@ -193,13 +206,15 @@ const AiAssistant = () => {
             responseText = data.response || data.message || data.answer;
             console.log('n8n webhook response:', data);
           } else {
-            console.error('n8n webhook error:', response.statusText);
+            console.error('n8n webhook error:', response.status, response.statusText);
+            console.error('Response text:', await response.text());
             throw new Error(`n8n webhook error: ${response.statusText}`);
           }
         } catch (error) {
           console.error('Error calling n8n webhook:', error);
           // If n8n webhook fails, try Grok or fallback
           if (isGrokConfigured) {
+            console.log('Falling back to Grok API');
             responseText = await callGrokApi(currentQuery);
           } else {
             throw error;
@@ -207,9 +222,11 @@ const AiAssistant = () => {
         }
       } else if (isGrokConfigured) {
         // Use the Grok API if configured and n8n is not available
+        console.log('Using Grok API');
         responseText = await callGrokApi(currentQuery);
       } else {
         // Use mock implementation if neither Grok nor n8n is configured
+        console.log('Using mock implementation');
         const lowerCommand = currentQuery.toLowerCase();
         
         if (lowerCommand.includes('sales') || lowerCommand.includes('revenue')) {
@@ -250,6 +267,7 @@ const AiAssistant = () => {
 
   const handleClear = () => {
     setQuery('');
+    setDisplayedQuery(''); // Clear the displayed query
     setResponse('');
     if (speechSynthesisRef.current) {
       speechSynthesisRef.current.cancel();
@@ -341,6 +359,32 @@ const AiAssistant = () => {
           </div>
         )}
       
+        {displayedQuery && (
+          <div className="flex items-start justify-end mb-4">
+            <div className="bg-primary bg-opacity-10 p-3 rounded-lg max-w-[85%]">
+              <p className="text-sm">{displayedQuery}</p>
+            </div>
+            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center ml-2">
+              <User size={16} />
+            </div>
+          </div>
+        )}
+
+        {isThinking && (
+          <div className="flex items-start mb-4">
+            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white mr-2">
+              M
+            </div>
+            <div className="bg-white p-3 rounded-lg shadow-sm">
+              <div className="flex space-x-1 items-center">
+                <div className="h-2 w-2 bg-gray-400 rounded-full animate-pulse"></div>
+                <div className="h-2 w-2 bg-gray-400 rounded-full animate-pulse delay-100"></div>
+                <div className="h-2 w-2 bg-gray-400 rounded-full animate-pulse delay-200"></div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {response && (
           <div className="mb-4">
             <div className="flex items-start mb-2">
@@ -371,32 +415,6 @@ const AiAssistant = () => {
               <Button size="sm" variant="ghost" className="h-8 text-xs">
                 See Details
               </Button>
-            </div>
-          </div>
-        )}
-        
-        {isThinking && (
-          <div className="flex items-start mb-4">
-            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white mr-2">
-              M
-            </div>
-            <div className="bg-white p-3 rounded-lg shadow-sm">
-              <div className="flex space-x-1 items-center">
-                <div className="h-2 w-2 bg-gray-400 rounded-full animate-pulse"></div>
-                <div className="h-2 w-2 bg-gray-400 rounded-full animate-pulse delay-100"></div>
-                <div className="h-2 w-2 bg-gray-400 rounded-full animate-pulse delay-200"></div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {query && (
-          <div className="flex items-start justify-end mb-4">
-            <div className="bg-primary bg-opacity-10 p-3 rounded-lg max-w-[85%]">
-              <p className="text-sm">{query}</p>
-            </div>
-            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center ml-2">
-              <User size={16} />
             </div>
           </div>
         )}
