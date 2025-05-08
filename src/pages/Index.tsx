@@ -135,9 +135,12 @@ const Index = () => {
           <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
             <div>
               <h1 className="text-3xl font-semibold">
-                <span className="text-primary">MiN NEW YORK</span> {user?.role} Dashboard
+                <span className="font-cormorant font-medium text-4xl tracking-wider">
+                  <span className="font-semibold">MiN</span> NEW YORK
+                </span>{" "}
+                <span className="text-xl">{user?.role} Dashboard</span>
               </h1>
-              <p className="text-gray-500">Welcome back to your MiN NEW YORK command center, {user?.name}</p>
+              <p className="text-gray-500 mt-1">Welcome back to your luxury fragrance dashboard, {user?.name}</p>
             </div>
             <div className="mt-4 sm:mt-0">
               <span className="text-sm text-gray-500 mr-2">Last updated:</span>

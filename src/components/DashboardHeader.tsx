@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -39,12 +38,10 @@ const DashboardHeader = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         <div className="flex items-center">
           <Link to="/" className="flex items-center mr-10">
-            <img 
-              src="/lovable-uploads/e6e84936-32d0-4228-be3a-6432509ca2b9.png" 
-              alt="MiN NEW YORK" 
-              className="h-10 mr-3"
-            />
-            <span className="font-semibold text-lg tracking-wide hidden md:block">MiN NEW YORK</span>
+            <div className="font-cormorant text-2xl mr-3 border-r pr-3 border-gray-200">
+              <span className="font-semibold tracking-wider">MiN</span>
+              <span className="block -mt-1.5 text-xl tracking-widest">NEW YORK</span>
+            </div>
           </Link>
           
           {/* Desktop Navigation Menu */}
@@ -122,12 +119,10 @@ const DashboardHeader = () => {
             <SheetContent side="left" className="w-72 bg-white">
               <SheetHeader className="mb-6">
                 <SheetTitle className="flex flex-col items-center gap-2">
-                  <img 
-                    src="/lovable-uploads/e6e84936-32d0-4228-be3a-6432509ca2b9.png" 
-                    alt="MiN NEW YORK" 
-                    className="h-8"
-                  />
-                  <span className="font-semibold text-lg tracking-wide">MiN NEW YORK</span>
+                  <div className="font-cormorant text-2xl">
+                    <span className="font-semibold tracking-wider">MiN</span>
+                    <span className="block -mt-1.5 text-xl tracking-widest text-center">NEW YORK</span>
+                  </div>
                 </SheetTitle>
               </SheetHeader>
               <div className="flex flex-col space-y-3">
