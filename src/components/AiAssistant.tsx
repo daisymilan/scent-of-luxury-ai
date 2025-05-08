@@ -1,6 +1,6 @@
 
 import { useState, useRef, useEffect } from 'react';
-import { Mic, Play, ChevronDown, X, Volume2, PauseCircle, User } from 'lucide-react';
+import { Mic, Play, ChevronDown, X, Volume2, PauseCircle, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -13,9 +13,10 @@ const AiAssistant = () => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [query, setQuery] = useState('');
-  const [displayedQuery, setDisplayedQuery] = useState(''); // New state for displayed query
+  const [displayedQuery, setDisplayedQuery] = useState('');
   const [response, setResponse] = useState('');
   const [isThinking, setIsThinking] = useState(false);
+  const [isWebhookFailed, setIsWebhookFailed] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -62,8 +63,9 @@ const AiAssistant = () => {
       recognitionRef.current.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         console.log('Voice recognized:', transcript);
-        setQuery(transcript);
-        setDisplayedQuery(transcript); // Set the displayed query
+        setQuery('');
+        setDisplayedQuery(transcript);
+        
         // Immediately submit the query after voice recognition
         handleQuerySubmit(transcript);
       };
@@ -137,22 +139,11 @@ const AiAssistant = () => {
         setIsListening(false);
       }
     } else {
-      // Fallback for browsers without speech recognition
-      setIsListening(true);
-      // Simulate voice recognition with mock data
-      setTimeout(() => {
-        const randomQueries = [
-          "How are sales performing this month?",
-          "What's our inventory status?",
-          "Show me today's revenue",
-          "How many orders came in today?"
-        ];
-        const randomQuery = randomQueries[Math.floor(Math.random() * randomQueries.length)];
-        setQuery(randomQuery);
-        setDisplayedQuery(randomQuery); // Set the displayed query
-        setIsListening(false);
-        handleQuerySubmit(randomQuery);
-      }, 2000);
+      toast({
+        title: "Speech Recognition Not Available",
+        description: "Your browser doesn't support speech recognition",
+        variant: "destructive"
+      });
     }
   };
 
@@ -167,65 +158,71 @@ const AiAssistant = () => {
     // Clear previous response and show thinking state
     setResponse('');
     setIsThinking(true);
+    setIsWebhookFailed(false);
+    
+    // Clear the input field after submission
+    setQuery('');
     
     try {
       let responseText;
+      let webhookSuccess = false;
       
-      // First try the n8n webhook
-      if (n8nWebhookUrl) {
-        try {
-          console.log('Calling n8n webhook with query:', currentQuery);
-          console.log('Webhook URL:', n8nWebhookUrl);
-          
-          const webhookPayload = {
-            query: currentQuery,
-            user: user ? {
-              role: user.role,
-              id: user.id,
-              name: user.name
-            } : {
-              role: 'Guest',
-              id: 'guest',
-              name: 'Guest User'
-            },
-            timestamp: new Date().toISOString()
-          };
-          
-          console.log('Webhook payload:', JSON.stringify(webhookPayload, null, 2));
-          
-          const response = await fetch(n8nWebhookUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(webhookPayload)
-          });
+      // Always try the n8n webhook first
+      const webhookToCall = n8nWebhookUrl || 'https://minnewyorkofficial.app.n8n.cloud/webhook/ceo-dashboard';
+      console.log('Calling n8n webhook with query:', currentQuery);
+      console.log('Webhook URL:', webhookToCall);
+      
+      const webhookPayload = {
+        query: currentQuery,
+        user: user ? {
+          role: user.role,
+          id: user.id,
+          name: user.name
+        } : {
+          role: 'Guest',
+          id: 'guest',
+          name: 'Guest User'
+        },
+        timestamp: new Date().toISOString()
+      };
+      
+      console.log('Webhook payload:', JSON.stringify(webhookPayload, null, 2));
+      
+      try {
+        const response = await fetch(webhookToCall, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(webhookPayload)
+        });
 
-          if (response.ok) {
-            const data = await response.json();
-            responseText = data.response || data.message || data.answer;
-            console.log('n8n webhook response:', data);
-          } else {
-            console.error('n8n webhook error:', response.status, response.statusText);
-            console.error('Response text:', await response.text());
-            throw new Error(`n8n webhook error: ${response.statusText}`);
-          }
-        } catch (error) {
-          console.error('Error calling n8n webhook:', error);
-          // If n8n webhook fails, try Grok or fallback
-          if (isGrokConfigured) {
-            console.log('Falling back to Grok API');
-            responseText = await callGrokApi(currentQuery);
-          } else {
-            throw error;
-          }
+        if (response.ok) {
+          const data = await response.json();
+          responseText = data.response || data.message || data.answer;
+          console.log('n8n webhook response:', data);
+          webhookSuccess = true;
+        } else {
+          console.error('n8n webhook error:', response.status, response.statusText);
+          console.error('Response text:', await response.text());
+          throw new Error(`n8n webhook error: ${response.statusText}`);
         }
-      } else if (isGrokConfigured) {
-        // Use the Grok API if configured and n8n is not available
-        console.log('Using Grok API');
-        responseText = await callGrokApi(currentQuery);
-      } else {
-        // Use mock implementation if neither Grok nor n8n is configured
+      } catch (error) {
+        console.error('Error calling n8n webhook:', error);
+        setIsWebhookFailed(true);
+        
+        // If n8n webhook fails, try Grok or fallback
+        if (isGrokConfigured) {
+          console.log('Falling back to Grok API');
+          responseText = await callGrokApi(currentQuery);
+          webhookSuccess = true;
+        } else {
+          throw error;
+        }
+      }
+      
+      // If both n8n and Grok failed, use mock implementation
+      if (!webhookSuccess) {
         console.log('Using mock implementation');
         const lowerCommand = currentQuery.toLowerCase();
         
@@ -246,9 +243,6 @@ const AiAssistant = () => {
       
       console.log('Final AI response:', responseText);
       setResponse(responseText);
-      
-      // Clear the input field after submission whether it was typed or voice
-      setQuery('');
     } catch (error) {
       console.error('Error processing query:', error);
       toast({
@@ -257,9 +251,6 @@ const AiAssistant = () => {
         variant: "destructive",
       });
       setResponse("I'm sorry, I couldn't process your request at this time. Please try again later.");
-      
-      // Clear the input field even on error
-      setQuery('');
     } finally {
       setIsThinking(false);
     }
@@ -267,7 +258,7 @@ const AiAssistant = () => {
 
   const handleClear = () => {
     setQuery('');
-    setDisplayedQuery(''); // Clear the displayed query
+    setDisplayedQuery(''); 
     setResponse('');
     if (speechSynthesisRef.current) {
       speechSynthesisRef.current.cancel();
@@ -353,9 +344,9 @@ const AiAssistant = () => {
       </div>
       
       <div className="p-4 max-h-96 overflow-y-auto bg-gray-50">
-        {!n8nWebhookUrl && !isGrokConfigured && (
+        {isWebhookFailed && (
           <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
-            Neither n8n nor Grok API is configured. Using simulated responses. Go to Integrations to configure the APIs.
+            Could not connect to webhook. Using fallback response.
           </div>
         )}
       
@@ -377,9 +368,8 @@ const AiAssistant = () => {
             </div>
             <div className="bg-white p-3 rounded-lg shadow-sm">
               <div className="flex space-x-1 items-center">
-                <div className="h-2 w-2 bg-gray-400 rounded-full animate-pulse"></div>
-                <div className="h-2 w-2 bg-gray-400 rounded-full animate-pulse delay-100"></div>
-                <div className="h-2 w-2 bg-gray-400 rounded-full animate-pulse delay-200"></div>
+                <Loader2 size={12} className="animate-spin text-gray-400" />
+                <span className="text-sm text-gray-500">Connecting to webhook...</span>
               </div>
             </div>
           </div>
