@@ -1,17 +1,18 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DashboardHeader from '@/components/DashboardHeader';
 import KpiOverview from '@/components/KpiOverview';
 import B2BLeadGeneration from '@/components/B2BLeadGeneration';
 import SEODashboard from '@/components/SEODashboard';
-import AbandonedCartRecovery from '@/components/AbandonedCartRecovery'; // Path is unchanged, we'll use index.tsx
+import AbandonedCartRecovery from '@/components/AbandonedCartRecovery'; 
 import AiAssistant from '@/components/AiAssistant';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { WooCustomer, WooOrder, WooProduct } from '@/lib/mockData';
 
-// WooCommerce API endpoints - same as in B2BPage
+// WooCommerce API endpoints
 const API_BASE_URL = 'https://min.com/int/wp-json/wc/v3';
 const API_CREDENTIALS = 'Basic ' + btoa('ck_8448b85f1bb94d4dd33539f9533fd338d50e781c:cs_703141faee85294cdddd88fd14dc2151d00a7aab');
 
@@ -20,7 +21,7 @@ const Index = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Fetch WooCommerce data for B2B component
+  // Optimize data fetching with stale-while-revalidate strategy
   const { data: customers, isLoading: isLoadingCustomers } = useQuery({
     queryKey: ['wooCustomers'],
     queryFn: async () => {
@@ -46,10 +47,12 @@ const Index = () => {
         });
         return null;
       }
-    }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 10 * 60 * 1000, // 10 minutes
   });
 
-  // Fetch orders from WooCommerce API
+  // Fetch orders from WooCommerce API with optimized caching
   const { data: orders, isLoading: isLoadingOrders } = useQuery({
     queryKey: ['wooOrders'],
     queryFn: async () => {
@@ -75,10 +78,12 @@ const Index = () => {
         });
         return null;
       }
-    }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 10 * 60 * 1000, // 10 minutes
   });
 
-  // Fetch products from WooCommerce API
+  // Fetch products with optimized caching
   const { data: products, isLoading: isLoadingProducts } = useQuery({
     queryKey: ['wooProducts'],
     queryFn: async () => {
@@ -104,8 +109,22 @@ const Index = () => {
         });
         return null;
       }
-    }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 10 * 60 * 1000, // 10 minutes
   });
+
+  // This function helps lazy-load components based on active tab
+  const shouldLoadComponent = (tabId: string) => {
+    // Always load overview tab
+    if (tabId === 'overview') return true;
+    
+    // Load the active tab
+    if (activeTab === tabId) return true;
+    
+    // Don't load other tabs until they're activated
+    return false;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -143,23 +162,29 @@ const Index = () => {
             </TabsContent>
             
             <TabsContent value="b2b" className="space-y-6">
-              <B2BLeadGeneration 
-                wooCustomers={customers} 
-                wooOrders={orders} 
-                wooProducts={products} 
-              />
+              {shouldLoadComponent('b2b') && (
+                <B2BLeadGeneration 
+                  wooCustomers={customers} 
+                  wooOrders={orders} 
+                  wooProducts={products} 
+                />
+              )}
             </TabsContent>
             
             <TabsContent value="seo" className="space-y-6">
-              <SEODashboard />
+              {shouldLoadComponent('seo') && (
+                <SEODashboard />
+              )}
             </TabsContent>
             
             <TabsContent value="cart" className="space-y-6">
-              <AbandonedCartRecovery 
-                wooCustomers={customers}
-                wooOrders={orders}
-                wooProducts={products}
-              />
+              {shouldLoadComponent('cart') && (
+                <AbandonedCartRecovery 
+                  wooCustomers={customers}
+                  wooOrders={orders}
+                  wooProducts={products}
+                />
+              )}
             </TabsContent>
           </Tabs>
         </div>

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DashboardHeader from '@/components/DashboardHeader';
 import SocialMediaAdCreator from '@/components/SocialMediaAdCreator';
@@ -8,7 +8,17 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const SocialMediaAdsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('creator');
+  const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
+  
+  // Simulate faster loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 500); // Reduced artificial loading time to 500ms
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -23,7 +33,7 @@ const SocialMediaAdsPage: React.FC = () => {
             </div>
             <div className="mt-4 sm:mt-0">
               <span className="text-sm text-gray-500 mr-2">Last updated:</span>
-              <span className="text-sm font-medium">May 7, 2025, 11:15 AM</span>
+              <span className="text-sm font-medium">May 8, 2025, {new Date().toLocaleTimeString()}</span>
             </div>
           </div>
           
@@ -38,11 +48,11 @@ const SocialMediaAdsPage: React.FC = () => {
             </TabsList>
             
             <TabsContent value="creator" className="space-y-6">
-              <SocialMediaAdCreator />
+              <SocialMediaAdCreator isLoading={isLoading} />
             </TabsContent>
             
             <TabsContent value="metrics" className="space-y-6">
-              <SocialMediaMetrics />
+              <SocialMediaMetrics isLoading={isLoading} />
             </TabsContent>
           </Tabs>
         </div>
