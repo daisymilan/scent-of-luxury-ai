@@ -13,6 +13,29 @@ import { useToast } from '@/hooks/use-toast';
 const API_BASE_URL = 'https://min.com/int/wp-json/wc/v3';
 const API_CREDENTIALS = 'Basic ' + btoa('ck_8448b85f1bb94d4dd33539f9533fd338d50e781c:cs_703141faee85294cdddd88fd14dc2151d00a7aab');
 
+// Column mapping for B2B leads import
+export const B2BColumnMapping = {
+  brand: ["brand", "Brand"],
+  linkedInProfileUrl: ["linkedin profile url", "linkedinprofileurl", "linkedin url", "profile url"],
+  fullName: ["full name", "fullname", "name"],
+  firstName: ["first name", "firstname"],
+  lastName: ["last name", "lastname"],
+  jobTitle: ["job title", "jobtitle", "title", "position"],
+  email: ["email", "email address", "contact email"],
+  companyName: ["company name", "companyname", "company", "organization"],
+  linkedInCompanyUrl: ["linkedin company url", "company linkedin url", "company profile"],
+  linkedInCompanyId: ["linkedin company id", "company id"],
+  website: ["website", "web", "site"],
+  domain: ["domain", "company domain"],
+  employeeCount: ["employee count", "employees", "company size", "size"],
+  industry: ["industry", "sector", "field"],
+  companyHQ: ["company hq", "headquarters", "hq"],
+  location: ["person's location", "location", "contact location"],
+  openProfile: ["open profile", "openprofile"],
+  premiumLinkedIn: ["premium linkedin", "premium"],
+  geoTag: ["geo tag", "geotag", "geo"]
+};
+
 const B2BPage = () => {
   const [activeTab, setActiveTab] = useState('leads');
   const { toast } = useToast();
