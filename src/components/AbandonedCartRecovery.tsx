@@ -1,4 +1,3 @@
-
 import { Clock, Mail, MoreHorizontal, Plus, ShoppingCart, Smartphone, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -79,12 +78,10 @@ const AbandonedCartRecovery = ({
             order.line_items.forEach(item => {
               if (item.name) {
                 cartProducts.push(item.name);
-              } else if (item.product_id) {
-                // Try to find product name if not in line_item
-                const product = wooProducts.find(p => p.id === item.product_id);
-                if (product) {
-                  cartProducts.push(product.name);
-                }
+              } else {
+                // Since product_id doesn't exist in the line_item type, we can't use it directly
+                // Just add a default product name if name is not available
+                cartProducts.push("Unnamed Product");
               }
             });
           }
@@ -92,9 +89,9 @@ const AbandonedCartRecovery = ({
           // Calculate cart value - use order total or sum line items
           let cartValue = parseFloat(order.total);
           if (isNaN(cartValue) || cartValue === 0) {
-            // Fallback to calculating from line items
+            // Fallback to calculating from line items, using 'price' property which exists
             cartValue = order.line_items.reduce((total, item) => {
-              const itemPrice = parseFloat(item.total || item.price || "0");
+              const itemPrice = parseFloat(item.price || "0");
               return total + (isNaN(itemPrice) ? 0 : itemPrice);
             }, 0);
           }
