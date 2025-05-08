@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { Mic, Play, ChevronDown, X, Volume2, PauseCircle, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -146,7 +147,7 @@ const AiAssistant = () => {
     }
   };
 
-  // Function to call n8n webhook or fallback to Grok API
+  // Function to call n8n webhook and wait for full workflow response
   const handleQuerySubmit = async (command?: string) => {
     const currentQuery = command || query;
     if (!currentQuery) return;
@@ -166,7 +167,6 @@ const AiAssistant = () => {
       let responseText;
       let webhookSuccess = false;
       
-      // Always try the n8n webhook first
       const webhookToCall = n8nWebhookUrl || 'https://minnewyorkofficial.app.n8n.cloud/webhook/ceo-dashboard';
       console.log('Calling n8n webhook with query:', currentQuery);
       console.log('Webhook URL:', webhookToCall);
@@ -188,22 +188,34 @@ const AiAssistant = () => {
       console.log('Webhook payload:', JSON.stringify(webhookPayload, null, 2));
       
       try {
+        // Important: Remove 'mode: "no-cors"' to actually receive the webhook response
         const response = await fetch(webhookToCall, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
+          // Removed 'mode: "no-cors"' to receive the actual response
           body: JSON.stringify(webhookPayload)
         });
 
         if (response.ok) {
+          console.log('n8n webhook response status:', response.status);
+          // Try to parse response as JSON
           const data = await response.json();
-          responseText = data.response || data.message || data.answer;
-          console.log('n8n webhook response:', data);
+          console.log('n8n webhook full response:', data);
+          
+          // Extract response from various possible property names
+          responseText = data.response || data.message || data.answer || 
+                        data.result || data.content || data.text || 
+                        JSON.stringify(data);
+                        
+          console.log('Extracted response text:', responseText);
           webhookSuccess = true;
         } else {
-          console.error('n8n webhook error:', response.status, response.statusText);
-          console.error('Response text:', await response.text());
+          console.error('n8n webhook error response:', response.status, response.statusText);
+          // Try to get error details
+          const errorText = await response.text();
+          console.error('Response error text:', errorText);
           throw new Error(`n8n webhook error: ${response.statusText}`);
         }
       } catch (error) {
@@ -245,8 +257,8 @@ const AiAssistant = () => {
     } catch (error) {
       console.error('Error processing query:', error);
       toast({
-        title: "Query Processing Error",
-        description: error instanceof Error ? error.message : "Failed to process your request",
+        title: "Request Error",
+        description: error instanceof Error ? error.message : "Unable to process your request right now",
         variant: "destructive",
       });
       setResponse("I'm sorry, I couldn't process your request at this time. Please try again later.");
