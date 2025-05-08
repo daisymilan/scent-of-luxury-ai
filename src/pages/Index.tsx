@@ -5,7 +5,7 @@ import DashboardHeader from '@/components/DashboardHeader';
 import KpiOverview from '@/components/KpiOverview';
 import B2BLeadGeneration from '@/components/B2BLeadGeneration';
 import SEODashboard from '@/components/SEODashboard';
-import AbandonedCartRecovery from '@/components/AbandonedCartRecovery';
+import AbandonedCartRecovery from '@/components/AbandonedCartRecovery'; // Path is unchanged, we'll use index.tsx
 import AiAssistant from '@/components/AiAssistant';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
