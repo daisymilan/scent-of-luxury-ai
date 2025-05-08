@@ -10,6 +10,9 @@ import RecoveryStats from './RecoveryStats';
 import AbandonedCartList from './AbandonedCartList';
 import RecoveryAutomations from './RecoveryAutomations';
 import { processAbandonedCartData, AbandonedCart, calculateRecoveryStats } from './utils';
+import { useQuery } from '@tanstack/react-query';
+import { WOO_API_BASE_URL, WOO_API_AUTH_PARAMS } from '@/utils/woocommerceApi';
+import { useToast } from '@/hooks/use-toast';
 
 interface AbandonedCartRecoveryProps {
   wooOrders?: WooOrder[] | null;
@@ -23,11 +26,113 @@ const AbandonedCartRecovery = ({
   wooProducts 
 }: AbandonedCartRecoveryProps) => {
   const [activeTab, setActiveTab] = useState('active');
+  const { toast } = useToast();
+
+  // If props aren't provided, fetch the data directly
+  const { data: fetchedOrders } = useQuery({
+    queryKey: ['abandonedCartOrders'],
+    queryFn: async () => {
+      // Only fetch if props weren't provided
+      if (wooOrders) return wooOrders;
+      
+      try {
+        const response = await fetch(
+          `${WOO_API_BASE_URL}/orders?status=pending,on-hold&per_page=100&${WOO_API_AUTH_PARAMS}`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          }
+        );
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error fetching abandoned cart orders:', error);
+        toast({
+          title: "Data Fetch Error",
+          description: "Could not load abandoned cart data from WooCommerce.",
+          variant: "destructive",
+        });
+        return null;
+      }
+    },
+    enabled: !wooOrders,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  const { data: fetchedCustomers } = useQuery({
+    queryKey: ['abandonedCartCustomers'],
+    queryFn: async () => {
+      // Only fetch if props weren't provided
+      if (wooCustomers) return wooCustomers;
+      
+      try {
+        const response = await fetch(
+          `${WOO_API_BASE_URL}/customers?per_page=100&${WOO_API_AUTH_PARAMS}`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          }
+        );
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error fetching customers for abandoned carts:', error);
+        return null;
+      }
+    },
+    enabled: !wooCustomers,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+
+  const { data: fetchedProducts } = useQuery({
+    queryKey: ['abandonedCartProducts'],
+    queryFn: async () => {
+      // Only fetch if props weren't provided
+      if (wooProducts) return wooProducts;
+      
+      try {
+        const response = await fetch(
+          `${WOO_API_BASE_URL}/products?per_page=100&${WOO_API_AUTH_PARAMS}`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          }
+        );
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error fetching products for abandoned carts:', error);
+        return null;
+      }
+    },
+    enabled: !wooProducts,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+
+  // Use either the props or the fetched data
+  const orders = wooOrders || fetchedOrders;
+  const customers = wooCustomers || fetchedCustomers;
+  const products = wooProducts || fetchedProducts;
 
   // Process WooCommerce data to identify abandoned carts
   const processedCarts = useMemo(() => {
-    return processAbandonedCartData(wooOrders, wooCustomers, wooProducts, abandonedCarts);
-  }, [wooOrders, wooCustomers, wooProducts]);
+    return processAbandonedCartData(orders, customers, products, abandonedCarts);
+  }, [orders, customers, products]);
   
   // Calculate recovery stats
   const recoveryStats = useMemo(() => {

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import DashboardHeader from '@/components/DashboardHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,12 +7,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import WooCommerceConfig from '@/components/WooCommerceConfig';
 import N8nConfig from '@/components/N8nConfig';
 import GrokConfig from '@/components/GrokConfig';
-import { useWooProducts, useWooOrders, useWooStats, getWooCommerceConfig } from '@/utils/woocommerceApi';
+import { useWooProducts, useWooOrders, useWooStats, getWooCommerceConfig, WOO_API_BASE_URL, WOO_API_AUTH_PARAMS } from '@/utils/woocommerceApi';
 import { getGrokApiConfig } from '@/utils/grokApi';
 import { getN8nConfig } from '@/components/N8nConfig';
 import { useAuth } from '@/contexts/AuthContext';
 import KpiOverview from '@/components/KpiOverview';
 import { ShoppingCart, Search, Zap, Webhook } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 const ReportsPage = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -19,6 +21,31 @@ const ReportsPage = () => {
   const isWooConfigured = !!getWooCommerceConfig();
   const isGrokConfigured = !!getGrokApiConfig();
   const isN8nConfigured = !!getN8nConfig();
+
+  // Additional API data fetching for reports
+  const { data: reportStats, isLoading: isLoadingReportStats } = useQuery({
+    queryKey: ['wooReportStats'],
+    queryFn: async () => {
+      try {
+        const response = await fetch(`${WOO_API_BASE_URL}/reports/sales?period=month&${WOO_API_AUTH_PARAMS}`, {
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error fetching report stats:', error);
+        return null;
+      }
+    },
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    enabled: isWooConfigured,
+  });
   
   // Only fetch data if WooCommerce is configured
   const { stats, isLoading: isLoadingStats } = isWooConfigured ? useWooStats('week') : { stats: null, isLoading: false };

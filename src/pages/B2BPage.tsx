@@ -7,10 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { WooCustomer, WooOrder, WooProduct } from '@/lib/mockData';
 import { useToast } from '@/hooks/use-toast';
-
-// WooCommerce API endpoints - updated to staging environment
-const API_BASE_URL = 'https://staging.min.com/int/wp-json/wc/v3';
-const API_CREDENTIALS = 'Basic ' + btoa('ck_83b6276178dfd425fb2618461bfb02aad3fd6d67:cs_a9ffe2c31156740acaa6dc82c50489717cb6d4d7');
+import { WOO_API_BASE_URL, WOO_API_CREDENTIALS, WOO_API_AUTH_PARAMS } from '@/utils/woocommerceApi';
 
 // Column mapping for B2B leads import
 export const B2BColumnMapping = {
@@ -39,15 +36,14 @@ const B2BPage = () => {
   const [activeTab, setActiveTab] = useState('leads');
   const { toast } = useToast();
 
-  // Fetch customers from WooCommerce API
+  // Fetch customers from WooCommerce API using query parameters
   const { data: customers, isLoading: isLoadingCustomers } = useQuery({
     queryKey: ['wooCustomers'],
     queryFn: async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/customers?per_page=100`, {
+        const response = await fetch(`${WOO_API_BASE_URL}/customers?per_page=100&${WOO_API_AUTH_PARAMS}`, {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': API_CREDENTIALS
           }
         });
         
@@ -73,10 +69,9 @@ const B2BPage = () => {
     queryKey: ['wooOrders'],
     queryFn: async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/orders?per_page=100`, {
+        const response = await fetch(`${WOO_API_BASE_URL}/orders?per_page=100&${WOO_API_AUTH_PARAMS}`, {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': API_CREDENTIALS
           }
         });
         
@@ -102,10 +97,9 @@ const B2BPage = () => {
     queryKey: ['wooProducts'],
     queryFn: async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/products?per_page=100`, {
+        const response = await fetch(`${WOO_API_BASE_URL}/products?per_page=100&${WOO_API_AUTH_PARAMS}`, {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': API_CREDENTIALS
           }
         });
         

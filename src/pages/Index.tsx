@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -6,14 +5,11 @@ import DashboardHeader from '@/components/DashboardHeader';
 import KpiOverview from '@/components/KpiOverview';
 import B2BLeadGeneration from '@/components/B2BLeadGeneration';
 import SEODashboard from '@/components/SEODashboard';
-import AbandonedCartRecovery from '@/components/AbandonedCartRecovery'; 
+import AbandonedCartRecovery from '@/components/AbandonedCartRecovery';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { WooCustomer, WooOrder, WooProduct } from '@/lib/mockData';
-
-// WooCommerce API endpoints
-const API_BASE_URL = 'https://min.com/int/wp-json/wc/v3';
-const API_CREDENTIALS = 'Basic ' + btoa('ck_8448b85f1bb94d4dd33539f9533fd338d50e781c:cs_703141faee85294cdddd88fd14dc2151d00a7aab');
+import { WOO_API_BASE_URL, WOO_API_AUTH_PARAMS } from '@/utils/woocommerceApi';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -25,10 +21,9 @@ const Index = () => {
     queryKey: ['wooCustomers'],
     queryFn: async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/customers?per_page=100`, {
+        const response = await fetch(`${WOO_API_BASE_URL}/customers?per_page=100&${WOO_API_AUTH_PARAMS}`, {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': API_CREDENTIALS
           }
         });
         
@@ -56,10 +51,9 @@ const Index = () => {
     queryKey: ['wooOrders'],
     queryFn: async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/orders?per_page=100`, {
+        const response = await fetch(`${WOO_API_BASE_URL}/orders?per_page=100&${WOO_API_AUTH_PARAMS}`, {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': API_CREDENTIALS
           }
         });
         
@@ -87,10 +81,9 @@ const Index = () => {
     queryKey: ['wooProducts'],
     queryFn: async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/products?per_page=100`, {
+        const response = await fetch(`${WOO_API_BASE_URL}/products?per_page=100&${WOO_API_AUTH_PARAMS}`, {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': API_CREDENTIALS
           }
         });
         

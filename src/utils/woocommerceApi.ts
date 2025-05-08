@@ -1,4 +1,3 @@
-
 /**
  * WooCommerce API utility for interacting with the WooCommerce REST API
  */
@@ -19,6 +18,11 @@ export const HARDCODED_WOO_CONFIG: WooCommerceConfig | null = {
   consumerSecret: 'cs_a9ffe2c31156740acaa6dc82c50489717cb6d4d7',
   version: '3'
 };
+
+// Export constants for direct use in components
+export const WOO_API_BASE_URL = 'https://staging.min.com/int/wp-json/wc/v3';
+export const WOO_API_CREDENTIALS = 'Basic ' + btoa(`${HARDCODED_WOO_CONFIG.consumerKey}:${HARDCODED_WOO_CONFIG.consumerSecret}`);
+export const WOO_API_AUTH_PARAMS = `consumer_key=${HARDCODED_WOO_CONFIG.consumerKey}&consumer_secret=${HARDCODED_WOO_CONFIG.consumerSecret}`;
 
 // Store credentials in localStorage (temporary solution)
 export const saveWooCommerceConfig = (config: WooCommerceConfig) => {
@@ -143,16 +147,13 @@ export const fetchWooCommerceData = async <T,>(
   endpoint: string,
   config: WooCommerceConfig
 ): Promise<T> => {
-  // WooCommerce REST API requires OAuth 1.0a signature
-  // For browser-based requests, we'll use basic auth (less secure but simpler)
-  const credentials = btoa(`${config.consumerKey}:${config.consumerSecret}`);
-  
+  // Try both authentication methods
   try {
+    // First try query parameter authentication (more reliable for some servers)
     const response = await fetch(
-      `${config.url}/wp-json/wc/v${config.version}/${endpoint}`,
+      `${config.url}/wp-json/wc/v${config.version}/${endpoint}${endpoint.includes('?') ? '&' : '?'}consumer_key=${config.consumerKey}&consumer_secret=${config.consumerSecret}`,
       {
         headers: {
-          'Authorization': `Basic ${credentials}`,
           'Content-Type': 'application/json',
         },
       }
@@ -164,8 +165,30 @@ export const fetchWooCommerceData = async <T,>(
     
     return await response.json();
   } catch (error) {
-    console.error('WooCommerce API fetch error:', error);
-    throw error;
+    console.error('WooCommerce API fetch error with query params:', error);
+    
+    // Fall back to Basic Auth if query params fail
+    try {
+      const credentials = btoa(`${config.consumerKey}:${config.consumerSecret}`);
+      const response = await fetch(
+        `${config.url}/wp-json/wc/v${config.version}/${endpoint}`,
+        {
+          headers: {
+            'Authorization': `Basic ${credentials}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error(`WooCommerce API error: ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (secondError) {
+      console.error('WooCommerce API fetch error with basic auth:', secondError);
+      throw secondError;
+    }
   }
 };
 
