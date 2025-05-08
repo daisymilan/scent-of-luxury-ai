@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -156,7 +155,11 @@ const Index = () => {
             </TabsContent>
             
             <TabsContent value="cart" className="space-y-6">
-              <AbandonedCartRecovery />
+              <AbandonedCartRecovery 
+                wooCustomers={customers}
+                wooOrders={orders}
+                wooProducts={products}
+              />
             </TabsContent>
           </Tabs>
         </div>

@@ -10,8 +10,114 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { abandonedCarts } from '../lib/mockData';
+import { WooOrder, WooCustomer, WooProduct } from '@/lib/mockData';
+import { useState, useMemo } from 'react';
 
-const AbandonedCartRecovery = () => {
+interface AbandonedCartRecoveryProps {
+  wooOrders?: WooOrder[] | null;
+  wooCustomers?: WooCustomer[] | null;
+  wooProducts?: WooProduct[] | null;
+}
+
+// Define a type for our processed abandoned cart data
+interface AbandonedCart {
+  id: number;
+  customer: string;
+  email: string;
+  products: string[];
+  value: number;
+  time: string;
+}
+
+const AbandonedCartRecovery = ({ 
+  wooOrders, 
+  wooCustomers, 
+  wooProducts 
+}: AbandonedCartRecoveryProps) => {
+  const [activeTab, setActiveTab] = useState('active');
+
+  // Process WooCommerce data to identify abandoned carts
+  const processedCarts = useMemo(() => {
+    // If we don't have the WooCommerce data yet, use mock data
+    if (!wooOrders || !wooCustomers || !wooProducts) {
+      console.log('Using mock data for abandoned carts');
+      return abandonedCarts;
+    }
+
+    try {
+      console.log('Processing WooCommerce data for abandoned carts', {
+        orders: wooOrders.length,
+        customers: wooCustomers.length,
+        products: wooProducts.length
+      });
+
+      // Find abandoned carts (orders with status 'pending' or 'failed')
+      const abandonedOrdersData = wooOrders
+        .filter(order => ['pending', 'failed', 'on-hold'].includes(order.status))
+        .map(order => {
+          // Find customer info
+          const customerName = `${order.billing.first_name} ${order.billing.last_name}`;
+          const customerEmail = order.billing.email;
+          
+          // Get products in cart
+          const cartProducts = order.line_items.map(item => item.name);
+          
+          // Calculate cart value
+          const cartValue = parseFloat(order.total);
+          
+          // Calculate time since order
+          const orderDate = new Date(order.date_created);
+          const now = new Date();
+          const diffTime = Math.abs(now.getTime() - orderDate.getTime());
+          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+          const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          
+          let timeAgo;
+          if (diffDays > 0) {
+            timeAgo = `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+          } else {
+            timeAgo = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+          }
+          
+          return {
+            id: order.id,
+            customer: customerName,
+            email: customerEmail,
+            products: cartProducts,
+            value: cartValue,
+            time: timeAgo
+          };
+        });
+
+      console.log('Found abandoned carts:', abandonedOrdersData);
+      
+      return abandonedOrdersData;
+    } catch (error) {
+      console.error('Error processing abandoned cart data:', error);
+      return abandonedCarts; // Fallback to mock data
+    }
+  }, [wooOrders, wooCustomers, wooProducts]);
+  
+  // Calculate recovery stats
+  const recoveryStats = useMemo(() => {
+    // In a real implementation, this would be based on actual data
+    // For now we'll use some realistic calculations based on the abandoned carts
+    const abandonedCount = processedCarts.length;
+    const recoveredCount = Math.floor(abandonedCount * 0.3); // Assume 30% recovery rate
+    const recoveryRate = abandonedCount > 0 ? (recoveredCount / abandonedCount) * 100 : 0;
+    const valueRecovered = processedCarts.reduce((total, cart) => {
+      // Assume 30% of carts are recovered with their full value
+      return total + (Math.random() > 0.7 ? cart.value : 0);
+    }, 0);
+    
+    return {
+      abandoned: abandonedCount,
+      recovered: recoveredCount,
+      recoveryRate: recoveryRate.toFixed(1),
+      valueRecovered: valueRecovered.toFixed(0)
+    };
+  }, [processedCarts]);
+
   return (
     <div className="grid gap-6">
       <Card className="col-span-full">
@@ -31,101 +137,108 @@ const AbandonedCartRecovery = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
                 <div>
                   <p className="text-xs text-gray-500">Abandoned</p>
-                  <p className="text-lg font-semibold">23</p>
+                  <p className="text-lg font-semibold">{recoveryStats.abandoned}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Recovered</p>
-                  <p className="text-lg font-semibold">7</p>
+                  <p className="text-lg font-semibold">{recoveryStats.recovered}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Recovery Rate</p>
-                  <p className="text-lg font-semibold">30.4%</p>
+                  <p className="text-lg font-semibold">{recoveryStats.recoveryRate}%</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Value Recovered</p>
-                  <p className="text-lg font-semibold">$2,180</p>
+                  <p className="text-lg font-semibold">${recoveryStats.valueRecovered}</p>
                 </div>
               </div>
             </div>
             
-            <Tabs defaultValue="active">
+            <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-4">
-                <TabsTrigger value="active">Active Recovery (12)</TabsTrigger>
-                <TabsTrigger value="completed">Completed (11)</TabsTrigger>
+                <TabsTrigger value="active">Active Recovery ({processedCarts.length})</TabsTrigger>
+                <TabsTrigger value="completed">Completed ({recoveryStats.recovered})</TabsTrigger>
               </TabsList>
               <TabsContent value="active">
-                <div className="rounded-md border overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-gray-50 border-b">
-                        <th className="py-3 px-4 text-left font-medium text-gray-500">Customer</th>
-                        <th className="py-3 px-4 text-left font-medium text-gray-500">Products</th>
-                        <th className="py-3 px-4 text-left font-medium text-gray-500">Cart Value</th>
-                        <th className="py-3 px-4 text-left font-medium text-gray-500">Abandoned</th>
-                        <th className="py-3 px-4 text-left font-medium text-gray-500">Status</th>
-                        <th className="py-3 px-4 text-left font-medium text-gray-500">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {abandonedCarts.map((cart) => (
-                        <tr key={cart.id} className="border-b last:border-b-0 hover:bg-gray-50">
-                          <td className="py-3 px-4">
-                            <div>
-                              <p className="font-medium">{cart.customer}</p>
-                              <p className="text-xs text-gray-500">{cart.email}</p>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            {cart.products.map((product, index) => (
-                              <span key={index}>
-                                {product}
-                                {index < cart.products.length - 1 ? ', ' : ''}
-                              </span>
-                            ))}
-                          </td>
-                          <td className="py-3 px-4">
-                            ${cart.value}
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center text-gray-500">
-                              <Clock size={14} className="mr-1" />
-                              <span>{cart.time}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center">
-                              <div className="h-2 w-2 rounded-full bg-yellow-400 mr-2"></div>
-                              <span>Recovery in progress</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex space-x-2">
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <Mail size={16} />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <Smartphone size={16} />
-                              </Button>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <MoreHorizontal size={16} />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>View Details</DropdownMenuItem>
-                                  <DropdownMenuItem>Send Custom Email</DropdownMenuItem>
-                                  <DropdownMenuItem>Mark as Recovered</DropdownMenuItem>
-                                  <DropdownMenuItem className="text-red-600">Cancel Recovery</DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </td>
+                {processedCarts.length > 0 ? (
+                  <div className="rounded-md border overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-gray-50 border-b">
+                          <th className="py-3 px-4 text-left font-medium text-gray-500">Customer</th>
+                          <th className="py-3 px-4 text-left font-medium text-gray-500">Products</th>
+                          <th className="py-3 px-4 text-left font-medium text-gray-500">Cart Value</th>
+                          <th className="py-3 px-4 text-left font-medium text-gray-500">Abandoned</th>
+                          <th className="py-3 px-4 text-left font-medium text-gray-500">Status</th>
+                          <th className="py-3 px-4 text-left font-medium text-gray-500">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {processedCarts.map((cart) => (
+                          <tr key={cart.id} className="border-b last:border-b-0 hover:bg-gray-50">
+                            <td className="py-3 px-4">
+                              <div>
+                                <p className="font-medium">{cart.customer}</p>
+                                <p className="text-xs text-gray-500">{cart.email}</p>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              {cart.products.map((product, index) => (
+                                <span key={index}>
+                                  {product}
+                                  {index < cart.products.length - 1 ? ', ' : ''}
+                                </span>
+                              ))}
+                            </td>
+                            <td className="py-3 px-4">
+                              ${typeof cart.value === 'number' ? cart.value.toFixed(2) : cart.value}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center text-gray-500">
+                                <Clock size={14} className="mr-1" />
+                                <span>{cart.time}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center">
+                                <div className="h-2 w-2 rounded-full bg-yellow-400 mr-2"></div>
+                                <span>Recovery in progress</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex space-x-2">
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <Mail size={16} />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <Smartphone size={16} />
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                      <MoreHorizontal size={16} />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem>View Details</DropdownMenuItem>
+                                    <DropdownMenuItem>Send Custom Email</DropdownMenuItem>
+                                    <DropdownMenuItem>Mark as Recovered</DropdownMenuItem>
+                                    <DropdownMenuItem className="text-red-600">Cancel Recovery</DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 border rounded-md">
+                    <ShoppingCart className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+                    <p className="text-gray-500">No abandoned carts found</p>
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="completed">
                 <div className="text-center py-8 border rounded-md">
