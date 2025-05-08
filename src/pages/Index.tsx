@@ -49,7 +49,7 @@ const Index = () => {
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes - updated from cacheTime to gcTime
   });
 
   // Fetch orders from WooCommerce API with optimized caching
@@ -80,7 +80,7 @@ const Index = () => {
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes - updated from cacheTime to gcTime
   });
 
   // Fetch products with optimized caching
@@ -111,7 +111,7 @@ const Index = () => {
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes - updated from cacheTime to gcTime
   });
 
   // This function helps lazy-load components based on active tab
