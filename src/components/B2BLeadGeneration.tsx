@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Check, Mail, MessageSquare, Plus, Search, BarChart3, Calendar, TagIcon, Map, Upload } from 'lucide-react';
@@ -750,4 +751,20 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
                     </div>
                     <div className="p-4">
                       <div className="flex justify-between mb-1">
-                        <span className="text-sm font-medium">Phone Call
+                        <span className="text-sm font-medium">Phone Call</span>
+                        <span className="text-xs text-gray-500">May 8, 2025</span>
+                      </div>
+                      <p className="text-sm text-gray-600">Discussed partnership possibilities and next steps.</p>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default B2BLeadGeneration;
