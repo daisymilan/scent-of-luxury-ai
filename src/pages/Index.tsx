@@ -134,7 +134,9 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
             <div>
-              <h1 className="text-3xl font-semibold">{user?.role} Dashboard</h1>
+              <h1 className="text-3xl font-semibold">
+                <span className="text-primary">MiN NEW YORK</span> {user?.role} Dashboard
+              </h1>
               <p className="text-gray-500">Welcome back to your MiN NEW YORK command center, {user?.name}</p>
             </div>
             <div className="mt-4 sm:mt-0">

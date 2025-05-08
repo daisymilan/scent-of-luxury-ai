@@ -42,8 +42,9 @@ const DashboardHeader = () => {
             <img 
               src="/lovable-uploads/e6e84936-32d0-4228-be3a-6432509ca2b9.png" 
               alt="MiN NEW YORK" 
-              className="h-8 mr-2"
+              className="h-10 mr-3"
             />
+            <span className="font-semibold text-lg tracking-wide hidden md:block">MiN NEW YORK</span>
           </Link>
           
           {/* Desktop Navigation Menu */}
@@ -120,12 +121,13 @@ const DashboardHeader = () => {
             </SheetTrigger>
             <SheetContent side="left" className="w-72 bg-white">
               <SheetHeader className="mb-6">
-                <SheetTitle className="flex justify-center">
+                <SheetTitle className="flex flex-col items-center gap-2">
                   <img 
                     src="/lovable-uploads/e6e84936-32d0-4228-be3a-6432509ca2b9.png" 
                     alt="MiN NEW YORK" 
-                    className="h-6"
+                    className="h-8"
                   />
+                  <span className="font-semibold text-lg tracking-wide">MiN NEW YORK</span>
                 </SheetTitle>
               </SheetHeader>
               <div className="flex flex-col space-y-3">
