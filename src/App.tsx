@@ -20,6 +20,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
 import SocialMediaAdsPage from "./pages/SocialMediaAdsPage";
 import ReorderReminderPage from "./pages/ReorderReminderPage";
+import AiAssistant from "./components/AiAssistant";
 
 const queryClient = new QueryClient();
 
@@ -100,6 +101,7 @@ const App = () => (
           </Routes>
           <Toaster />
           <Sonner />
+          <AiAssistant />
         </TooltipProvider>
       </AuthProvider>
     </BrowserRouter>

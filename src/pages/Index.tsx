@@ -7,7 +7,6 @@ import KpiOverview from '@/components/KpiOverview';
 import B2BLeadGeneration from '@/components/B2BLeadGeneration';
 import SEODashboard from '@/components/SEODashboard';
 import AbandonedCartRecovery from '@/components/AbandonedCartRecovery'; 
-import AiAssistant from '@/components/AiAssistant';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { WooCustomer, WooOrder, WooProduct } from '@/lib/mockData';
@@ -194,8 +193,6 @@ const Index = () => {
           </Tabs>
         </div>
       </main>
-      
-      <AiAssistant />
     </div>
   );
 };
