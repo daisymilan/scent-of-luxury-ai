@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from 'react';
-import { Check, Mail, MessageSquare, Plus, Search, BarChart3, Calendar, TagIcon, Map } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Check, Mail, MessageSquare, Plus, Search, BarChart3, Calendar, TagIcon, Map, Upload } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,9 +17,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import B2BLeadImport from './B2BLeadImport';
+import { B2BLead, mergeLeadSources } from '@/utils/b2bUtils';
 
 // Type definitions for B2B leads
-interface B2BLead {
+interface B2BLeadDisplay {
   id: number;
   company: string;
   contact: string;
@@ -53,14 +55,15 @@ interface B2BLeadGenerationProps {
 const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGenerationProps) => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLead, setSelectedLead] = useState<B2BLead | null>(null);
+  const [selectedLead, setSelectedLead] = useState<B2BLeadDisplay | null>(null);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [sequenceModalOpen, setSequenceModalOpen] = useState(false);
   const [leadDetailModalOpen, setLeadDetailModalOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [leads, setLeads] = useState<B2BLead[]>([]);
+  const [leads, setLeads] = useState<B2BLeadDisplay[]>([]);
   const [leadDetailsTab, setLeadDetailsTab] = useState('overview');
   
   // Outreach sequence state
@@ -172,11 +175,11 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
     lead.location?.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  const handleLeadSelect = (lead: B2BLead) => {
+  const handleLeadSelect = (lead: B2BLeadDisplay) => {
     setSelectedLead(lead);
   };
   
-  const handleViewLeadDetails = (lead: B2BLead) => {
+  const handleViewLeadDetails = (lead: B2BLeadDisplay) => {
     setSelectedLead(lead);
     setLeadDetailModalOpen(true);
   };
@@ -261,15 +264,50 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
     });
     // This would open a modal for adding a new lead
   };
+
+  const handleImportLeads = () => {
+    setImportModalOpen(true);
+  };
+  
+  const handleImportSuccess = (importedLeads: Partial<B2BLead>[]) => {
+    // Convert imported B2BLeads to the format used by the component
+    const newLeads = importedLeads.map((lead, index) => {
+      return {
+        id: Date.now() + index, // Generate unique id
+        company: lead.companyName || 'Unknown Company',
+        contact: lead.contactName || 'Unknown Contact',
+        email: lead.contactEmail || '',
+        status: 'New Lead',
+        score: lead.score || 50,
+        notes: lead.notes || '',
+        industry: lead.industry || 'Retail',
+        location: lead.location || 'Unknown',
+        productInterests: [],
+      } as B2BLeadDisplay;
+    });
+    
+    // Add the new leads to the existing ones
+    setLeads(prevLeads => [...newLeads, ...prevLeads]);
+    
+    toast({
+      title: "Import complete",
+      description: `${newLeads.length} leads have been imported successfully`,
+    });
+  };
   
   return (
     <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
       <Card className="col-span-full lg:col-span-2">
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <CardTitle className="text-lg font-medium">B2B Lead Management</CardTitle>
-          <Button className="h-9" size="sm" onClick={handleAddNewLead}>
-            <Plus size={16} className="mr-1" /> Add Lead
-          </Button>
+          <div className="flex space-x-2">
+            <Button variant="outline" className="h-9" size="sm" onClick={handleImportLeads}>
+              <Upload size={16} className="mr-1" /> Import CSV
+            </Button>
+            <Button className="h-9" size="sm" onClick={handleAddNewLead}>
+              <Plus size={16} className="mr-1" /> Add Lead
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="relative mb-4">
@@ -453,7 +491,12 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
         </CardContent>
       </Card>
 
-      {/* Custom Email Modal */}
+      <B2BLeadImport 
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onImportSuccess={handleImportSuccess}
+      />
+
       <Dialog open={emailModalOpen} onOpenChange={setEmailModalOpen}>
         <DialogContent className="sm:max-w-[525px]">
           <DialogHeader>
@@ -496,7 +539,6 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
         </DialogContent>
       </Dialog>
 
-      {/* Edit Sequence Modal */}
       <Dialog open={sequenceModalOpen} onOpenChange={setSequenceModalOpen}>
         <DialogContent className="sm:max-w-[525px]">
           <DialogHeader>
@@ -545,7 +587,6 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
         </DialogContent>
       </Dialog>
 
-      {/* Lead Details Modal */}
       <Dialog open={leadDetailModalOpen} onOpenChange={setLeadDetailModalOpen}>
         <DialogContent className="sm:max-w-[700px]">
           <DialogHeader>
@@ -709,37 +750,4 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
                     </div>
                     <div className="p-4">
                       <div className="flex justify-between mb-1">
-                        <span className="text-sm font-medium">Phone Call</span>
-                        <span className="text-xs text-gray-500">May 4, 2025</span>
-                      </div>
-                      <p className="text-sm text-gray-600">Discussed product lineup and wholesale pricing.</p>
-                    </div>
-                    <div className="p-4">
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm font-medium">Samples Sent</span>
-                        <span className="text-xs text-gray-500">May 1, 2025</span>
-                      </div>
-                      <p className="text-sm text-gray-600">Sent sample kit with 5 fragrances.</p>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          )}
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setLeadDetailModalOpen(false)}>Close</Button>
-            <Button onClick={() => {
-              setLeadDetailModalOpen(false);
-              handleSendCustomEmail();
-            }}>
-              <Mail size={16} className="mr-2" /> Contact Lead
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
-
-export default B2BLeadGeneration;
+                        <span className="text-sm font-medium">Phone Call
