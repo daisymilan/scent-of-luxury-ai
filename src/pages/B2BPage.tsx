@@ -1,10 +1,111 @@
 
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import DashboardHeader from '@/components/DashboardHeader';
 import B2BLeadGeneration from '@/components/B2BLeadGeneration';
 import N8nConfig from '@/components/N8nConfig';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2 } from 'lucide-react';
+import { WooCustomer, WooOrder, WooProduct } from '@/lib/mockData';
+import { useToast } from '@/hooks/use-toast';
+
+// WooCommerce API endpoints
+const API_BASE_URL = 'https://min.com/int/wp-json/wc/v3';
+const API_CREDENTIALS = 'Basic ' + btoa('ck_8448b85f1bb94d4dd33539f9533fd338d50e781c:cs_703141faee85294cdddd88fd14dc2151d00a7aab');
 
 const B2BPage = () => {
+  const [activeTab, setActiveTab] = useState('leads');
+  const { toast } = useToast();
+
+  // Fetch customers from WooCommerce API
+  const { data: customers, isLoading: isLoadingCustomers } = useQuery({
+    queryKey: ['wooCustomers'],
+    queryFn: async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/customers?per_page=100`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': API_CREDENTIALS
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        return await response.json() as WooCustomer[];
+      } catch (error) {
+        console.error('Error fetching customers:', error);
+        toast({
+          title: "Data Fetch Error",
+          description: "Could not load customer data from WooCommerce. Using fallback data.",
+          variant: "destructive",
+        });
+        return null;
+      }
+    }
+  });
+
+  // Fetch orders from WooCommerce API
+  const { data: orders, isLoading: isLoadingOrders } = useQuery({
+    queryKey: ['wooOrders'],
+    queryFn: async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/orders?per_page=100`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': API_CREDENTIALS
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        return await response.json() as WooOrder[];
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+        toast({
+          title: "Data Fetch Error",
+          description: "Could not load order data from WooCommerce. Using fallback data.",
+          variant: "destructive",
+        });
+        return null;
+      }
+    }
+  });
+
+  // Fetch products from WooCommerce API
+  const { data: products, isLoading: isLoadingProducts } = useQuery({
+    queryKey: ['wooProducts'],
+    queryFn: async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/products?per_page=100`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': API_CREDENTIALS
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        return await response.json() as WooProduct[];
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        toast({
+          title: "Data Fetch Error",
+          description: "Could not load product data from WooCommerce. Using fallback data.",
+          variant: "destructive",
+        });
+        return null;
+      }
+    }
+  });
+
+  const isLoading = isLoadingCustomers || isLoadingOrders || isLoadingProducts;
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <DashboardHeader />
@@ -18,22 +119,33 @@ const B2BPage = () => {
             </div>
             <div className="mt-4 sm:mt-0">
               <span className="text-sm text-gray-500 mr-2">Last updated:</span>
-              <span className="text-sm font-medium">May 6, 2025, 10:24 AM</span>
+              <span className="text-sm font-medium">May 8, 2025, {new Date().toLocaleTimeString()}</span>
             </div>
           </div>
           
-          <Tabs defaultValue="leads" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="leads">Lead Management</TabsTrigger>
-              <TabsTrigger value="automation">Automation Config</TabsTrigger>
-            </TabsList>
-            <TabsContent value="leads">
-              <B2BLeadGeneration />
-            </TabsContent>
-            <TabsContent value="automation">
-              <N8nConfig />
-            </TabsContent>
-          </Tabs>
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center p-12">
+              <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
+              <p className="text-gray-500">Loading B2B data from WooCommerce...</p>
+            </div>
+          ) : (
+            <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="leads">Lead Management</TabsTrigger>
+                <TabsTrigger value="automation">Automation Config</TabsTrigger>
+              </TabsList>
+              <TabsContent value="leads">
+                <B2BLeadGeneration 
+                  wooCustomers={customers} 
+                  wooOrders={orders} 
+                  wooProducts={products} 
+                />
+              </TabsContent>
+              <TabsContent value="automation">
+                <N8nConfig />
+              </TabsContent>
+            </Tabs>
+          )}
         </div>
       </main>
     </div>

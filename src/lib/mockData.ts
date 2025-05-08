@@ -43,12 +43,78 @@ export const marketingPerformance = {
   ]
 };
 
+// B2B leads with expanded data for WooCommerce integration
 export const b2bLeads = [
-  { id: 1, company: 'Luxury Boutiques Inc.', contact: 'Sarah Miller', email: 'sarah@luxuryboutiques.com', status: 'New Lead', score: 87 },
-  { id: 2, company: 'Heritage Hotels', contact: 'James Wilson', email: 'jwilson@heritagehotels.com', status: 'Contacted', score: 92 },
-  { id: 3, company: 'Elite Spas Network', contact: 'Emma Thompson', email: 'emma@elitespas.com', status: 'Negotiating', score: 76 },
-  { id: 4, company: 'Prestige Retail Group', contact: 'Michael Chen', email: 'mchen@prestigeretail.com', status: 'New Lead', score: 81 },
-  { id: 5, company: 'Azure Resorts', contact: 'Diana Lopez', email: 'diana@azureresorts.com', status: 'Interested', score: 89 },
+  { 
+    id: 1, 
+    company: 'Luxury Boutiques Inc.', 
+    contact: 'Sarah Miller', 
+    email: 'sarah@luxuryboutiques.com', 
+    status: 'New Lead', 
+    score: 87,
+    lastOrder: null,
+    totalSpent: 0,
+    notes: 'Initial contact from trade show',
+    industry: 'Retail',
+    location: 'New York, USA',
+    productInterests: ['Dune Fragrance', 'Velvet Noir']
+  },
+  { 
+    id: 2, 
+    company: 'Heritage Hotels', 
+    contact: 'James Wilson', 
+    email: 'jwilson@heritagehotels.com', 
+    status: 'Contacted', 
+    score: 92,
+    lastOrder: '2025-04-01',
+    totalSpent: 4250,
+    notes: 'Interested in custom hotel amenities',
+    industry: 'Hospitality',
+    location: 'London, UK',
+    productInterests: ['Hotel Collection', 'Custom Blends']
+  },
+  { 
+    id: 3, 
+    company: 'Elite Spas Network', 
+    contact: 'Emma Thompson', 
+    email: 'emma@elitespas.com', 
+    status: 'Negotiating', 
+    score: 76,
+    lastOrder: '2025-03-15',
+    totalSpent: 2800,
+    notes: 'Negotiations for spa-exclusive collection',
+    industry: 'Wellness',
+    location: 'Los Angeles, USA',
+    productInterests: ['Wellness Collection', 'Amber Woods']
+  },
+  { 
+    id: 4, 
+    company: 'Prestige Retail Group', 
+    contact: 'Michael Chen', 
+    email: 'mchen@prestigeretail.com', 
+    status: 'New Lead', 
+    score: 81,
+    lastOrder: null,
+    totalSpent: 0,
+    notes: 'Referral from Luxury Boutiques Inc.',
+    industry: 'Retail',
+    location: 'Toronto, Canada',
+    productInterests: ['Moon Elixir', 'Dune Fragrance']
+  },
+  { 
+    id: 5, 
+    company: 'Azure Resorts', 
+    contact: 'Diana Lopez', 
+    email: 'diana@azureresorts.com', 
+    status: 'Interested', 
+    score: 89,
+    lastOrder: '2025-02-20',
+    totalSpent: 6750,
+    notes: 'Interested in resort-wide implementation',
+    industry: 'Hospitality',
+    location: 'Miami, USA',
+    productInterests: ['Hotel Collection', 'Custom Packaging']
+  },
 ];
 
 export const abandonedCarts = [
@@ -72,3 +138,55 @@ export const seoPerformance = {
     { url: '/product/moon-elixir', traffic: 1640, conversion: 4.8 },
   ]
 };
+
+// WooCommerce API integration types for B2B
+export interface WooCustomer {
+  id: number;
+  date_created: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  billing: {
+    company: string;
+    address_1: string;
+    city: string;
+    state: string;
+    postcode: string;
+    country: string;
+    email: string;
+    phone: string;
+  };
+  meta_data: Array<{
+    key: string;
+    value: string;
+  }>;
+}
+
+export interface WooOrder {
+  id: number;
+  status: string;
+  date_created: string;
+  customer_id: number;
+  billing: {
+    first_name: string;
+    last_name: string;
+    company: string;
+    email: string;
+  };
+  total: string;
+  line_items: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+  }>;
+}
+
+export interface WooProduct {
+  id: number;
+  name: string;
+  price: string;
+  stock_quantity: number;
+  images: Array<{
+    src: string;
+  }>;
+}

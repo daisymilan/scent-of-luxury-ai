@@ -1,10 +1,10 @@
 
-import { useState } from 'react';
-import { Check, Mail, MessageSquare, Plus, Search } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Check, Mail, MessageSquare, Plus, Search, BarChart3, Calendar, TagIcon, Map } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { b2bLeads } from '../lib/mockData';
+import { b2bLeads, WooCustomer, WooOrder, WooProduct } from '../lib/mockData';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,23 +16,52 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+// Type definitions for B2B leads
+interface B2BLead {
+  id: number;
+  company: string;
+  contact: string;
+  email: string;
+  status: string;
+  score: number;
+  lastOrder?: string | null;
+  totalSpent?: number;
+  notes?: string;
+  industry?: string;
+  location?: string;
+  productInterests?: string[];
+}
+
+// Status color mapping
 const statusColors = {
   'New Lead': 'bg-blue-100 text-blue-800',
   'Contacted': 'bg-yellow-100 text-yellow-800',
   'Interested': 'bg-green-100 text-green-800',
   'Negotiating': 'bg-purple-100 text-purple-800',
+  'Customer': 'bg-emerald-100 text-emerald-800',
+  'Lost': 'bg-gray-100 text-gray-800',
 };
 
-const B2BLeadGeneration = () => {
+interface B2BLeadGenerationProps {
+  wooCustomers: WooCustomer[] | null;
+  wooOrders: WooOrder[] | null;
+  wooProducts: WooProduct[] | null;
+}
+
+const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGenerationProps) => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLead, setSelectedLead] = useState<typeof b2bLeads[0] | null>(null);
+  const [selectedLead, setSelectedLead] = useState<B2BLead | null>(null);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [sequenceModalOpen, setSequenceModalOpen] = useState(false);
+  const [leadDetailModalOpen, setLeadDetailModalOpen] = useState(false);
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [leads, setLeads] = useState<B2BLead[]>([]);
+  const [leadDetailsTab, setLeadDetailsTab] = useState('overview');
   
   // Outreach sequence state
   const [sequence, setSequence] = useState([
@@ -41,13 +70,115 @@ const B2BLeadGeneration = () => {
     { id: 3, name: 'Final Follow-up', status: 'scheduled', scheduledDate: 'Next week' },
   ]);
   
-  const filteredLeads = b2bLeads.filter(lead => 
+  // Process WooCommerce data into leads if available
+  useEffect(() => {
+    if (wooCustomers && wooOrders) {
+      try {
+        // Process WooCommerce customers into leads
+        const processedLeads = wooCustomers
+          .filter(customer => customer.billing?.company) // Only include customers with company names (B2B)
+          .map(customer => {
+            // Find all orders for this customer
+            const customerOrders = wooOrders.filter(order => order.customer_id === customer.id);
+            
+            // Calculate total spent
+            const totalSpent = customerOrders.reduce((sum, order) => {
+              return sum + parseFloat(order.total || '0');
+            }, 0);
+            
+            // Get last order date
+            const lastOrder = customerOrders.length > 0 
+              ? new Date(customerOrders.sort((a, b) => 
+                new Date(b.date_created).getTime() - new Date(a.date_created).getTime()
+              )[0].date_created).toISOString().split('T')[0]
+              : null;
+              
+            // Determine lead status based on order history
+            let status = 'New Lead';
+            if (customerOrders.length > 0) {
+              status = 'Customer';
+            }
+            
+            // Calculate lead score (simple algorithm - can be enhanced)
+            let score = 50; // Base score
+            
+            // Increase score based on order history
+            if (customerOrders.length > 5) score += 20;
+            else if (customerOrders.length > 0) score += customerOrders.length * 4;
+            
+            // Increase score based on total spent
+            if (totalSpent > 10000) score += 20;
+            else if (totalSpent > 5000) score += 15;
+            else if (totalSpent > 1000) score += 10;
+            else if (totalSpent > 0) score += 5;
+            
+            // Cap score at 100
+            score = Math.min(100, score);
+            
+            // Extract industry from meta_data if available
+            const industryMeta = customer.meta_data?.find(meta => meta.key === 'industry');
+            const industry = industryMeta ? industryMeta.value : 'Retail';
+            
+            // Format location from address details
+            const location = customer.billing?.city && customer.billing?.country 
+              ? `${customer.billing.city}, ${customer.billing.country}`
+              : 'Unknown';
+              
+            return {
+              id: customer.id,
+              company: customer.billing?.company || 'Unknown Company',
+              contact: `${customer.first_name} ${customer.last_name}`,
+              email: customer.billing?.email || customer.email,
+              status,
+              score,
+              lastOrder,
+              totalSpent,
+              notes: '',
+              industry,
+              location,
+              productInterests: []
+            };
+          });
+          
+        // If we have real data and it's not empty, use it; otherwise fallback to mock data
+        if (processedLeads.length > 0) {
+          console.log('Using WooCommerce data for B2B leads:', processedLeads);
+          setLeads(processedLeads);
+        } else {
+          console.log('No B2B customers found in WooCommerce, using fallback data');
+          setLeads(b2bLeads);
+        }
+      } catch (error) {
+        console.error('Error processing WooCommerce data:', error);
+        toast({
+          title: "Data Processing Error",
+          description: "Error processing WooCommerce data. Using fallback data.",
+          variant: "destructive",
+        });
+        setLeads(b2bLeads);
+      }
+    } else {
+      // Use mock data as fallback
+      console.log('No WooCommerce data available, using fallback data');
+      setLeads(b2bLeads);
+    }
+  }, [wooCustomers, wooOrders, toast]);
+  
+  const filteredLeads = leads.filter(lead => 
     lead.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    lead.contact.toLowerCase().includes(searchQuery.toLowerCase())
+    lead.contact.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    lead.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    lead.industry?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    lead.location?.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  const handleLeadSelect = (lead: typeof b2bLeads[0]) => {
+  const handleLeadSelect = (lead: B2BLead) => {
     setSelectedLead(lead);
+  };
+  
+  const handleViewLeadDetails = (lead: B2BLead) => {
+    setSelectedLead(lead);
+    setLeadDetailModalOpen(true);
   };
   
   const handleSendCustomEmail = () => {
@@ -122,13 +253,21 @@ const B2BLeadGeneration = () => {
       step.id === id ? { ...step, [field]: value } : step
     ));
   };
+
+  const handleAddNewLead = () => {
+    toast({
+      title: "Feature in development",
+      description: "The ability to add new leads will be available soon.",
+    });
+    // This would open a modal for adding a new lead
+  };
   
   return (
     <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
       <Card className="col-span-full lg:col-span-2">
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
-          <CardTitle className="text-lg font-medium">B2B Lead Generation</CardTitle>
-          <Button className="h-9" size="sm">
+          <CardTitle className="text-lg font-medium">B2B Lead Management</CardTitle>
+          <Button className="h-9" size="sm" onClick={handleAddNewLead}>
             <Plus size={16} className="mr-1" /> Add Lead
           </Button>
         </CardHeader>
@@ -137,7 +276,7 @@ const B2BLeadGeneration = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
             <Input
               type="text"
-              placeholder="Search leads..."
+              placeholder="Search leads by company, contact, email, industry or location..."
               className="pl-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -156,60 +295,75 @@ const B2BLeadGeneration = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredLeads.map((lead) => (
-                  <tr 
-                    key={lead.id} 
-                    className="border-b last:border-b-0 hover:bg-gray-50 cursor-pointer"
-                    onClick={() => handleLeadSelect(lead)}
-                  >
-                    <td className="py-3 px-4">{lead.company}</td>
-                    <td className="py-3 px-4">{lead.contact}</td>
-                    <td className="py-3 px-4">
-                      <Badge variant="outline" className={`${statusColors[lead.status as keyof typeof statusColors]}`}>
-                        {lead.status}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center">
-                        <div className="w-10 bg-gray-200 rounded-full h-1.5 mr-2">
-                          <div 
-                            className={`h-1.5 rounded-full ${
-                              lead.score >= 80 ? 'bg-green-500' : 
-                              lead.score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                            }`} 
-                            style={{ width: `${lead.score}%` }}
-                          ></div>
+                {filteredLeads.length > 0 ? (
+                  filteredLeads.map((lead) => (
+                    <tr 
+                      key={lead.id} 
+                      className={`border-b last:border-b-0 hover:bg-gray-50 cursor-pointer ${selectedLead?.id === lead.id ? 'bg-gray-50' : ''}`}
+                      onClick={() => handleLeadSelect(lead)}
+                    >
+                      <td className="py-3 px-4">{lead.company}</td>
+                      <td className="py-3 px-4">{lead.contact}</td>
+                      <td className="py-3 px-4">
+                        <Badge variant="outline" className={`${statusColors[lead.status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}>
+                          {lead.status}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center">
+                          <div className="w-10 bg-gray-200 rounded-full h-1.5 mr-2">
+                            <div 
+                              className={`h-1.5 rounded-full ${
+                                lead.score >= 80 ? 'bg-green-500' : 
+                                lead.score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                              }`} 
+                              style={{ width: `${lead.score}%` }}
+                            ></div>
+                          </div>
+                          <span>{lead.score}</span>
                         </div>
-                        <span>{lead.score}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex space-x-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                          <Mail size={16} />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                          <MessageSquare size={16} />
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <svg width="15" height="3" viewBox="0 0 15 3" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M1.5 1.5H13.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
-                              </svg>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>Edit Lead</DropdownMenuItem>
-                            <DropdownMenuItem>Mark as Contacted</DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex space-x-2">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedLead(lead);
+                            handleSendCustomEmail();
+                          }}>
+                            <Mail size={16} />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewLeadDetails(lead);
+                          }}>
+                            <BarChart3 size={16} />
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <svg width="15" height="3" viewBox="0 0 15 3" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M1.5 1.5H13.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+                                </svg>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleViewLeadDetails(lead)}>View Details</DropdownMenuItem>
+                              <DropdownMenuItem>Edit Lead</DropdownMenuItem>
+                              <DropdownMenuItem>Mark as Contacted</DropdownMenuItem>
+                              <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="py-6 text-center text-gray-500">
+                      {searchQuery ? 'No leads match your search criteria.' : 'No leads available.'}
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -227,6 +381,21 @@ const B2BLeadGeneration = () => {
                 <h3 className="font-medium mb-1">{selectedLead.company}</h3>
                 <p className="text-sm text-gray-600">{selectedLead.contact}</p>
                 <p className="text-sm text-gray-600">{selectedLead.email}</p>
+                {selectedLead.industry && (
+                  <div className="mt-2 flex items-center text-sm text-gray-600">
+                    <TagIcon size={14} className="mr-1" /> {selectedLead.industry}
+                  </div>
+                )}
+                {selectedLead.location && (
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Map size={14} className="mr-1" /> {selectedLead.location}
+                  </div>
+                )}
+                {selectedLead.lastOrder && (
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Calendar size={14} className="mr-1" /> Last order: {selectedLead.lastOrder}
+                  </div>
+                )}
               </div>
               
               <div>
@@ -372,6 +541,200 @@ const B2BLeadGeneration = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setSequenceModalOpen(false)}>Cancel</Button>
             <Button onClick={handleUpdateSequence}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Lead Details Modal */}
+      <Dialog open={leadDetailModalOpen} onOpenChange={setLeadDetailModalOpen}>
+        <DialogContent className="sm:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle>Lead Details: {selectedLead?.company}</DialogTitle>
+            <DialogDescription>
+              Detailed information about this B2B lead and their interaction history.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedLead && (
+            <Tabs value={leadDetailsTab} onValueChange={setLeadDetailsTab} className="w-full">
+              <TabsList className="grid grid-cols-3 mb-4">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="orders">Orders</TabsTrigger>
+                <TabsTrigger value="interactions">Interactions</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="overview" className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm text-gray-500">Company</Label>
+                    <p className="font-medium">{selectedLead.company}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm text-gray-500">Contact</Label>
+                    <p className="font-medium">{selectedLead.contact}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm text-gray-500">Email</Label>
+                    <p className="font-medium">{selectedLead.email}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm text-gray-500">Status</Label>
+                    <p>
+                      <Badge variant="outline" className={`mt-1 ${statusColors[selectedLead.status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}>
+                        {selectedLead.status}
+                      </Badge>
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm text-gray-500">Industry</Label>
+                    <p className="font-medium">{selectedLead.industry || "Unknown"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm text-gray-500">Location</Label>
+                    <p className="font-medium">{selectedLead.location || "Unknown"}</p>
+                  </div>
+                </div>
+                
+                <div>
+                  <Label className="text-sm text-gray-500">Score</Label>
+                  <div className="flex items-center mt-1">
+                    <div className="w-full h-2 bg-gray-200 rounded-full mr-2">
+                      <div 
+                        className={`h-2 rounded-full ${
+                          selectedLead.score >= 80 ? 'bg-green-500' : 
+                          selectedLead.score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                        }`} 
+                        style={{ width: `${selectedLead.score}%` }}
+                      ></div>
+                    </div>
+                    <span className="font-medium">{selectedLead.score}</span>
+                  </div>
+                </div>
+                
+                {selectedLead.productInterests && selectedLead.productInterests.length > 0 && (
+                  <div>
+                    <Label className="text-sm text-gray-500">Product Interests</Label>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {selectedLead.productInterests.map((product, index) => (
+                        <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700">
+                          {product}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <div>
+                  <Label className="text-sm text-gray-500">Notes</Label>
+                  <Textarea 
+                    value={selectedLead.notes || ''} 
+                    placeholder="Add notes about this lead..."
+                    className="mt-1"
+                  />
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="orders">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <Label className="text-sm text-gray-500">Total Spent</Label>
+                      <p className="font-medium text-lg">€{selectedLead.totalSpent?.toLocaleString() || '0'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm text-gray-500">Last Order</Label>
+                      <p className="font-medium">{selectedLead.lastOrder || 'No orders yet'}</p>
+                    </div>
+                  </div>
+                  
+                  {selectedLead.totalSpent ? (
+                    <div className="border rounded-md overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-gray-50 border-b">
+                            <th className="py-2 px-4 text-left font-medium text-gray-500">Date</th>
+                            <th className="py-2 px-4 text-left font-medium text-gray-500">Order ID</th>
+                            <th className="py-2 px-4 text-left font-medium text-gray-500">Amount</th>
+                            <th className="py-2 px-4 text-left font-medium text-gray-500">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {wooOrders && wooOrders
+                            .filter(order => order.customer_id === selectedLead.id)
+                            .sort((a, b) => new Date(b.date_created).getTime() - new Date(a.date_created).getTime())
+                            .slice(0, 5)
+                            .map((order) => (
+                              <tr key={order.id} className="border-b last:border-b-0">
+                                <td className="py-2 px-4">{new Date(order.date_created).toLocaleDateString()}</td>
+                                <td className="py-2 px-4">#{order.id}</td>
+                                <td className="py-2 px-4">€{parseFloat(order.total).toLocaleString()}</td>
+                                <td className="py-2 px-4">
+                                  <Badge variant="outline" className={
+                                    order.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                    order.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-yellow-100 text-yellow-800'
+                                  }>
+                                    {order.status}
+                                  </Badge>
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 border rounded-md">
+                      <p className="text-gray-500">No order history available.</p>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="interactions">
+                <div className="space-y-4">
+                  <div className="flex justify-between">
+                    <h3 className="font-medium">Contact History</h3>
+                    <Button size="sm" variant="outline">
+                      <Plus size={14} className="mr-1" /> Log Interaction
+                    </Button>
+                  </div>
+                  
+                  <div className="border rounded-md divide-y">
+                    <div className="p-4">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm font-medium">Initial Outreach Email</span>
+                        <span className="text-xs text-gray-500">May 6, 2025</span>
+                      </div>
+                      <p className="text-sm text-gray-600">Sent introduction email about partnership opportunities.</p>
+                    </div>
+                    <div className="p-4">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm font-medium">Phone Call</span>
+                        <span className="text-xs text-gray-500">May 4, 2025</span>
+                      </div>
+                      <p className="text-sm text-gray-600">Discussed product lineup and wholesale pricing.</p>
+                    </div>
+                    <div className="p-4">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm font-medium">Samples Sent</span>
+                        <span className="text-xs text-gray-500">May 1, 2025</span>
+                      </div>
+                      <p className="text-sm text-gray-600">Sent sample kit with 5 fragrances.</p>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLeadDetailModalOpen(false)}>Close</Button>
+            <Button onClick={() => {
+              setLeadDetailModalOpen(false);
+              handleSendCustomEmail();
+            }}>
+              <Mail size={16} className="mr-2" /> Contact Lead
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
