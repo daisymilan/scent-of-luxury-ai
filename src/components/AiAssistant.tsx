@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Mic, Play, ChevronDown, X, Volume2, PauseCircle, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -346,16 +345,16 @@ const AiAssistant = () => {
       <div className="p-4 max-h-96 overflow-y-auto bg-gray-50">
         {isWebhookFailed && (
           <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
-            Could not connect to webhook. Using fallback response.
+            Could not connect to our servers. Using alternative response method.
           </div>
         )}
       
         {displayedQuery && (
           <div className="flex items-start justify-end mb-4">
-            <div className="bg-primary bg-opacity-10 p-3 rounded-lg max-w-[85%]">
+            <div className="bg-blue-100 p-3 rounded-lg max-w-[85%] text-gray-800">
               <p className="text-sm">{displayedQuery}</p>
             </div>
-            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center ml-2">
+            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center ml-2 text-white">
               <User size={16} />
             </div>
           </div>
@@ -369,7 +368,7 @@ const AiAssistant = () => {
             <div className="bg-white p-3 rounded-lg shadow-sm">
               <div className="flex space-x-1 items-center">
                 <Loader2 size={12} className="animate-spin text-gray-400" />
-                <span className="text-sm text-gray-500">Connecting to webhook...</span>
+                <span className="text-sm text-gray-500">Getting your answer ready...</span>
               </div>
             </div>
           </div>
@@ -381,7 +380,7 @@ const AiAssistant = () => {
               <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white mr-2">
                 M
               </div>
-              <div className="bg-white p-3 rounded-lg shadow-sm max-w-[85%]">
+              <div className="bg-white p-3 rounded-lg shadow-sm max-w-[85%] text-gray-700">
                 <p className="text-sm">{response}</p>
               </div>
             </div>
