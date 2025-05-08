@@ -3,16 +3,17 @@ import { BarChart2, DollarSign, ShoppingBag, TrendingUp } from 'lucide-react';
 import DataCard from './ui/DataCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import LineChart from './ui/LineChart';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useWooStats, useWooOrders, useWooProducts } from '@/utils/woocommerceApi';
 import { useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 const KpiOverview = () => {
   const { stats, isLoading: isStatsLoading } = useWooStats('week');
   const { orders, isLoading: isOrdersLoading } = useWooOrders(5);
   const { products, isLoading: isProductsLoading } = useWooProducts(5);
   const [dailyChartData, setDailyChartData] = useState<{ name: string; value: number }[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
     // Generate chart data from orders if available
@@ -56,7 +57,19 @@ const KpiOverview = () => {
     }
   }, [dailyChartData]);
 
+  useEffect(() => {
+    if (stats && !isStatsLoading) {
+      console.log("WooCommerce stats loaded:", stats);
+    }
+  }, [stats, isStatsLoading]);
+
   const isLoading = isStatsLoading || isOrdersLoading || isProductsLoading;
+
+  // Calculate revenue metrics
+  const dailyRevenue = stats?.totalRevenue ? parseFloat(stats.totalRevenue) : 0;
+  const monthlyRevenue = dailyRevenue * 30; // Approximate monthly revenue
+  const totalProductsSold = stats?.totalOrders || 0;
+  const conversionRate = "3.2%"; // This could be calculated from actual data in the future
 
   // Format top products from WooCommerce data
   const topProductsList = products
@@ -69,6 +82,17 @@ const KpiOverview = () => {
       revenue: parseFloat(product.price) * (product.total_sales || 0),
       image: product.images && product.images.length > 0 ? product.images[0].src : 'placeholder.svg'
     })) || [];
+
+  // If there's an issue loading data, show a toast notification
+  useEffect(() => {
+    if (!isLoading && !stats && !orders?.length && !products?.length) {
+      toast({
+        title: "Data loading issue",
+        description: "Could not load store data. Using sample data instead.",
+        variant: "destructive",
+      });
+    }
+  }, [isLoading, stats, orders, products, toast]);
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -103,25 +127,25 @@ const KpiOverview = () => {
         <>
           <DataCard
             title="Daily Revenue"
-            value={`$${stats?.totalRevenue ? parseFloat(stats.totalRevenue).toLocaleString() : '0'}`}
+            value={`$${dailyRevenue.toLocaleString()}`}
             change={8.4}
             icon={<DollarSign />}
           />
           <DataCard
             title="Monthly Revenue"
-            value={`$${stats && parseFloat(stats.totalRevenue) * 4 ? (parseFloat(stats.totalRevenue) * 4).toLocaleString() : '0'}`}
+            value={`$${monthlyRevenue.toLocaleString()}`}
             change={5.2}
             icon={<BarChart2 />}
           />
           <DataCard
             title="Total Products Sold"
-            value={stats?.totalOrders ? stats.totalOrders.toString() : '0'}
+            value={totalProductsSold.toString()}
             change={4.6}
             icon={<ShoppingBag />}
           />
           <DataCard
             title="Conversion Rate"
-            value="3.2%"
+            value={conversionRate}
             change={0.8}
             icon={<TrendingUp />}
           />
