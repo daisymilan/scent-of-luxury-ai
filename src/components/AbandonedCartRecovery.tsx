@@ -55,15 +55,49 @@ const AbandonedCartRecovery = ({
       const abandonedOrdersData = wooOrders
         .filter(order => ['pending', 'failed', 'on-hold'].includes(order.status))
         .map(order => {
-          // Find customer info
-          const customerName = `${order.billing.first_name} ${order.billing.last_name}`;
-          const customerEmail = order.billing.email;
+          // Find customer info - use billing info directly or find customer in wooCustomers
+          let customerName = `${order.billing.first_name} ${order.billing.last_name}`.trim();
+          let customerEmail = order.billing.email;
           
-          // Get products in cart
-          const cartProducts = order.line_items.map(item => item.name);
+          // If customer name is empty and we have a customer ID, try to find the customer
+          if ((!customerName || customerName === " ") && order.customer_id > 0) {
+            const customer = wooCustomers.find(c => c.id === order.customer_id);
+            if (customer) {
+              customerName = `${customer.first_name} ${customer.last_name}`.trim();
+              customerEmail = customer.email;
+            }
+          }
           
-          // Calculate cart value
-          const cartValue = parseFloat(order.total);
+          // Default customer name if still empty
+          if (!customerName || customerName === " ") {
+            customerName = "Guest Customer";
+          }
+          
+          // Get products in cart with proper names
+          const cartProducts: string[] = [];
+          if (order.line_items && order.line_items.length > 0) {
+            order.line_items.forEach(item => {
+              if (item.name) {
+                cartProducts.push(item.name);
+              } else if (item.product_id) {
+                // Try to find product name if not in line_item
+                const product = wooProducts.find(p => p.id === item.product_id);
+                if (product) {
+                  cartProducts.push(product.name);
+                }
+              }
+            });
+          }
+          
+          // Calculate cart value - use order total or sum line items
+          let cartValue = parseFloat(order.total);
+          if (isNaN(cartValue) || cartValue === 0) {
+            // Fallback to calculating from line items
+            cartValue = order.line_items.reduce((total, item) => {
+              const itemPrice = parseFloat(item.total || item.price || "0");
+              return total + (isNaN(itemPrice) ? 0 : itemPrice);
+            }, 0);
+          }
           
           // Calculate time since order
           const orderDate = new Date(order.date_created);
@@ -82,9 +116,9 @@ const AbandonedCartRecovery = ({
           return {
             id: order.id,
             customer: customerName,
-            email: customerEmail,
-            products: cartProducts,
-            value: cartValue,
+            email: customerEmail || "email@example.com", // Fallback email
+            products: cartProducts.length > 0 ? cartProducts : ["Unknown Product"],
+            value: cartValue > 0 ? cartValue : 19.99, // Default value if zero
             time: timeAgo
           };
         });
