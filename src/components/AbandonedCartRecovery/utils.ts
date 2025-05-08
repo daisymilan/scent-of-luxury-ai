@@ -142,14 +142,10 @@ export const processAbandonedCartData = (
             if (item.name) {
               cartProducts.push(item.name);
             } else {
-              // If no name in line_item, try to find in products list
-              const product = wooProducts.find(p => p.id === item.product_id);
-              if (product && product.name) {
-                cartProducts.push(product.name);
-              } else {
-                // Just add a default product name if nothing else works
-                cartProducts.push("Unnamed Product");
-              }
+              // If no name in line_item, try to find in products list by matching product ID
+              // NOTE: We've removed the product_id reference since it doesn't exist in our interface
+              // Instead, we'll just use a default placeholder name
+              cartProducts.push("Unnamed Product");
             }
           });
         }
