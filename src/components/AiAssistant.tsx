@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { Mic, Play, ChevronDown, X, Volume2, PauseCircle, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -5,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { callGrokApi, getGrokApiConfig } from '@/utils/grokApi';
+import { getN8nConfig } from '@/components/N8nConfig';
 
 const AiAssistant = () => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -26,10 +28,24 @@ const AiAssistant = () => {
   // Check if Grok is configured
   const [isGrokConfigured, setIsGrokConfigured] = useState(false);
   
+  // Check if n8n is configured
+  const [isN8nConfigured, setIsN8nConfigured] = useState(false);
+  const [n8nWebhookUrl, setN8nWebhookUrl] = useState<string>('');
+  
   // Initialize speech synthesis and recognition
   useEffect(() => {
     // Check Grok configuration
     setIsGrokConfigured(!!getGrokApiConfig());
+    
+    // Check n8n configuration
+    const n8nConfig = getN8nConfig();
+    setIsN8nConfigured(!!n8nConfig && !!n8nConfig.webhookUrl);
+    if (n8nConfig && n8nConfig.webhookUrl) {
+      setN8nWebhookUrl(n8nConfig.webhookUrl);
+    } else {
+      // Default webhook URL if not configured in n8n settings
+      setN8nWebhookUrl('https://minnewyorkofficial.app.n8n.cloud/webhook/ceo-dashboard');
+    }
     
     // Initialize speech synthesis
     speechSynthesisRef.current = window.speechSynthesis;
@@ -80,21 +96,27 @@ const AiAssistant = () => {
     };
   }, [toast]);
   
-  // Check for Grok config changes
+  // Check for Grok and n8n config changes
   useEffect(() => {
-    const checkGrokConfig = () => {
+    const checkConfigs = () => {
       setIsGrokConfigured(!!getGrokApiConfig());
+      
+      const n8nConfig = getN8nConfig();
+      setIsN8nConfigured(!!n8nConfig && !!n8nConfig.webhookUrl);
+      if (n8nConfig && n8nConfig.webhookUrl) {
+        setN8nWebhookUrl(n8nConfig.webhookUrl);
+      }
     };
     
     // Check initially
-    checkGrokConfig();
+    checkConfigs();
     
     // Set up event listener for storage changes
-    window.addEventListener('storage', checkGrokConfig);
+    window.addEventListener('storage', checkConfigs);
     
     // Cleanup
     return () => {
-      window.removeEventListener('storage', checkGrokConfig);
+      window.removeEventListener('storage', checkConfigs);
     };
   }, []);
 
@@ -130,7 +152,7 @@ const AiAssistant = () => {
     }
   };
 
-  // Function to call Grok API
+  // Function to call n8n webhook or fallback to Grok API
   const handleQuerySubmit = async (command?: string) => {
     const currentQuery = command || query;
     if (!currentQuery) return;
@@ -142,11 +164,52 @@ const AiAssistant = () => {
     try {
       let responseText;
       
-      if (isGrokConfigured) {
-        // Use the Grok API if configured
+      // First try the n8n webhook
+      if (n8nWebhookUrl) {
+        try {
+          console.log('Calling n8n webhook with query:', currentQuery);
+          const response = await fetch(n8nWebhookUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              query: currentQuery,
+              user: user ? {
+                role: user.role,
+                id: user.id,
+                name: user.name
+              } : {
+                role: 'Guest',
+                id: 'guest',
+                name: 'Guest User'
+              },
+              timestamp: new Date().toISOString()
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            responseText = data.response || data.message || data.answer;
+            console.log('n8n webhook response:', data);
+          } else {
+            console.error('n8n webhook error:', response.statusText);
+            throw new Error(`n8n webhook error: ${response.statusText}`);
+          }
+        } catch (error) {
+          console.error('Error calling n8n webhook:', error);
+          // If n8n webhook fails, try Grok or fallback
+          if (isGrokConfigured) {
+            responseText = await callGrokApi(currentQuery);
+          } else {
+            throw error;
+          }
+        }
+      } else if (isGrokConfigured) {
+        // Use the Grok API if configured and n8n is not available
         responseText = await callGrokApi(currentQuery);
       } else {
-        // Use mock implementation if Grok is not configured
+        // Use mock implementation if neither Grok nor n8n is configured
         const lowerCommand = currentQuery.toLowerCase();
         
         if (lowerCommand.includes('sales') || lowerCommand.includes('revenue')) {
@@ -157,12 +220,14 @@ const AiAssistant = () => {
           responseText = `Today we've received 37 new orders totaling $8,450. There are 5 pending shipments and 2 orders flagged for review due to potential fraud. Would you like details on those orders?`;
         } else if (lowerCommand.includes('marketing') || lowerCommand.includes('campaign')) {
           responseText = `The current Instagram campaign has reached 245,000 impressions with a 3.8% engagement rate. This is 0.7% above our benchmarks. The TikTok campaign is launching tomorrow. Would you like me to schedule a performance report for next week?`;
+        } else if (lowerCommand.includes('kpi')) {
+          responseText = `The latest KPIs show that revenue is at $345,000, which is 8% above target. Customer acquisition cost is down 12% at $32 per customer, and average order value increased by 5% to $175. Would you like to see the full KPI dashboard?`;
         } else {
-          responseText = `I understand you're asking about "${currentQuery}". As this is a demonstration, I can provide insights on sales, inventory, orders, and marketing campaigns. Please try asking about one of these areas.`;
+          responseText = `I understand you're asking about "${currentQuery}". As this is a demonstration, I can provide insights on sales, inventory, orders, KPIs, and marketing campaigns. Please try asking about one of these areas.`;
         }
       }
       
-      console.log('Received response from Grok API:', responseText);
+      console.log('Final AI response:', responseText);
       setResponse(responseText);
       
       // Clear the input field after submission if it was typed (not voice)
@@ -247,7 +312,7 @@ const AiAssistant = () => {
   return (
     <Card className="fixed bottom-6 right-6 w-96 shadow-xl border border-gray-200 rounded-xl overflow-hidden z-50">
       <div className="bg-primary text-white p-3 flex justify-between items-center">
-        <h3 className="font-semibold">Grok AI Assistant</h3>
+        <h3 className="font-semibold">MIN NEW YORK AI Assistant</h3>
         <div className="flex space-x-2">
           <Button 
             variant="ghost" 
@@ -269,9 +334,9 @@ const AiAssistant = () => {
       </div>
       
       <div className="p-4 max-h-96 overflow-y-auto bg-gray-50">
-        {!isGrokConfigured && (
+        {!n8nWebhookUrl && !isGrokConfigured && (
           <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
-            Grok API is not configured. Using simulated responses. Go to Reports &gt; Integrations &gt; Grok AI to configure the API.
+            Neither n8n nor Grok API is configured. Using simulated responses. Go to Integrations to configure the APIs.
           </div>
         )}
       
@@ -279,7 +344,7 @@ const AiAssistant = () => {
           <div className="mb-4">
             <div className="flex items-start mb-2">
               <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white mr-2">
-                G
+                M
               </div>
               <div className="bg-white p-3 rounded-lg shadow-sm max-w-[85%]">
                 <p className="text-sm">{response}</p>
@@ -312,7 +377,7 @@ const AiAssistant = () => {
         {isThinking && (
           <div className="flex items-start mb-4">
             <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white mr-2">
-              G
+              M
             </div>
             <div className="bg-white p-3 rounded-lg shadow-sm">
               <div className="flex space-x-1 items-center">
@@ -336,7 +401,7 @@ const AiAssistant = () => {
         )}
 
         <div className="mb-2 text-center text-sm text-gray-600">
-          <p>Try asking about: sales, inventory, orders, or marketing campaigns</p>
+          <p>Try asking about: sales, KPIs, inventory, orders, or marketing campaigns</p>
           {user?.role === 'CEO' && <p className="mt-1 text-xs opacity-75">Premium insights available for CEO role</p>}
         </div>
       </div>
