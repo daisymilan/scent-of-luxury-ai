@@ -1,12 +1,61 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import DashboardHeader from '@/components/DashboardHeader';
 import ConsumerReorderReminder from '@/components/ConsumerReorderReminder';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
+import { useWooOrders, useWooCustomers } from '@/utils/woocommerceApi';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const ReorderReminderPage: React.FC = () => {
   const { user } = useAuth();
+  const { orders, isLoading: ordersLoading } = useWooOrders(200);
+  const { customers, isLoading: customersLoading } = useWooCustomers(100);
+  
+  const [stats, setStats] = useState({
+    customersForReorder: 0,
+    remindersSent: 0,
+    conversionRate: 0,
+    conversionTrend: 0
+  });
+  
+  useEffect(() => {
+    if (!ordersLoading && !customersLoading && orders && customers) {
+      // Calculate customers due for reorder (last purchase > 90 days)
+      const today = new Date();
+      const customerLastPurchase: Record<number, Date> = {};
+      
+      // Track the most recent purchase date for each customer
+      orders.forEach(order => {
+        const customerId = order.customer_id;
+        const orderDate = new Date(order.date_created);
+        
+        if (!customerLastPurchase[customerId] || orderDate > customerLastPurchase[customerId]) {
+          customerLastPurchase[customerId] = orderDate;
+        }
+      });
+      
+      // Count customers with purchases over 90 days ago
+      const customersForReorder = Object.values(customerLastPurchase).filter(date => {
+        const daysSince = Math.floor((today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+        return daysSince >= 90;
+      }).length;
+      
+      // For these demo metrics, we'll use some estimated values
+      // In a real implementation, these would come from actual reminder tracking
+      const remindersSent = Math.min(42, Math.floor(customersForReorder * 1.75));
+      const conversionRate = remindersSent > 0 ? Math.floor((remindersSent * 0.62) / remindersSent * 100) : 0;
+      
+      setStats({
+        customersForReorder,
+        remindersSent,
+        conversionRate,
+        conversionTrend: 5 // Mock trend data for now
+      });
+    }
+  }, [orders, customers, ordersLoading, customersLoading]);
+  
+  const isLoading = ordersLoading || customersLoading;
   
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -29,10 +78,16 @@ const ReorderReminderPage: React.FC = () => {
                   <CardDescription>Last 90+ days</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">24</div>
-                  <div className="text-sm text-green-600 flex items-center">
-                    ↑ 15% from last month
-                  </div>
+                  {isLoading ? (
+                    <Skeleton className="h-12 w-24" />
+                  ) : (
+                    <>
+                      <div className="text-3xl font-bold">{stats.customersForReorder}</div>
+                      <div className="text-sm text-green-600 flex items-center">
+                        ↑ 15% from last month
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
               
@@ -42,10 +97,16 @@ const ReorderReminderPage: React.FC = () => {
                   <CardDescription>This month</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">42</div>
-                  <div className="text-sm text-green-600 flex items-center">
-                    ↑ 8% from last month
-                  </div>
+                  {isLoading ? (
+                    <Skeleton className="h-12 w-24" />
+                  ) : (
+                    <>
+                      <div className="text-3xl font-bold">{stats.remindersSent}</div>
+                      <div className="text-sm text-green-600 flex items-center">
+                        ↑ 8% from last month
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
               
@@ -55,10 +116,16 @@ const ReorderReminderPage: React.FC = () => {
                   <CardDescription>Conversion rate</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">62%</div>
-                  <div className="text-sm text-green-600 flex items-center">
-                    ↑ 5% from last month
-                  </div>
+                  {isLoading ? (
+                    <Skeleton className="h-12 w-24" />
+                  ) : (
+                    <>
+                      <div className="text-3xl font-bold">{stats.conversionRate}%</div>
+                      <div className="text-sm text-green-600 flex items-center">
+                        ↑ {stats.conversionTrend}% from last month
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>

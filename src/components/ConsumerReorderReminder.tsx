@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+import { useWooOrders, useWooCustomers, WooOrder, WooCustomer } from '@/utils/woocommerceApi';
 
 interface Customer {
   id: string;
@@ -21,54 +23,6 @@ interface Customer {
   purchaseCount: number;
 }
 
-const MOCK_CUSTOMERS: Customer[] = [
-  {
-    id: '1',
-    name: 'Jordan Smith',
-    email: 'j.smith@example.com',
-    lastPurchase: 'Moon Dust EDP 75ml',
-    lastPurchaseDate: '2025-03-10',
-    daysSince: 58,
-    purchaseCount: 3
-  },
-  {
-    id: '2',
-    name: 'Alex Wong',
-    email: 'alex.w@example.com',
-    lastPurchase: 'Dune EDP 50ml',
-    lastPurchaseDate: '2025-02-15',
-    daysSince: 81,
-    purchaseCount: 5
-  },
-  {
-    id: '3',
-    name: 'Taylor Johnson',
-    email: 'taylor@example.com',
-    lastPurchase: 'Coda EDP 75ml',
-    lastPurchaseDate: '2025-04-01',
-    daysSince: 36,
-    purchaseCount: 2
-  },
-  {
-    id: '4',
-    name: 'Jamie Rivera',
-    email: 'jamie.r@example.com',
-    lastPurchase: 'Dahab EDP 50ml',
-    lastPurchaseDate: '2024-12-12',
-    daysSince: 146,
-    purchaseCount: 8
-  },
-  {
-    id: '5',
-    name: 'Casey Lee',
-    email: 'casey.lee@example.com',
-    lastPurchase: 'Moon Dust EDP 75ml',
-    lastPurchaseDate: '2025-01-20',
-    daysSince: 107,
-    purchaseCount: 4
-  }
-];
-
 const ConsumerReorderReminder: React.FC = () => {
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   const [reminderType, setReminderType] = useState<string>('email');
@@ -78,8 +32,66 @@ const ConsumerReorderReminder: React.FC = () => {
   );
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const [sendingReminders, setSendingReminders] = useState<boolean>(false);
+  const [processedCustomers, setProcessedCustomers] = useState<Customer[]>([]);
   
   const { toast } = useToast();
+  
+  // Fetch orders and customers from WooCommerce API
+  const { orders, isLoading: isLoadingOrders } = useWooOrders(100); // Get up to 100 orders
+  const { customers, isLoading: isLoadingCustomers } = useWooCustomers(100); // Get up to 100 customers
+  
+  // Process the data to create our customer reorder list
+  useEffect(() => {
+    if (!isLoadingOrders && !isLoadingCustomers && orders && customers) {
+      // Map of customer ID to their purchase info
+      const customerPurchases: Record<number, {
+        lastPurchase: string;
+        lastPurchaseDate: string;
+        daysSince: number;
+        purchaseCount: number;
+      }> = {};
+      
+      // Process orders to get purchase information
+      orders.forEach(order => {
+        const customerId = order.customer_id;
+        const orderDate = new Date(order.date_created);
+        const today = new Date();
+        const daysSince = Math.floor((today.getTime() - orderDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Get the name of the first product in the order
+        const productName = order.line_items[0]?.name || "Unknown Product";
+        
+        if (!customerPurchases[customerId] || new Date(customerPurchases[customerId].lastPurchaseDate) < orderDate) {
+          // Update the last purchase info for this customer
+          customerPurchases[customerId] = {
+            lastPurchase: productName,
+            lastPurchaseDate: order.date_created,
+            daysSince: daysSince,
+            purchaseCount: customerPurchases[customerId]?.purchaseCount + 1 || 1
+          };
+        } else {
+          // Increment the purchase count
+          customerPurchases[customerId].purchaseCount += 1;
+        }
+      });
+      
+      // Combine with customer info
+      const processed: Customer[] = customers
+        .filter(customer => customerPurchases[customer.id]) // Only include customers with purchases
+        .map(customer => ({
+          id: customer.id.toString(),
+          name: `${customer.first_name} ${customer.last_name}`,
+          email: customer.email,
+          lastPurchase: customerPurchases[customer.id].lastPurchase,
+          lastPurchaseDate: customerPurchases[customer.id].lastPurchaseDate,
+          daysSince: customerPurchases[customer.id].daysSince,
+          purchaseCount: customerPurchases[customer.id].purchaseCount
+        }))
+        .sort((a, b) => b.daysSince - a.daysSince); // Sort by days since last purchase (descending)
+      
+      setProcessedCustomers(processed);
+    }
+  }, [orders, customers, isLoadingOrders, isLoadingCustomers]);
   
   const toggleCustomerSelection = (customerId: string) => {
     setSelectedCustomers(prev => 
@@ -90,7 +102,7 @@ const ConsumerReorderReminder: React.FC = () => {
   };
   
   const selectAllCustomers = () => {
-    setSelectedCustomers(MOCK_CUSTOMERS.map(c => c.id));
+    setSelectedCustomers(processedCustomers.map(c => c.id));
   };
   
   const clearSelection = () => {
@@ -114,6 +126,43 @@ const ConsumerReorderReminder: React.FC = () => {
     }, 1500);
   };
   
+  // If there's no data yet, show a loading state
+  if (isLoadingOrders || isLoadingCustomers) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Consumer Reorder Reminders</CardTitle>
+          <CardDescription>Loading customer data...</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-10">
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p>Fetching customer data from WooCommerce...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  // If we have no customers or orders, show an empty state
+  if (processedCustomers.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Consumer Reorder Reminders</CardTitle>
+          <CardDescription>No customer purchase data available</CardDescription>
+        </CardHeader>
+        <CardContent className="text-center py-10">
+          <p className="mb-4">There are no customers with purchase history to display.</p>
+          <p className="text-sm text-gray-500">
+            This could be because there are no orders in your WooCommerce store, 
+            or the orders don't have associated customer accounts.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+  
   return (
     <Card>
       <CardHeader>
@@ -127,7 +176,7 @@ const ConsumerReorderReminder: React.FC = () => {
               variant="outline" 
               size="sm" 
               onClick={selectAllCustomers}
-              disabled={selectedCustomers.length === MOCK_CUSTOMERS.length}
+              disabled={selectedCustomers.length === processedCustomers.length}
             >
               Select All
             </Button>
@@ -215,7 +264,7 @@ const ConsumerReorderReminder: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {MOCK_CUSTOMERS.map((customer) => (
+              {processedCustomers.map((customer) => (
                 <TableRow key={customer.id} className={selectedCustomers.includes(customer.id) ? 'bg-primary/5' : ''}>
                   <TableCell>
                     <div className="flex items-center justify-center">
@@ -236,7 +285,7 @@ const ConsumerReorderReminder: React.FC = () => {
                   <TableCell>
                     <div>
                       <p>{customer.lastPurchase}</p>
-                      <p className="text-xs text-gray-500">{customer.lastPurchaseDate}</p>
+                      <p className="text-xs text-gray-500">{new Date(customer.lastPurchaseDate).toLocaleDateString()}</p>
                     </div>
                   </TableCell>
                   <TableCell>{customer.daysSince} days</TableCell>
