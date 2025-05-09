@@ -440,7 +440,7 @@ const AiAssistant = () => {
                 M
               </div>
               <div className="bg-white p-3 rounded-lg shadow-sm max-w-[85%] text-gray-700 overflow-x-auto">
-                <pre className="text-sm font-mono whitespace-pre-wrap break-all">{response}</pre>
+                <pre className="text-sm font-mono whitespace-pre-line break-all">{response}</pre>
               </div>
             </div>
             <div className="flex justify-start ml-10 space-x-2">
