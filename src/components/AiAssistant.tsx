@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Mic, Play, ChevronDown, X, Volume2, PauseCircle, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,6 +14,7 @@ const AiAssistant = () => {
   const [query, setQuery] = useState('');
   const [displayedQuery, setDisplayedQuery] = useState('');
   const [response, setResponse] = useState('');
+  const [rawResponse, setRawResponse] = useState<any>(null);
   const [isThinking, setIsThinking] = useState(false);
   const [isWebhookFailed, setIsWebhookFailed] = useState(false);
   const { user } = useAuth();
@@ -157,6 +157,7 @@ const AiAssistant = () => {
     
     // Clear previous response and show thinking state
     setResponse('');
+    setRawResponse(null);
     setIsThinking(true);
     setIsWebhookFailed(false);
     
@@ -200,16 +201,21 @@ const AiAssistant = () => {
 
         if (response.ok) {
           console.log('n8n webhook response status:', response.status);
-          // Try to parse response as JSON
+          // Parse response as JSON
           const data = await response.json();
           console.log('n8n webhook full response:', data);
           
-          // Extract response from various possible property names
-          responseText = data.response || data.message || data.answer || 
-                        data.result || data.content || data.text || 
-                        JSON.stringify(data);
+          // Store the complete raw response
+          setRawResponse(data);
+          
+          // For speech synthesis and display, use a string representation
+          if (typeof data === 'object') {
+            responseText = JSON.stringify(data, null, 2);
+          } else {
+            responseText = String(data);
+          }
                         
-          console.log('Extracted response text:', responseText);
+          console.log('Raw response text:', responseText);
           webhookSuccess = true;
         } else {
           console.error('n8n webhook error response:', response.status, response.statusText);
@@ -225,7 +231,9 @@ const AiAssistant = () => {
         // If n8n webhook fails, try Grok or fallback
         if (isGrokConfigured) {
           console.log('Falling back to Grok API');
-          responseText = await callGrokApi(currentQuery);
+          const grokResponse = await callGrokApi(currentQuery);
+          responseText = grokResponse;
+          setRawResponse({ grok_fallback_response: grokResponse });
           webhookSuccess = true;
         } else {
           throw error;
@@ -236,20 +244,51 @@ const AiAssistant = () => {
       if (!webhookSuccess) {
         console.log('Using mock implementation');
         const lowerCommand = currentQuery.toLowerCase();
+        let mockResponse: any = {};
         
         if (lowerCommand.includes('sales') || lowerCommand.includes('revenue')) {
-          responseText = `Sales are up 12.4% compared to last month. The best performing product is Dune Fragrance with 128 units sold, generating $22,400 in revenue. Would you like a detailed breakdown by product category or sales channel?`;
+          mockResponse = {
+            type: "mock_response",
+            data: {
+              sales: {
+                total: 22400,
+                increase: "12.4%",
+                bestProduct: "Dune Fragrance",
+                unitsSold: 128
+              }
+            },
+            message: `Sales are up 12.4% compared to last month. The best performing product is Dune Fragrance with 128 units sold, generating $22,400 in revenue. Would you like a detailed breakdown by product category or sales channel?`
+          };
         } else if (lowerCommand.includes('inventory') || lowerCommand.includes('stock')) {
-          responseText = `Current inventory status: Moon Dust: 254 units, Dune: 128 units, Dahab: 89 units. The Las Vegas warehouse is running low on Moon Dust with only 28 units remaining. Should I prepare a reorder report?`;
-        } else if (lowerCommand.includes('order') || lowerCommand.includes('purchase')) {
-          responseText = `Today we've received 37 new orders totaling $8,450. There are 5 pending shipments and 2 orders flagged for review due to potential fraud. Would you like details on those orders?`;
-        } else if (lowerCommand.includes('marketing') || lowerCommand.includes('campaign')) {
-          responseText = `The current Instagram campaign has reached 245,000 impressions with a 3.8% engagement rate. This is 0.7% above our benchmarks. The TikTok campaign is launching tomorrow. Would you like me to schedule a performance report for next week?`;
-        } else if (lowerCommand.includes('kpi')) {
-          responseText = `The latest KPIs show that revenue is at $345,000, which is 8% above target. Customer acquisition cost is down 12% at $32 per customer, and average order value increased by 5% to $175. Would you like to see the full KPI dashboard?`;
+          mockResponse = {
+            type: "mock_response",
+            data: {
+              inventory: {
+                "Moon Dust": 254,
+                "Dune": 128,
+                "Dahab": 89
+              },
+              alerts: [
+                {
+                  product: "Moon Dust",
+                  location: "Las Vegas",
+                  quantity: 28,
+                  status: "low"
+                }
+              ]
+            },
+            message: `Current inventory status: Moon Dust: 254 units, Dune: 128 units, Dahab: 89 units. The Las Vegas warehouse is running low on Moon Dust with only 28 units remaining. Should I prepare a reorder report?`
+          };
         } else {
-          responseText = `I understand you're asking about "${currentQuery}". As this is a demonstration, I can provide insights on sales, inventory, orders, KPIs, and marketing campaigns. Please try asking about one of these areas.`;
+          mockResponse = {
+            type: "mock_response",
+            query: currentQuery,
+            message: `I understand you're asking about "${currentQuery}". As this is a demonstration, I can provide insights on sales, inventory, orders, KPIs, and marketing campaigns.`
+          };
         }
+        
+        responseText = JSON.stringify(mockResponse, null, 2);
+        setRawResponse(mockResponse);
       }
       
       console.log('Final AI response:', responseText);
@@ -261,7 +300,13 @@ const AiAssistant = () => {
         description: error instanceof Error ? error.message : "Unable to process your request right now",
         variant: "destructive",
       });
-      setResponse("I'm sorry, I couldn't process your request at this time. Please try again later.");
+      const errorResponse = {
+        error: true,
+        message: "I'm sorry, I couldn't process your request at this time. Please try again later.",
+        details: error instanceof Error ? error.message : "Unknown error"
+      };
+      setResponse(JSON.stringify(errorResponse, null, 2));
+      setRawResponse(errorResponse);
     } finally {
       setIsThinking(false);
     }
@@ -271,6 +316,7 @@ const AiAssistant = () => {
     setQuery('');
     setDisplayedQuery(''); 
     setResponse('');
+    setRawResponse(null);
     if (speechSynthesisRef.current) {
       speechSynthesisRef.current.cancel();
     }
@@ -319,6 +365,7 @@ const AiAssistant = () => {
     }
   };
 
+  // Collapsed view
   if (!isExpanded) {
     return (
       <Button 
@@ -392,8 +439,8 @@ const AiAssistant = () => {
               <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white mr-2">
                 M
               </div>
-              <div className="bg-white p-3 rounded-lg shadow-sm max-w-[85%] text-gray-700">
-                <p className="text-sm">{response}</p>
+              <div className="bg-white p-3 rounded-lg shadow-sm max-w-[85%] text-gray-700 overflow-x-auto">
+                <pre className="text-sm font-mono whitespace-pre-wrap break-all">{response}</pre>
               </div>
             </div>
             <div className="flex justify-start ml-10 space-x-2">

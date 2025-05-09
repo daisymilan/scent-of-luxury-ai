@@ -1,5 +1,5 @@
 
-import { WooOrder, WooCustomer } from '@/utils/woocommerceApi';
+import { WooOrder, WooCustomer } from '@/utils/woocommerce';
 
 export interface Customer {
   id: string;
