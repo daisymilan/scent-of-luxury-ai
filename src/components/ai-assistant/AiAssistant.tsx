@@ -15,7 +15,7 @@ import { AssistantFooter } from '@/components/ai-assistant/AssistantFooter';
 import { QueryInput } from '@/components/ai-assistant/QueryInput';
 import { AssistantToggles } from '@/components/ai-assistant/AssistantToggles';
 import { SuggestionLinks } from '@/components/ai-assistant/SuggestionLinks';
-import { createSpeechRecognition, checkSpeechRecognitionSupport } from '@/components/ai-assistant/SpeechRecognition';
+import { createSpeechRecognition, checkSpeechRecognitionSupport, SpeechSupportResult } from '@/components/ai-assistant/SpeechRecognition';
 import { useSpeechSynthesis } from '@/components/ai-assistant/useSpeechSynthesis';
 import { useWebhookCall } from '@/components/ai-assistant/useWebhookCall';
 import { getGrokApiConfig } from '@/utils/grokApi';
