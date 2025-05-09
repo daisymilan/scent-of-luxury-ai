@@ -57,6 +57,17 @@ const VoiceAuthComponent: React.FC = () => {
       setToken(storedToken);
       fetchDashboardData(storedToken);
     }
+    
+    // Ensure we have permission for microphone if needed
+    const checkMicrophonePermission = async () => {
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (error) {
+        console.log('Microphone permission not granted or not available');
+      }
+    };
+    
+    checkMicrophonePermission();
   }, []);
   
   const handleAuthResponse = async (response: any) => {

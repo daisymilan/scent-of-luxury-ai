@@ -43,7 +43,7 @@ const VoiceRecording: React.FC<VoiceRecordingProps> = ({ onProcessVoice, isProce
       micStreamRef.current = stream;
       
       // Setup audio context and analyser for visualizations
-      const audioContext = new AudioContext();
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       audioContextRef.current = audioContext;
       const analyser = audioContext.createAnalyser();
       analyserRef.current = analyser;

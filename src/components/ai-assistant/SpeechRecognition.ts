@@ -9,7 +9,7 @@ export type SpeechSupportResult = {
 
 // Function to check browser Speech Recognition support
 export function checkSpeechRecognitionSupport(): SpeechSupportResult {
-  // Simplifying the support check - if the browser has the API, consider it supported
+  // Check if the Web Speech API is available in this browser
   if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     return {
       isSupported: true,
@@ -41,46 +41,55 @@ export function createSpeechRecognition(handlers: {
     return null;
   }
 
-  // Create speech recognition instance
-  const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-  const recognition = new SpeechRecognition();
-  
-  // Configure recognition
-  recognition.continuous = false;
-  recognition.interimResults = false;
-  recognition.lang = 'en-US';
-  
-  // Set up event listeners
-  recognition.onresult = (event: any) => {
-    const transcript = event.results[0][0].transcript;
-    console.log('Voice recognized:', transcript);
-    handlers.onResult(transcript);
-  };
-  
-  recognition.onerror = (event: any) => {
-    console.error('Speech recognition error:', event.error);
-    handlers.onError(event);
-  };
-  
-  recognition.onend = () => {
-    handlers.onEnd();
-  };
-  
-  return {
-    start: () => {
-      try {
-        recognition.start();
-      } catch (e) {
-        console.error('Speech recognition start error:', e);
-        handlers.onError(e);
+  try {
+    // Create speech recognition instance
+    const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    // Configure recognition
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+    
+    // Set up event listeners
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      console.log('Voice recognized:', transcript);
+      handlers.onResult(transcript);
+    };
+    
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error:', event.error);
+      handlers.onError(event);
+    };
+    
+    recognition.onend = () => {
+      handlers.onEnd();
+    };
+    
+    return {
+      start: () => {
+        try {
+          recognition.start();
+        } catch (e) {
+          console.error('Speech recognition start error:', e);
+          handlers.onError(e);
+        }
+      },
+      stop: () => {
+        try {
+          recognition.stop();
+        } catch (e) {
+          console.log('Speech recognition was not started');
+        }
       }
-    },
-    stop: () => {
-      try {
-        recognition.stop();
-      } catch (e) {
-        console.log('Speech recognition was not started');
-      }
-    }
-  };
+    };
+  } catch (error) {
+    console.error('Error creating speech recognition:', error);
+    handlers.onError({
+      error: 'initialization-failed',
+      message: "Failed to initialize speech recognition"
+    });
+    return null;
+  }
 }

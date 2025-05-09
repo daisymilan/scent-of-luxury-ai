@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -87,6 +86,7 @@ const AiAssistant = () => {
     }
     
     // Initialize speech recognition 
+    console.log("Initializing speech recognition");
     recognitionRef.current = createSpeechRecognition({
       onResult: (transcript) => {
         console.log('Voice recognized:', transcript);
@@ -122,6 +122,7 @@ const AiAssistant = () => {
     // If recognition initialization fails, we'll need to update the support status
     if (!recognitionRef.current) {
       const supportResult = checkSpeechRecognitionSupport();
+      console.log("Speech recognition support check result:", supportResult);
       setSpeechSupport(supportResult);
       setShowSpeechAlert(!supportResult.isSupported);
     }
