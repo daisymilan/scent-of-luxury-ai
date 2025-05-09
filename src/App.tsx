@@ -20,7 +20,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
 import SocialMediaAdsPage from "./pages/SocialMediaAdsPage";
 import ReorderReminderPage from "./pages/ReorderReminderPage";
-import AiAssistant from "./components/AiAssistant";
+import AiAssistant from "./components/ai-assistant/AiAssistant";
 
 const queryClient = new QueryClient();
 
