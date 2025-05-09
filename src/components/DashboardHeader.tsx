@@ -44,10 +44,10 @@ const DashboardHeader = ({ title, heading }: DashboardHeaderProps = {}) => {
   const headerTitle = title || heading || '';
   
   return (
-    <header className="bg-white border-b border-gray-100 sticky top-0 z-30 backdrop-blur-sm bg-white/80">
+    <header className="bg-white border-b border-gray-100 sticky top-0 z-30 backdrop-blur-sm bg-white/90">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-        <div className="flex items-center">
-          <Link to="/" className="flex items-center mr-10">
+        <div className="flex items-center gap-8">
+          <Link to="/" className="flex items-center">
             <div className="font-cormorant text-2xl mr-3 border-r pr-3 border-gray-200">
               <span className="font-semibold tracking-wider">MiN</span>
               <span className="block -mt-1.5 text-xl tracking-widest">NEW YORK</span>
@@ -62,7 +62,7 @@ const DashboardHeader = ({ title, heading }: DashboardHeaderProps = {}) => {
           {/* Desktop Navigation Menu */}
           <div className="hidden md:block">
             <NavigationMenu>
-              <NavigationMenuList className="space-x-1">
+              <NavigationMenuList className="space-x-2">
                 <NavigationMenuItem>
                   <Link to="/" className={navigationMenuTriggerStyle() + " font-light uppercase text-xs tracking-wider"}>
                     Dashboard
@@ -141,42 +141,42 @@ const DashboardHeader = ({ title, heading }: DashboardHeaderProps = {}) => {
                 </SheetTitle>
               </SheetHeader>
               <div className="flex flex-col space-y-3">
-                <Link to="/" className="px-3 py-2 rounded-md text-xs uppercase tracking-wider font-light text-gray-700 hover:text-primary hover:bg-gray-50">
+                <Link to="/" className="px-3 py-2 rounded-none text-xs uppercase tracking-wider font-light text-gray-700 hover:text-black hover:bg-gray-50 border-b border-transparent hover:border-black transition-all">
                   Dashboard
                 </Link>
                 
                 {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Commercial Director') && (
-                  <Link to="/b2b" className="px-3 py-2 rounded-md text-xs uppercase tracking-wider font-light text-gray-700 hover:text-primary hover:bg-gray-50">
+                  <Link to="/b2b" className="px-3 py-2 rounded-none text-xs uppercase tracking-wider font-light text-gray-700 hover:text-black hover:bg-gray-50 border-b border-transparent hover:border-black transition-all">
                     B2B
                   </Link>
                 )}
                 
                 {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Marketing Manager') && (
-                  <Link to="/marketing" className="px-3 py-2 rounded-md text-xs uppercase tracking-wider font-light text-gray-700 hover:text-primary hover:bg-gray-50">
+                  <Link to="/marketing" className="px-3 py-2 rounded-none text-xs uppercase tracking-wider font-light text-gray-700 hover:text-black hover:bg-gray-50 border-b border-transparent hover:border-black transition-all">
                     Marketing
                   </Link>
                 )}
                 
                 {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Marketing Manager' || user?.role === 'Social Media Manager') && (
-                  <Link to="/social-media-ads" className="px-3 py-2 rounded-md text-xs uppercase tracking-wider font-light text-gray-700 hover:text-primary hover:bg-gray-50">
+                  <Link to="/social-media-ads" className="px-3 py-2 rounded-none text-xs uppercase tracking-wider font-light text-gray-700 hover:text-black hover:bg-gray-50 border-b border-transparent hover:border-black transition-all">
                     Social Ads
                   </Link>
                 )}
                 
                 {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Marketing Manager' || user?.role === 'Customer Support') && (
-                  <Link to="/reorder-reminder" className="px-3 py-2 rounded-md text-xs uppercase tracking-wider font-light text-gray-700 hover:text-primary hover:bg-gray-50">
+                  <Link to="/reorder-reminder" className="px-3 py-2 rounded-none text-xs uppercase tracking-wider font-light text-gray-700 hover:text-black hover:bg-gray-50 border-b border-transparent hover:border-black transition-all">
                     Reorder Reminders
                   </Link>
                 )}
                 
                 {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Commercial Director' || user?.role === 'Regional Manager') && (
-                  <Link to="/inventory" className="px-3 py-2 rounded-md text-xs uppercase tracking-wider font-light text-gray-700 hover:text-primary hover:bg-gray-50">
+                  <Link to="/inventory" className="px-3 py-2 rounded-none text-xs uppercase tracking-wider font-light text-gray-700 hover:text-black hover:bg-gray-50 border-b border-transparent hover:border-black transition-all">
                     Inventory
                   </Link>
                 )}
                 
                 {(user?.role === 'CEO' || user?.role === 'CCO') && (
-                  <Link to="/reports" className="px-3 py-2 rounded-md text-xs uppercase tracking-wider font-light text-gray-700 hover:text-primary hover:bg-gray-50">
+                  <Link to="/reports" className="px-3 py-2 rounded-none text-xs uppercase tracking-wider font-light text-gray-700 hover:text-black hover:bg-gray-50 border-b border-transparent hover:border-black transition-all">
                     Reports
                   </Link>
                 )}
@@ -224,39 +224,39 @@ const DashboardHeader = ({ title, heading }: DashboardHeaderProps = {}) => {
                 <User size={20} className="text-gray-700" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 border-gray-200 shadow-md">
+            <DropdownMenuContent align="end" className="w-56 border-gray-200 shadow-md rounded-none">
               <DropdownMenuLabel>
                 <div>
                   <p className="font-medium text-gray-900">{user?.name || 'Guest'}</p>
                   <p className="text-xs text-gray-500">{user?.email || ''}</p>
-                  <div className="text-xs bg-primary/5 text-primary px-2 py-0.5 rounded mt-1 inline-block">
+                  <div className="text-xs bg-black text-white px-2 py-0.5 rounded-none mt-1 inline-block">
                     {user?.role || 'Guest'}
                   </div>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <Link to="/profile">
-                <DropdownMenuItem className="cursor-pointer hover:text-primary">
+                <DropdownMenuItem className="cursor-pointer hover:text-black rounded-none">
                   <User className="mr-2" size={16} />
                   <span>Profile</span>
                 </DropdownMenuItem>
               </Link>
               <Link to="/preferences">
-                <DropdownMenuItem className="cursor-pointer hover:text-primary">
+                <DropdownMenuItem className="cursor-pointer hover:text-black rounded-none">
                   <Settings className="mr-2" size={16} />
                   <span>Preferences</span>
                 </DropdownMenuItem>
               </Link>
               {user?.role === 'CEO' && (
                 <Link to="/settings/system">
-                  <DropdownMenuItem className="cursor-pointer hover:text-primary">
+                  <DropdownMenuItem className="cursor-pointer hover:text-black rounded-none">
                     <Settings className="mr-2" size={16} />
                     <span>System Settings</span>
                   </DropdownMenuItem>
                 </Link>
               )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer hover:text-primary" onClick={logout}>
+              <DropdownMenuItem className="cursor-pointer hover:text-black rounded-none" onClick={logout}>
                 <LogOut className="mr-2" size={16} />
                 <span>Logout</span>
               </DropdownMenuItem>
