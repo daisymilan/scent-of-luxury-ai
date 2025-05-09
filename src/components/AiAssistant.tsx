@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { callGrokApi, getGrokApiConfig } from '@/utils/grokApi';
 import { getN8nConfig } from '@/components/N8nConfig';
+import { ErrorDialog } from '@/components/ui/error-dialog';
 
 const AiAssistant = () => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -19,6 +20,11 @@ const AiAssistant = () => {
   const [isWebhookFailed, setIsWebhookFailed] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  // Added error dialog state
+  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [errorId, setErrorId] = useState('');
   
   // Reference for speech synthesis
   const speechSynthesisRef = useRef<SpeechSynthesis | null>(null);
@@ -228,6 +234,11 @@ const AiAssistant = () => {
         console.error('Error calling n8n webhook:', error);
         setIsWebhookFailed(true);
         
+        // Show error dialog
+        setErrorMessage('Could not connect to the webhook service.');
+        setErrorId(`error-${Date.now()}`);
+        setErrorDialogOpen(true);
+        
         // If n8n webhook fails, try Grok or fallback
         if (isGrokConfigured) {
           console.log('Falling back to Grok API');
@@ -300,6 +311,12 @@ const AiAssistant = () => {
         description: error instanceof Error ? error.message : "Unable to process your request right now",
         variant: "destructive",
       });
+      
+      // Show error in dialog too
+      setErrorMessage("Unable to process your request right now. Please try again later.");
+      setErrorId(`error-${Date.now()}`);
+      setErrorDialogOpen(true);
+      
       const errorResponse = {
         error: true,
         message: "I'm sorry, I couldn't process your request at this time. Please try again later.",
@@ -378,165 +395,179 @@ const AiAssistant = () => {
   }
 
   return (
-    <Card className="fixed bottom-6 right-6 w-96 shadow-xl border border-gray-200 rounded-xl overflow-hidden z-50">
-      <div className="bg-primary text-white p-3 flex justify-between items-center">
-        <h3 className="font-semibold">MIN NEW YORK AI Assistant</h3>
-        <div className="flex space-x-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-white hover:bg-primary/50"
-            onClick={() => setIsExpanded(false)}
-          >
-            <ChevronDown size={16} />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-white hover:bg-primary/50"
-            onClick={() => setIsExpanded(false)}
-          >
-            <X size={16} />
-          </Button>
+    <>
+      <Card className="fixed bottom-6 right-6 w-96 shadow-xl border border-gray-200 rounded-xl overflow-hidden z-50">
+        <div className="bg-primary text-white p-3 flex justify-between items-center">
+          <h3 className="font-semibold">MIN NEW YORK AI Assistant</h3>
+          <div className="flex space-x-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 text-white hover:bg-primary/50"
+              onClick={() => setIsExpanded(false)}
+            >
+              <ChevronDown size={16} />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 text-white hover:bg-primary/50"
+              onClick={() => setIsExpanded(false)}
+            >
+              <X size={16} />
+            </Button>
+          </div>
         </div>
-      </div>
-      
-      <div className="p-4 max-h-96 overflow-y-auto bg-gray-50">
-        {isWebhookFailed && (
-          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
-            Could not connect to our servers. Using alternative response method.
-          </div>
-        )}
-      
-        {displayedQuery && (
-          <div className="flex items-start justify-end mb-4">
-            <div className="bg-blue-100 p-3 rounded-lg max-w-[85%] text-gray-800">
-              <p className="text-sm">{displayedQuery}</p>
+        
+        <div className="p-4 max-h-96 overflow-y-auto bg-gray-50">
+          {isWebhookFailed && (
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
+              Could not connect to our servers. Using alternative response method.
             </div>
-            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center ml-2 text-white">
-              <User size={16} />
-            </div>
-          </div>
-        )}
-
-        {isThinking && (
-          <div className="flex items-start mb-4">
-            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white mr-2">
-              M
-            </div>
-            <div className="bg-white p-3 rounded-lg shadow-sm">
-              <div className="flex space-x-1 items-center">
-                <Loader2 size={12} className="animate-spin text-gray-400" />
-                <span className="text-sm text-gray-500">Getting your answer ready...</span>
+          )}
+        
+          {displayedQuery && (
+            <div className="flex items-start justify-end mb-4">
+              <div className="bg-blue-100 p-3 rounded-lg max-w-[85%] text-gray-800">
+                <p className="text-sm">{displayedQuery}</p>
+              </div>
+              <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center ml-2 text-white">
+                <User size={16} />
               </div>
             </div>
-          </div>
-        )}
-        
-        {response && (
-          <div className="mb-4">
-            <div className="flex items-start mb-2">
+          )}
+
+          {isThinking && (
+            <div className="flex items-start mb-4">
               <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white mr-2">
                 M
               </div>
-              <div className="bg-white p-3 rounded-lg shadow-sm max-w-[85%] text-gray-700 overflow-x-auto">
-                <pre className="text-sm font-mono whitespace-pre-line break-all">{response}</pre>
+              <div className="bg-white p-3 rounded-lg shadow-sm">
+                <div className="flex space-x-1 items-center">
+                  <Loader2 size={12} className="animate-spin text-gray-400" />
+                  <span className="text-sm text-gray-500">Getting your answer ready...</span>
+                </div>
               </div>
             </div>
-            <div className="flex justify-start ml-10 space-x-2">
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="h-8 text-xs flex items-center"
-                onClick={handleReadAloud}
-              >
-                {isSpeaking ? (
-                  <>
-                    <PauseCircle size={14} className="mr-1" /> Stop Reading
-                  </>
-                ) : (
-                  <>
-                    <Volume2 size={14} className="mr-1" /> Read Aloud
-                  </>
-                )}
-              </Button>
-              <Button size="sm" variant="ghost" className="h-8 text-xs">
-                See Details
-              </Button>
+          )}
+          
+          {response && (
+            <div className="mb-4">
+              <div className="flex items-start mb-2">
+                <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white mr-2">
+                  M
+                </div>
+                <div className="bg-white p-3 rounded-lg shadow-sm max-w-[85%] text-gray-700 overflow-x-auto">
+                  <pre className="text-sm font-mono whitespace-pre-line break-all">{response}</pre>
+                </div>
+              </div>
+              <div className="flex justify-start ml-10 space-x-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="h-8 text-xs flex items-center"
+                  onClick={handleReadAloud}
+                >
+                  {isSpeaking ? (
+                    <>
+                      <PauseCircle size={14} className="mr-1" /> Stop Reading
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 size={14} className="mr-1" /> Read Aloud
+                    </>
+                  )}
+                </Button>
+                <Button size="sm" variant="ghost" className="h-8 text-xs">
+                  See Details
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="mb-2 text-center text-sm text-gray-600">
-          <p>Try asking about: sales, KPIs, inventory, orders, or marketing campaigns</p>
-          {user?.role === 'CEO' && <p className="mt-1 text-xs opacity-75">Premium insights available for CEO role</p>}
+          <div className="mb-2 text-center text-sm text-gray-600">
+            <p>Try asking about: sales, KPIs, inventory, orders, or marketing campaigns</p>
+            {user?.role === 'CEO' && <p className="mt-1 text-xs opacity-75">Premium insights available for CEO role</p>}
+          </div>
         </div>
-      </div>
-      
-      <div className="p-3 border-t border-gray-200 bg-white">
-        <div className="flex space-x-2">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              className="w-full px-4 py-2 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Ask anything..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleQuerySubmit()}
-            />
-            {query && (
+        
+        <div className="p-3 border-t border-gray-200 bg-white">
+          <div className="flex space-x-2">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                className="w-full px-4 py-2 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Ask anything..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleQuerySubmit()}
+              />
+              {query && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute right-1 top-1 h-8 w-8" 
+                  onClick={handleClear}
+                >
+                  <X size={16} />
+                </Button>
+              )}
+            </div>
+            
+            {isListening ? (
               <Button 
-                variant="ghost" 
-                size="icon" 
-                className="absolute right-1 top-1 h-8 w-8" 
-                onClick={handleClear}
+                className="rounded-full bg-red-500 hover:bg-red-600 h-10 w-10 flex-shrink-0" 
+                onClick={() => {
+                  if (recognitionRef.current) {
+                    try {
+                      recognitionRef.current.stop();
+                    } catch (e) {
+                      console.log('Recognition already stopped');
+                    }
+                  }
+                  setIsListening(false);
+                }}
               >
-                <X size={16} />
+                <X size={20} />
               </Button>
+            ) : (
+              <>
+                <Button 
+                  className="rounded-full bg-primary hover:bg-primary/90 h-10 w-10 flex-shrink-0" 
+                  onClick={handleListen}
+                >
+                  <Mic size={20} />
+                </Button>
+                <Button 
+                  className="rounded-full bg-primary hover:bg-primary/90 h-10 w-10 flex-shrink-0"
+                  onClick={() => handleQuerySubmit()}
+                  disabled={!query}
+                >
+                  <Play size={20} />
+                </Button>
+              </>
             )}
           </div>
           
-          {isListening ? (
-            <Button 
-              className="rounded-full bg-red-500 hover:bg-red-600 h-10 w-10 flex-shrink-0" 
-              onClick={() => {
-                if (recognitionRef.current) {
-                  try {
-                    recognitionRef.current.stop();
-                  } catch (e) {
-                    console.log('Recognition already stopped');
-                  }
-                }
-                setIsListening(false);
-              }}
-            >
-              <X size={20} />
-            </Button>
-          ) : (
-            <>
-              <Button 
-                className="rounded-full bg-primary hover:bg-primary/90 h-10 w-10 flex-shrink-0" 
-                onClick={handleListen}
-              >
-                <Mic size={20} />
-              </Button>
-              <Button 
-                className="rounded-full bg-primary hover:bg-primary/90 h-10 w-10 flex-shrink-0"
-                onClick={() => handleQuerySubmit()}
-                disabled={!query}
-              >
-                <Play size={20} />
-              </Button>
-            </>
-          )}
+          <div className="flex justify-between mt-2 px-2 text-xs text-gray-500">
+            <button className="hover:text-gray-800">Suggested Questions</button>
+            <button className="hover:text-gray-800">Help</button>
+          </div>
         </div>
-        
-        <div className="flex justify-between mt-2 px-2 text-xs text-gray-500">
-          <button className="hover:text-gray-800">Suggested Questions</button>
-          <button className="hover:text-gray-800">Help</button>
-        </div>
-      </div>
-    </Card>
+      </Card>
+      
+      {/* Error Dialog */}
+      <ErrorDialog
+        open={errorDialogOpen}
+        onOpenChange={setErrorDialogOpen}
+        description={errorMessage}
+        id={errorId}
+        showHelp={true}
+        onHelp={() => {
+          window.open('https://minnewyorkofficial.app.n8n.cloud/help', '_blank');
+        }}
+      />
+    </>
   );
 };
 

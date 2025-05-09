@@ -1,193 +1,181 @@
-import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet';
 import DashboardHeader from '@/components/DashboardHeader';
+import RecentOrdersTable from '@/components/RecentOrdersTable';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import KpiOverview from '@/components/KpiOverview';
-import B2BLeadGeneration from '@/components/B2BLeadGeneration';
-import SEODashboard from '@/components/SEODashboard';
-import AbandonedCartRecovery from '@/components/AbandonedCartRecovery';
-import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { ArrowDownToLine, ArrowUpFromLine, MoreHorizontal, Clock } from 'lucide-react';
+import AiAssistant from '@/components/AiAssistant';
+import { getTotalSales, getTotalOrders } from '@/utils/woocommerce';
 import { useToast } from '@/hooks/use-toast';
-import { WooCustomer, WooOrder, WooProduct } from '@/lib/mockData';
-import { WOO_API_BASE_URL, WOO_API_AUTH_PARAMS } from '@/utils/woocommerceApi';
 
-const Index = () => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const { user } = useAuth();
+const IndexPage: React.FC = () => {
+  const [totalSales, setTotalSales] = useState<number | null>(null);
+  const [totalOrders, setTotalOrders] = useState<number | null>(null);
   const { toast } = useToast();
 
-  // Optimize data fetching with stale-while-revalidate strategy
-  const { data: customers, isLoading: isLoadingCustomers } = useQuery({
-    queryKey: ['wooCustomers'],
-    queryFn: async () => {
+  useEffect(() => {
+    const fetchSalesData = async () => {
       try {
-        const response = await fetch(`${WOO_API_BASE_URL}/customers?per_page=100&${WOO_API_AUTH_PARAMS}`, {
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
-        }
-        
-        return await response.json() as WooCustomer[];
-      } catch (error) {
-        console.error('Error fetching customers:', error);
+        const sales = await getTotalSales();
+        setTotalSales(sales);
+      } catch (error: any) {
+        console.error("Failed to fetch total sales:", error);
         toast({
-          title: "Data Fetch Error",
-          description: "Could not load customer data from WooCommerce. Using fallback data.",
+          title: "Error fetching sales data",
+          description: error.message || "Failed to load sales data.",
           variant: "destructive",
         });
-        return null;
       }
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes - updated from cacheTime to gcTime
-  });
+    };
 
-  // Fetch orders from WooCommerce API with optimized caching
-  const { data: orders, isLoading: isLoadingOrders } = useQuery({
-    queryKey: ['wooOrders'],
-    queryFn: async () => {
+    const fetchOrdersData = async () => {
       try {
-        const response = await fetch(`${WOO_API_BASE_URL}/orders?per_page=100&${WOO_API_AUTH_PARAMS}`, {
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
-        }
-        
-        return await response.json() as WooOrder[];
-      } catch (error) {
-        console.error('Error fetching orders:', error);
+        const orders = await getTotalOrders();
+        setTotalOrders(orders);
+      } catch (error: any) {
+        console.error("Failed to fetch total orders:", error);
         toast({
-          title: "Data Fetch Error",
-          description: "Could not load order data from WooCommerce. Using fallback data.",
+          title: "Error fetching orders data",
+          description: error.message || "Failed to load orders data.",
           variant: "destructive",
         });
-        return null;
       }
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes - updated from cacheTime to gcTime
-  });
+    };
 
-  // Fetch products with optimized caching
-  const { data: products, isLoading: isLoadingProducts } = useQuery({
-    queryKey: ['wooProducts'],
-    queryFn: async () => {
-      try {
-        const response = await fetch(`${WOO_API_BASE_URL}/products?per_page=100&${WOO_API_AUTH_PARAMS}`, {
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
-        }
-        
-        return await response.json() as WooProduct[];
-      } catch (error) {
-        console.error('Error fetching products:', error);
-        toast({
-          title: "Data Fetch Error",
-          description: "Could not load product data from WooCommerce. Using fallback data.",
-          variant: "destructive",
-        });
-        return null;
-      }
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes - updated from cacheTime to gcTime
-  });
+    fetchSalesData();
+    fetchOrdersData();
+  }, [toast]);
 
-  // This function helps lazy-load components based on active tab
-  const shouldLoadComponent = (tabId: string) => {
-    // Always load overview tab
-    if (tabId === 'overview') return true;
-    
-    // Load the active tab
-    if (activeTab === tabId) return true;
-    
-    // Don't load other tabs until they're activated
-    return false;
-  };
+  const recentOrders = [
+    {
+      orderId: 1001,
+      customerName: 'John Doe',
+      orderDate: '2024-01-20',
+      totalAmount: 150.00,
+      status: 'Shipped',
+    },
+    {
+      orderId: 1002,
+      customerName: 'Jane Smith',
+      orderDate: '2024-01-22',
+      totalAmount: 220.50,
+      status: 'Delivered',
+    },
+    {
+      orderId: 1003,
+      customerName: 'Alice Johnson',
+      orderDate: '2024-01-25',
+      totalAmount: 95.00,
+      status: 'Pending',
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <DashboardHeader />
-      
-      <main className="flex-1 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
-            <div>
-              <h1 className="text-3xl font-semibold">
-                <span className="font-cormorant font-medium text-4xl tracking-wider">
-                  <span className="font-semibold">MiN</span> NEW YORK
-                </span>{" "}
-                <span className="text-xl">{user?.role} Dashboard</span>
-              </h1>
-              <p className="text-gray-500 mt-1">Welcome back to your luxury fragrance dashboard, {user?.name}</p>
-            </div>
-            <div className="mt-4 sm:mt-0">
-              <span className="text-sm text-gray-500 mr-2">Last updated:</span>
-              <span className="text-sm font-medium">May 8, 2025, {new Date().toLocaleTimeString()}</span>
-            </div>
-          </div>
-          
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="bg-white border border-gray-200 p-1 rounded-lg">
-              <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-md">Overview</TabsTrigger>
-              {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Commercial Director') && (
-                <TabsTrigger value="b2b" className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-md">B2B Leads</TabsTrigger>
-              )}
-              {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Marketing Manager') && (
-                <TabsTrigger value="seo" className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-md">SEO</TabsTrigger>
-              )}
-              {(user?.role === 'CEO' || user?.role === 'CCO' || user?.role === 'Commercial Director' || user?.role === 'Regional Manager') && (
-                <TabsTrigger value="cart" className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-md">Abandoned Carts</TabsTrigger>
-              )}
-            </TabsList>
-            
-            <TabsContent value="overview" className="space-y-6">
-              <KpiOverview />
-            </TabsContent>
-            
-            <TabsContent value="b2b" className="space-y-6">
-              {shouldLoadComponent('b2b') && (
-                <B2BLeadGeneration 
-                  wooCustomers={customers} 
-                  wooOrders={orders} 
-                  wooProducts={products} 
-                />
-              )}
-            </TabsContent>
-            
-            <TabsContent value="seo" className="space-y-6">
-              {shouldLoadComponent('seo') && (
-                <SEODashboard />
-              )}
-            </TabsContent>
-            
-            <TabsContent value="cart" className="space-y-6">
-              {shouldLoadComponent('cart') && (
-                <AbandonedCartRecovery 
-                  wooCustomers={customers}
-                  wooOrders={orders}
-                  wooProducts={products}
-                />
-              )}
-            </TabsContent>
-          </Tabs>
+    <>
+      <Helmet>
+        <title>Dashboard - MiN New York</title>
+        <meta name="description" content="Dashboard overview for MiN New York" />
+      </Helmet>
+      <div className="container mx-auto p-4">
+        <DashboardHeader title="Dashboard Overview" />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Total Sales</CardTitle>
+              <CardDescription>Overall sales performance</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">${totalSales !== null ? totalSales.toFixed(2) : 'Loading...'}</div>
+              <div className="text-sm text-gray-500">
+                <ArrowUpFromLine className="inline-block mr-1 text-green-500" size={16} />
+                12% increase from last month
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Total Orders</CardTitle>
+              <CardDescription>Number of orders placed</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalOrders !== null ? totalOrders : 'Loading...'}</div>
+              <div className="text-sm text-gray-500">
+                <ArrowDownToLine className="inline-block mr-1 text-red-500" size={16} />
+                5% decrease from last month
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Website Traffic</CardTitle>
+              <CardDescription>Visits and user engagement</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">12,450</div>
+              <div className="text-sm text-gray-500">
+                <ArrowUpFromLine className="inline-block mr-1 text-green-500" size={16} />
+                8% increase from last month
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </main>
-    </div>
+
+        <Tabs defaultvalue="overview" className="w-full">
+          <TabsList>
+            <TabsTrigger value="overview">KPI Overview</TabsTrigger>
+            <TabsTrigger value="recent">Recent Orders</TabsTrigger>
+            <TabsTrigger value="performance">Performance Trends</TabsTrigger>
+          </TabsList>
+          <TabsContent value="overview">
+            <KpiOverview />
+          </TabsContent>
+          <TabsContent value="recent">
+            <RecentOrdersTable orders={recentOrders} />
+          </TabsContent>
+          <TabsContent value="performance">
+            <Card>
+              <CardHeader>
+                <CardTitle>Performance Trends</CardTitle>
+                <CardDescription>Monthly sales and order trends</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl text-gray-700">
+                  Interactive charts and graphs will be here.
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        <div className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+              <CardDescription>Manage your store efficiently</CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-between">
+              <Button>
+                <Clock className="mr-2" size={16} />
+                Schedule Report
+              </Button>
+              <Button variant="secondary">
+                <MoreHorizontal className="mr-2" size={16} />
+                View All Actions
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+      
+      <AiAssistant />
+    </>
   );
 };
 
-export default Index;
+export default IndexPage;
