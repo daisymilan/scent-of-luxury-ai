@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { WooCustomer, WooOrder, WooProduct } from '@/lib/mockData';
 import { useToast } from '@/hooks/use-toast';
-import { WOO_API_BASE_URL, WOO_API_CREDENTIALS, WOO_API_AUTH_PARAMS } from '@/utils/woocommerceApi';
+import { WOO_API_BASE_URL, WOO_API_CREDENTIALS, WOO_API_AUTH_PARAMS } from '@/utils/woocommerce';
 
 // Column mapping for B2B leads import
 export const B2BColumnMapping = {

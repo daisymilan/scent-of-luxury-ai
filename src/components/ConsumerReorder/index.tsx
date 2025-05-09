@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useWooOrders, useWooCustomers } from '@/utils/woocommerceApi';
+import { useWooOrders, useWooCustomers } from '@/utils/woocommerce';
 import { processCustomerData, Customer } from './customerUtils';
 import LoadingState from './LoadingState';
 import EmptyState from './EmptyState';

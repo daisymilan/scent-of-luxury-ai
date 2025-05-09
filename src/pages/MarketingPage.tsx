@@ -6,7 +6,7 @@ import SEODashboard from '@/components/SEODashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { WOO_API_BASE_URL, WOO_API_AUTH_PARAMS } from '@/utils/woocommerceApi';
+import { WOO_API_BASE_URL, WOO_API_AUTH_PARAMS } from '@/utils/woocommerce';
 import { useToast } from '@/hooks/use-toast';
 
 const MarketingPage = () => {

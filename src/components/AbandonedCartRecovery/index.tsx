@@ -11,7 +11,7 @@ import AbandonedCartList from './AbandonedCartList';
 import RecoveryAutomations from './RecoveryAutomations';
 import { processAbandonedCartData, AbandonedCart, calculateRecoveryStats } from './utils';
 import { useQuery } from '@tanstack/react-query';
-import { WOO_API_BASE_URL, WOO_API_AUTH_PARAMS } from '@/utils/woocommerceApi';
+import { WOO_API_BASE_URL, WOO_API_AUTH_PARAMS } from '@/utils/woocommerce';
 import { useToast } from '@/hooks/use-toast';
 
 interface AbandonedCartRecoveryProps {

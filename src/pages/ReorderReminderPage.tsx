@@ -1,9 +1,10 @@
+
 import React, { useEffect, useState } from 'react';
 import DashboardHeader from '@/components/DashboardHeader';
 import ConsumerReorderReminder from '@/components/ConsumerReorder';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { useWooOrders, useWooCustomers } from '@/utils/woocommerceApi';
+import { useWooOrders, useWooCustomers } from '@/utils/woocommerce';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const ReorderReminderPage: React.FC = () => {

@@ -32,7 +32,7 @@ import {
   useWooProducts,
   useWooOrders,
   fetchWooCommerceData
-} from '@/utils/woocommerceApi';
+} from '@/utils/woocommerce';
 
 const WooCommerceConfig = () => {
   const { toast } = useToast();

@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import WooCommerceConfig from '@/components/WooCommerceConfig';
 import N8nConfig from '@/components/N8nConfig';
 import GrokConfig from '@/components/GrokConfig';
-import { useWooProducts, useWooOrders, useWooStats, getWooCommerceConfig, WOO_API_BASE_URL, WOO_API_AUTH_PARAMS } from '@/utils/woocommerceApi';
+import { useWooProducts, useWooOrders, useWooStats, getWooCommerceConfig, WOO_API_BASE_URL, WOO_API_AUTH_PARAMS } from '@/utils/woocommerce';
 import { getGrokApiConfig } from '@/utils/grokApi';
 import { getN8nConfig } from '@/components/N8nConfig';
 import { useAuth } from '@/contexts/AuthContext';

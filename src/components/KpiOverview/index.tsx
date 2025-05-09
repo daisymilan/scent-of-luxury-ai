@@ -1,5 +1,5 @@
 
-import { useWooStats, useWooOrders, useWooProducts } from '@/utils/woocommerceApi';
+import { useWooStats, useWooOrders, useWooProducts } from '@/utils/woocommerce';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import KpiCards from './KpiCards';
