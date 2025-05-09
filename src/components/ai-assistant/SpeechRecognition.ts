@@ -9,6 +9,7 @@ export type SpeechSupportResult = {
 
 // Function to check browser Speech Recognition support
 export function checkSpeechRecognitionSupport(): SpeechSupportResult {
+  // Simplifying the support check - if the browser has the API, consider it supported
   if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     return {
       isSupported: true,
@@ -16,31 +17,11 @@ export function checkSpeechRecognitionSupport(): SpeechSupportResult {
     };
   }
   
-  // Check specifically for different browsers to provide more helpful messages
-  const userAgent = navigator.userAgent.toLowerCase();
-  
-  if (userAgent.includes('firefox')) {
-    return {
-      isSupported: false,
-      errorMessage: "Firefox doesn't fully support speech recognition. Try Chrome or Edge instead."
-    };
-  } else if (userAgent.includes('safari') && !userAgent.includes('chrome')) {
-    return {
-      isSupported: false,
-      errorMessage: "Safari has limited support for speech recognition. Try Chrome or Edge instead."
-    };
-  } else if (userAgent.includes('edge') || userAgent.includes('edg')) {
-    // Edge should support it, but just in case
-    return {
-      isSupported: false,
-      errorMessage: "Your version of Edge might not support speech recognition. Try updating your browser."
-    };
-  } else {
-    return {
-      isSupported: false,
-      errorMessage: "Your browser doesn't support speech recognition. Try using Chrome or Edge instead."
-    };
-  }
+  // Only provide an error message if speech recognition is not available
+  return {
+    isSupported: false,
+    errorMessage: "Your browser doesn't support speech recognition. Try using Chrome or Edge instead."
+  };
 }
 
 export function createSpeechRecognition(handlers: {

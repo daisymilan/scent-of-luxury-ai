@@ -32,10 +32,7 @@ export const AssistantToggles = ({
     return (
       <Button 
         className="rounded-full bg-red-500 hover:bg-red-600 h-10 w-10 flex-shrink-0" 
-        onClick={() => {
-          // The actual stopping is handled in the parent component
-          handleClear();
-        }}
+        onClick={handleClear}
       >
         <X size={20} />
       </Button>

@@ -31,8 +31,11 @@ const AiAssistant = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  // Speech recognition support state
-  const [speechSupport, setSpeechSupport] = useState(() => checkSpeechRecognitionSupport());
+  // Speech recognition support state - default to supported until proven otherwise
+  const [speechSupport, setSpeechSupport] = useState<SpeechSupportResult>({
+    isSupported: true,
+    errorMessage: null
+  });
   const [showSpeechAlert, setShowSpeechAlert] = useState(false);
   
   // Error dialog state
@@ -83,12 +86,7 @@ const AiAssistant = () => {
       setN8nWebhookUrl('https://minnewyorkofficial.app.n8n.cloud/webhook/ceo-dashboard');
     }
     
-    // Check speech recognition support
-    const supportResult = checkSpeechRecognitionSupport();
-    setSpeechSupport(supportResult);
-    setShowSpeechAlert(!supportResult.isSupported);
-    
-    // Initialize speech recognition
+    // Initialize speech recognition 
     recognitionRef.current = createSpeechRecognition({
       onResult: (transcript) => {
         console.log('Voice recognized:', transcript);
@@ -120,6 +118,13 @@ const AiAssistant = () => {
         setIsListening(false);
       }
     });
+    
+    // If recognition initialization fails, we'll need to update the support status
+    if (!recognitionRef.current) {
+      const supportResult = checkSpeechRecognitionSupport();
+      setSpeechSupport(supportResult);
+      setShowSpeechAlert(!supportResult.isSupported);
+    }
     
     // Cleanup on unmount
     return () => {
