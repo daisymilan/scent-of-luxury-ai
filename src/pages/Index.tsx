@@ -3,6 +3,7 @@ import React from 'react';
 import DashboardHeader from '@/components/DashboardHeader';
 import KpiOverview from '@/components/KpiOverview';
 import RecentOrdersTable from '@/components/RecentOrdersTable';
+import AiAssistant from '@/components/ai-assistant/AiAssistant';
 
 // Mock data for recent orders
 const mockOrders = [
@@ -45,6 +46,8 @@ const Index = () => {
         <KpiOverview />
         <RecentOrdersTable orders={mockOrders} />
       </div>
+      
+      <AiAssistant />
     </div>
   );
 };

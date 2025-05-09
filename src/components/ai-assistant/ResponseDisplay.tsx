@@ -57,7 +57,7 @@ export const ResponseDisplay = ({
           M
         </div>
         <div className="bg-white p-3 rounded-lg shadow-sm max-w-[85%] text-gray-700 overflow-x-auto">
-          <div className="text-sm font-normal whitespace-pre-line">{formattedResponse}</div>
+          <div className="text-sm font-normal whitespace-pre-line break-words">{formattedResponse}</div>
         </div>
       </div>
       <div className="flex justify-start ml-10 space-x-2">
