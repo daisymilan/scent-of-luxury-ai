@@ -23,14 +23,19 @@ export const ResponseDisplay = ({
       
       // If it's a JSON object, extract the content
       if (typeof jsonObj === 'object') {
-        // Format specific JSON structures from the API
+        // If it has a 'response' property, return that
         if (jsonObj.response) {
           return jsonObj.response;
         }
         
-        // For message-based responses
+        // If it has a 'message' property, return that
         if (jsonObj.message) {
           return jsonObj.message;
+        }
+        
+        // If it has user, date, and response properties (like in the example)
+        if (jsonObj.user !== undefined && jsonObj.date !== undefined && jsonObj.response !== undefined) {
+          return jsonObj.response;
         }
         
         // Fallback to the raw text
@@ -52,7 +57,7 @@ export const ResponseDisplay = ({
           M
         </div>
         <div className="bg-white p-3 rounded-lg shadow-sm max-w-[85%] text-gray-700 overflow-x-auto">
-          <div className="text-sm font-normal">{formattedResponse}</div>
+          <div className="text-sm font-normal whitespace-pre-line">{formattedResponse}</div>
         </div>
       </div>
       <div className="flex justify-start ml-10 space-x-2">
