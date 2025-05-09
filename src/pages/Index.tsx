@@ -1,9 +1,8 @@
-
 import React from 'react';
 import DashboardHeader from '@/components/DashboardHeader';
 import KpiOverview from '@/components/KpiOverview';
 import RecentOrdersTable from '@/components/RecentOrdersTable';
-import AiAssistant from '@/components/ai-assistant/AiAssistant';
+// Removing duplicate AiAssistant import since it's already in App.tsx
 
 // Mock data for recent orders
 const mockOrders = [
@@ -47,7 +46,7 @@ const Index = () => {
         <RecentOrdersTable orders={mockOrders} />
       </div>
       
-      <AiAssistant />
+      {/* Removing AiAssistant from here as it's already included in App.tsx */}
     </div>
   );
 };
