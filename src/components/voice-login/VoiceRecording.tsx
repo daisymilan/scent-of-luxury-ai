@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Mic, MicOff } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { createSpeechRecognition, checkSpeechRecognitionSupport } from '@/components/ai-assistant/SpeechRecognition';
 
 interface VoiceRecordingProps {
   onProcessVoice: (audioBlob: Blob) => Promise<void>;
@@ -21,6 +22,7 @@ const VoiceRecording: React.FC<VoiceRecordingProps> = ({ onProcessVoice, isProce
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
+  const speechRecognitionRef = useRef<any>(null);
 
   // Clean up resources on unmount
   useEffect(() => {
@@ -34,47 +36,110 @@ const VoiceRecording: React.FC<VoiceRecordingProps> = ({ onProcessVoice, isProce
       if (micStreamRef.current) {
         micStreamRef.current.getTracks().forEach((track) => track.stop());
       }
+      if (speechRecognitionRef.current) {
+        speechRecognitionRef.current.stop();
+      }
     };
   }, []);
+  
+  // Initialize speech recognition
+  useEffect(() => {
+    const supportResult = checkSpeechRecognitionSupport();
+    if (!supportResult.isSupported) {
+      toast({
+        title: "Speech Recognition Not Available",
+        description: supportResult.errorMessage || "Your browser doesn't support speech recognition",
+        variant: "destructive"
+      });
+    }
+    
+    speechRecognitionRef.current = createSpeechRecognition({
+      onResult: (transcript) => {
+        console.log('Speech recognition result:', transcript);
+        setSpeechText(transcript);
+      },
+      onError: (error) => {
+        console.error('Speech recognition error:', error);
+        toast({
+          title: "Voice Recognition Error",
+          description: error.message || `Recognition error: ${error.error}`,
+          variant: "destructive"
+        });
+        stopListening();
+      },
+      onEnd: () => {
+        // Only process audio if we have a valid transcript
+        if (speechText && audioChunksRef.current.length > 0) {
+          processAudio();
+        }
+        setIsListening(false);
+      }
+    });
+  }, [toast, speechText]);
 
   const startListening = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Reset state
+      setAudioLevel(0);
+      setSpeechText('');
+      audioChunksRef.current = [];
+      
+      // Request microphone access
+      console.log('Requesting microphone access...');
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: { 
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
+      });
       micStreamRef.current = stream;
       
       // Setup audio context and analyser for visualizations
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      const audioContext = new AudioContext();
       audioContextRef.current = audioContext;
+      
       const analyser = audioContext.createAnalyser();
       analyserRef.current = analyser;
+      
       const microphone = audioContext.createMediaStreamSource(stream);
       microphone.connect(analyser);
       analyser.fftSize = 256;
       
+      // Create media recorder
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
       
       mediaRecorder.addEventListener('dataavailable', (event) => {
-        audioChunksRef.current.push(event.data);
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
       });
       
-      mediaRecorder.addEventListener('stop', processAudio);
-      
-      // Start recording
+      // Start recording and visualization
       mediaRecorder.start();
       setIsListening(true);
       setSpeechText('Listening...');
-      
-      // Start audio level visualization
       visualizeAudio();
       
-      // Auto-stop recording after 5 seconds
+      // Start speech recognition
+      if (speechRecognitionRef.current) {
+        speechRecognitionRef.current.start();
+      } else {
+        toast({
+          title: "Speech Recognition Not Available",
+          description: "Could not initialize speech recognition",
+          variant: "destructive"
+        });
+      }
+      
+      // Auto-stop recording after 8 seconds
       setTimeout(() => {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        if (isListening && mediaRecorderRef.current?.state === 'recording') {
           stopListening();
         }
-      }, 5000);
+      }, 8000);
     } catch (error) {
       console.error('Error accessing microphone:', error);
       toast({
@@ -86,19 +151,28 @@ const VoiceRecording: React.FC<VoiceRecordingProps> = ({ onProcessVoice, isProce
   };
   
   const stopListening = () => {
+    // Stop media recorder if active
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
-      setIsListening(false);
-      setSpeechText('Processing voice...');
     }
     
+    // Stop speech recognition if active
+    if (speechRecognitionRef.current) {
+      speechRecognitionRef.current.stop();
+    }
+    
+    // Stop microphone stream
     if (micStreamRef.current) {
       micStreamRef.current.getTracks().forEach((track) => track.stop());
     }
     
+    // Cancel visualization animation frame
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
+    
+    setIsListening(false);
+    setSpeechText('Processing voice...');
   };
   
   const visualizeAudio = () => {
@@ -115,6 +189,11 @@ const VoiceRecording: React.FC<VoiceRecordingProps> = ({ onProcessVoice, isProce
       
       setAudioLevel(normalizedLevel);
       
+      // Log audio activity for debugging
+      if (average > 20) {
+        console.log('Audio activity detected:', average.toFixed(1));
+      }
+      
       animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
     };
     
@@ -122,8 +201,17 @@ const VoiceRecording: React.FC<VoiceRecordingProps> = ({ onProcessVoice, isProce
   };
   
   const processAudio = () => {
+    // Only process if we have audio data
+    if (audioChunksRef.current.length === 0) {
+      console.warn('No audio data to process');
+      return;
+    }
+    
     // Create audio blob from recorded chunks
     const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+    console.log('Processing audio blob:', audioBlob.size, 'bytes');
+    
+    // Process the audio with voice recognition
     onProcessVoice(audioBlob);
   };
 
@@ -142,7 +230,7 @@ const VoiceRecording: React.FC<VoiceRecordingProps> = ({ onProcessVoice, isProce
       {(isListening || isProcessing) && (
         <div className="w-full space-y-2">
           <Progress value={audioLevel} className="h-2" />
-          <p className="text-center text-sm">{speechText}</p>
+          <p className="text-center text-sm">{speechText || 'Listening...'}</p>
         </div>
       )}
       

@@ -9,8 +9,8 @@ export type SpeechSupportResult = {
 
 // Function to check browser Speech Recognition support
 export function checkSpeechRecognitionSupport(): SpeechSupportResult {
-  // Check if the Web Speech API is available in this browser
-  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  // Check for modern and webkit implementations
+  if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
     return {
       isSupported: true,
       errorMessage: null
@@ -42,34 +42,47 @@ export function createSpeechRecognition(handlers: {
   }
 
   try {
+    // Get the appropriate speech recognition constructor
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      throw new Error("Speech recognition constructor not found");
+    }
+    
     // Create speech recognition instance
-    const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
     const recognition = new SpeechRecognition();
     
-    // Configure recognition
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    // Configure recognition with more specific settings
+    recognition.continuous = false;      // Single result per session
+    recognition.interimResults = true;   // Enable interim results for faster feedback
+    recognition.maxAlternatives = 1;     // Only need the most likely transcription
     recognition.lang = 'en-US';
     
     // Set up event listeners
     recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      console.log('Voice recognized:', transcript);
-      handlers.onResult(transcript);
+      if (event.results && event.results.length > 0) {
+        // Get the most confident result
+        const transcript = event.results[0][0].transcript;
+        console.log('Voice recognized:', transcript, 'Confidence:', event.results[0][0].confidence);
+        handlers.onResult(transcript);
+      } else {
+        console.warn('Speech recognition event had no results');
+      }
     };
     
     recognition.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error);
+      console.error('Speech recognition error:', event.error, event);
       handlers.onError(event);
     };
     
     recognition.onend = () => {
+      console.log('Speech recognition ended');
       handlers.onEnd();
     };
     
     return {
       start: () => {
         try {
+          console.log('Starting speech recognition...');
           recognition.start();
         } catch (e) {
           console.error('Speech recognition start error:', e);
@@ -78,9 +91,10 @@ export function createSpeechRecognition(handlers: {
       },
       stop: () => {
         try {
+          console.log('Stopping speech recognition...');
           recognition.stop();
         } catch (e) {
-          console.log('Speech recognition was not started');
+          console.log('Speech recognition was already stopped');
         }
       }
     };
