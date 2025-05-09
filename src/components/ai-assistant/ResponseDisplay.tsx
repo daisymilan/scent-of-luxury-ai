@@ -15,6 +15,36 @@ export const ResponseDisplay = ({
 }: ResponseDisplayProps) => {
   if (!response) return null;
   
+  // Function to format JSON response if it's valid JSON
+  const formatResponse = (text: string) => {
+    try {
+      // Try to parse as JSON
+      const jsonObj = JSON.parse(text);
+      
+      // If it's a JSON object, return it formatted nicely
+      if (typeof jsonObj === 'object') {
+        // Format specific JSON structures from the API
+        if (jsonObj.response) {
+          return jsonObj.response;
+        }
+        
+        // For message-based responses (like in the screenshot)
+        if (jsonObj.message) {
+          return jsonObj.message;
+        }
+        
+        // Fallback to pretty-printed JSON
+        return JSON.stringify(jsonObj, null, 2);
+      }
+      return text;
+    } catch (e) {
+      // If not valid JSON, return original text
+      return text;
+    }
+  };
+  
+  const formattedResponse = formatResponse(response);
+  
   return (
     <div className="mb-4">
       <div className="flex items-start mb-2">
@@ -22,7 +52,7 @@ export const ResponseDisplay = ({
           M
         </div>
         <div className="bg-white p-3 rounded-lg shadow-sm max-w-[85%] text-gray-700 overflow-x-auto">
-          <pre className="text-sm font-mono whitespace-pre-line break-all">{response}</pre>
+          <pre className="text-sm whitespace-pre-wrap break-words font-sans">{formattedResponse}</pre>
         </div>
       </div>
       <div className="flex justify-start ml-10 space-x-2">
