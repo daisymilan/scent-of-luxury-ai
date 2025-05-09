@@ -55,6 +55,40 @@ export const fetchWooCommerceData = async <T,>(
   }
 };
 
+// Get all products from WooCommerce
+export const getProducts = async (
+  params?: { 
+    perPage?: number,
+    category?: number,
+    search?: string,
+    orderBy?: 'date' | 'id' | 'title' | 'slug',
+    order?: 'asc' | 'desc'
+  },
+  config?: WooCommerceConfig
+): Promise<WooProduct[]> => {
+  const wooConfig = config || getWooCommerceConfig();
+  if (!wooConfig) throw new Error('WooCommerce config not found');
+  
+  try {
+    // Build query string from params
+    const queryParams = params ? Object.entries(params)
+      .map(([key, value]) => {
+        // Convert camelCase to snake_case for WooCommerce API
+        const paramKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+        return `${paramKey}=${encodeURIComponent(String(value))}`;
+      })
+      .join('&') : '';
+    
+    // Append query params to endpoint if they exist
+    const endpoint = `products${queryParams ? `?${queryParams}` : ''}`;
+    
+    return await fetchWooCommerceData<WooProduct[]>(endpoint, wooConfig);
+  } catch (error) {
+    console.error('Error fetching WooCommerce products:', error);
+    throw error;
+  }
+};
+
 // Create a new product in WooCommerce
 export const createWooProduct = async (
   product: Partial<WooProduct>,

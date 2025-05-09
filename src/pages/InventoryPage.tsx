@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import DashboardHeader from '@/components/DashboardHeader';
-import { getProducts } from '@/utils/woocommerce';
+import { getProducts } from '@/utils/woocommerce/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SearchIcon, ArrowDownIcon, ArrowUpIcon, Filter, Download } from 'lucide-react';
