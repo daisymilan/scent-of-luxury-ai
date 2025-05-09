@@ -9,7 +9,7 @@ interface AssistantHeaderProps {
 export const AssistantHeader = ({ setIsExpanded }: AssistantHeaderProps) => {
   return (
     <div className="bg-primary text-white p-3 flex justify-between items-center">
-      <h3 className="font-semibold">MIN NEW YORK AI Assistant</h3>
+      <h3 className="font-medium">MIN NEW YORK AI Assistant</h3>
       <div className="flex space-x-2">
         <Button 
           variant="ghost" 
