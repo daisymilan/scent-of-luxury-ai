@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -29,9 +30,18 @@ import {
   navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
 
-const DashboardHeader = () => {
+// Add interface for the component props
+interface DashboardHeaderProps {
+  title?: string;
+  heading?: string;
+}
+
+const DashboardHeader = ({ title, heading }: DashboardHeaderProps = {}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const { user, logout } = useAuth();
+  
+  // Use title or heading prop if provided
+  const headerTitle = title || heading || '';
   
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-30 backdrop-blur-sm bg-white/80">
@@ -43,6 +53,11 @@ const DashboardHeader = () => {
               <span className="block -mt-1.5 text-xl tracking-widest">NEW YORK</span>
             </div>
           </Link>
+          
+          {/* Add heading/title display if provided */}
+          {headerTitle && (
+            <h1 className="text-xl font-semibold hidden md:block">{headerTitle}</h1>
+          )}
           
           {/* Desktop Navigation Menu */}
           <div className="hidden md:block">

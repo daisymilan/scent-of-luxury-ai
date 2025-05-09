@@ -1,10 +1,40 @@
 
-// Update import statements to properly use the DashboardHeader component
-// Make sure the component accepts a title prop
 import React from 'react';
 import DashboardHeader from '@/components/DashboardHeader';
 import KpiOverview from '@/components/KpiOverview';
 import RecentOrdersTable from '@/components/RecentOrdersTable';
+
+// Mock data for recent orders
+const mockOrders = [
+  {
+    orderId: 123456,
+    customerName: 'John Smith',
+    orderDate: '2025-05-01',
+    totalAmount: 129.99,
+    status: 'Delivered'
+  },
+  {
+    orderId: 123457,
+    customerName: 'Sarah Johnson',
+    orderDate: '2025-05-03',
+    totalAmount: 79.50,
+    status: 'Shipped'
+  },
+  {
+    orderId: 123458,
+    customerName: 'Michael Brown',
+    orderDate: '2025-05-05',
+    totalAmount: 249.99,
+    status: 'Processing'
+  },
+  {
+    orderId: 123459,
+    customerName: 'Emily Davis',
+    orderDate: '2025-05-07',
+    totalAmount: 54.25,
+    status: 'Delivered'
+  }
+];
 
 const Index = () => {
   return (
@@ -13,7 +43,7 @@ const Index = () => {
       
       <div className="space-y-8">
         <KpiOverview />
-        <RecentOrdersTable />
+        <RecentOrdersTable orders={mockOrders} />
       </div>
     </div>
   );
