@@ -15,10 +15,12 @@ import { AssistantFooter } from '@/components/ai-assistant/AssistantFooter';
 import { QueryInput } from '@/components/ai-assistant/QueryInput';
 import { AssistantToggles } from '@/components/ai-assistant/AssistantToggles';
 import { SuggestionLinks } from '@/components/ai-assistant/SuggestionLinks';
-import { createSpeechRecognition } from '@/components/ai-assistant/SpeechRecognition';
+import { createSpeechRecognition, checkSpeechRecognitionSupport } from '@/components/ai-assistant/SpeechRecognition';
 import { useSpeechSynthesis } from '@/components/ai-assistant/useSpeechSynthesis';
 import { useWebhookCall } from '@/components/ai-assistant/useWebhookCall';
 import { getGrokApiConfig } from '@/utils/grokApi';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { X } from 'lucide-react';
 
 const AiAssistant = () => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -28,6 +30,10 @@ const AiAssistant = () => {
   const [displayedQuery, setDisplayedQuery] = useState('');
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  // Speech recognition support state
+  const [speechSupport, setSpeechSupport] = useState(() => checkSpeechRecognitionSupport());
+  const [showSpeechAlert, setShowSpeechAlert] = useState(false);
   
   // Error dialog state
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
@@ -77,6 +83,11 @@ const AiAssistant = () => {
       setN8nWebhookUrl('https://minnewyorkofficial.app.n8n.cloud/webhook/ceo-dashboard');
     }
     
+    // Check speech recognition support
+    const supportResult = checkSpeechRecognitionSupport();
+    setSpeechSupport(supportResult);
+    setShowSpeechAlert(!supportResult.isSupported);
+    
     // Initialize speech recognition
     recognitionRef.current = createSpeechRecognition({
       onResult: (transcript) => {
@@ -90,11 +101,20 @@ const AiAssistant = () => {
       onError: (event) => {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
-        toast({
-          title: "Voice Recognition Error",
-          description: `Could not recognize voice: ${event.error}`,
-          variant: "destructive"
-        });
+        
+        if (event.error === 'not-supported') {
+          setSpeechSupport({
+            isSupported: false,
+            errorMessage: event.message || "Speech recognition not supported"
+          });
+          setShowSpeechAlert(true);
+        } else {
+          toast({
+            title: "Voice Recognition Error",
+            description: event.message || `Could not recognize voice: ${event.error}`,
+            variant: "destructive"
+          });
+        }
       },
       onEnd: () => {
         setIsListening(false);
@@ -143,7 +163,7 @@ const AiAssistant = () => {
     if (!recognitionRef.current) {
       toast({
         title: "Speech Recognition Not Available",
-        description: "Your browser doesn't support speech recognition",
+        description: speechSupport.errorMessage || "Your browser doesn't support speech recognition",
         variant: "destructive"
       });
       return;
@@ -234,6 +254,17 @@ const AiAssistant = () => {
       <Card className="fixed bottom-6 right-6 w-96 shadow-xl border border-gray-200 rounded-xl overflow-hidden z-50">
         <AssistantHeader setIsExpanded={setIsExpanded} />
         
+        {showSpeechAlert && (
+          <Alert className="bg-red-500 text-white border-none rounded-none flex items-center justify-between">
+            <AlertDescription>
+              {speechSupport.errorMessage || "Speech recognition not available"}
+            </AlertDescription>
+            <button onClick={() => setShowSpeechAlert(false)} className="text-white">
+              <X size={16} />
+            </button>
+          </Alert>
+        )}
+        
         <div className="p-4 max-h-96 overflow-y-auto bg-gray-50">
           <WebhookError isWebhookFailed={isWebhookFailed} />
           <UserQuery displayedQuery={displayedQuery} />
@@ -261,6 +292,8 @@ const AiAssistant = () => {
               handleListen={handleListen}
               handleClear={handleClear}
               handleQuerySubmit={() => handleQuerySubmit()}
+              speechRecognitionSupported={speechSupport.isSupported}
+              speechRecognitionErrorMessage={speechSupport.errorMessage}
             />
           </div>
           
