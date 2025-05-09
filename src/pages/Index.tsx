@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import DashboardHeader from '@/components/DashboardHeader';
@@ -7,8 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import KpiOverview from '@/components/KpiOverview';
 import { Button } from '@/components/ui/button';
 import { ArrowDownToLine, ArrowUpFromLine, MoreHorizontal, Clock } from 'lucide-react';
-import AiAssistant from '@/components/AiAssistant';
-import { getTotalSales, getTotalOrders } from '@/utils/woocommerce';
+import AiAssistant from '@/components/ai-assistant/AiAssistant';
 import { useToast } from '@/hooks/use-toast';
 
 const IndexPage: React.FC = () => {
@@ -17,37 +17,12 @@ const IndexPage: React.FC = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchSalesData = async () => {
-      try {
-        const sales = await getTotalSales();
-        setTotalSales(sales);
-      } catch (error: any) {
-        console.error("Failed to fetch total sales:", error);
-        toast({
-          title: "Error fetching sales data",
-          description: error.message || "Failed to load sales data.",
-          variant: "destructive",
-        });
-      }
-    };
-
-    const fetchOrdersData = async () => {
-      try {
-        const orders = await getTotalOrders();
-        setTotalOrders(orders);
-      } catch (error: any) {
-        console.error("Failed to fetch total orders:", error);
-        toast({
-          title: "Error fetching orders data",
-          description: error.message || "Failed to load orders data.",
-          variant: "destructive",
-        });
-      }
-    };
-
-    fetchSalesData();
-    fetchOrdersData();
-  }, [toast]);
+    // Mock data for total sales and orders
+    setTimeout(() => {
+      setTotalSales(124500);
+      setTotalOrders(350);
+    }, 1000);
+  }, []);
 
   const recentOrders = [
     {
@@ -126,7 +101,7 @@ const IndexPage: React.FC = () => {
           </Card>
         </div>
 
-        <Tabs defaultvalue="overview" className="w-full">
+        <Tabs defaultValue="overview" className="w-full">
           <TabsList>
             <TabsTrigger value="overview">KPI Overview</TabsTrigger>
             <TabsTrigger value="recent">Recent Orders</TabsTrigger>
