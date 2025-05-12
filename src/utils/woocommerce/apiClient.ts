@@ -64,8 +64,8 @@ export const fetchWooCommerceData = async <T,>(
   throw lastError || new Error('Failed to fetch WooCommerce data after multiple attempts');
 };
 
-// Test WooCommerce connection
-export const testWooCommerceConnection = async (config?: WooCommerceConfig): Promise<boolean> => {
+// Renamed from testWooCommerceConnection to avoid conflict with config.ts
+export const testApiConnection = async (config?: WooCommerceConfig): Promise<boolean> => {
   const wooConfig = config || getWooCommerceConfig();
   
   if (!wooConfig) {
