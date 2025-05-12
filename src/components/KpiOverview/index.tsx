@@ -1,125 +1,29 @@
 
-import { useWooStats, useWooOrders, useWooProducts } from '@/utils/woocommerce';
 import { useState, useEffect } from 'react';
+import { useWooStats, useWooOrders, useWooProducts } from '@/utils/woocommerce';
 import { useToast } from '@/hooks/use-toast';
 import KpiCards from './KpiCards';
 import RevenueTrendChart from './RevenueTrendChart';
 import TopSellingProducts from './TopSellingProducts';
 import RecentOrdersTable from '@/components/RecentOrdersTable';
+import { useChartData } from './hooks/useChartData';
+import { useMetricsCalculator } from './hooks/useMetricsCalculator';
+import { useFormattedProducts } from './hooks/useFormattedProducts';
+import { useFormattedOrders } from './hooks/useFormattedOrders';
 
 const KpiOverview = () => {
   const { stats, isLoading: isStatsLoading } = useWooStats('week');
   const { orders, isLoading: isOrdersLoading } = useWooOrders(10); 
   const { products, isLoading: isProductsLoading } = useWooProducts(10);
-  const [dailyChartData, setDailyChartData] = useState<{ name: string; value: number }[]>([]);
   const { toast } = useToast();
-
-  // Debug logging
-  useEffect(() => {
-    console.log("WooCommerce stats:", stats);
-    console.log("WooCommerce orders:", orders);
-    console.log("WooCommerce products:", products);
-  }, [stats, orders, products]);
-
-  useEffect(() => {
-    // Generate chart data from orders if available
-    if (orders && orders.length > 0) {
-      // Group orders by date and sum totals
-      const ordersByDate = orders.reduce((acc: Record<string, number>, order) => {
-        const date = new Date(order.date_created).toLocaleDateString();
-        acc[date] = (acc[date] || 0) + parseFloat(order.total);
-        return acc;
-      }, {});
-
-      // Convert to chart format
-      const chartData = Object.entries(ordersByDate)
-        .map(([date, value]) => ({
-          name: date,
-          value: Number(value.toFixed(2))
-        }))
-        .sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime())
-        .slice(-7); // Last 7 days
-
-      console.log("Generated chart data from orders:", chartData);
-      setDailyChartData(chartData);
-    } else {
-      console.log("No orders available for chart data");
-      setDailyChartData([]);
-    }
-  }, [orders]);
-
+  
+  // Use custom hooks to process data
+  const dailyChartData = useChartData(orders);
+  const { dailyRevenue, monthlyRevenue, totalProductsSold, conversionRate } = useMetricsCalculator(orders, stats);
+  const topProductsList = useFormattedProducts(products);
+  const recentOrders = useFormattedOrders(orders);
+  
   const isLoading = isStatsLoading || isOrdersLoading || isProductsLoading;
-
-  // Calculate revenue metrics from real data only
-  let dailyRevenue = 0;
-  let monthlyRevenue = 0;
-  let totalProductsSold = 0;
-  let conversionRate = "0.0%";
-
-  // Calculate metrics from orders if available
-  if (orders && orders.length > 0) {
-    // For daily revenue, sum orders from the last 24 hours
-    const oneDayAgo = new Date();
-    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-    
-    dailyRevenue = orders
-      .filter(order => new Date(order.date_created) >= oneDayAgo)
-      .reduce((sum, order) => sum + parseFloat(order.total), 0);
-    
-    // For monthly revenue, sum all orders or multiply daily by 30 if limited data
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    const monthlyOrders = orders.filter(order => new Date(order.date_created) >= thirtyDaysAgo);
-    if (monthlyOrders.length > 0) {
-      monthlyRevenue = monthlyOrders.reduce((sum, order) => sum + parseFloat(order.total), 0);
-    } else {
-      // If we don't have 30 days of data, estimate based on what we have
-      monthlyRevenue = dailyRevenue * 30;
-    }
-    
-    // Calculate total products sold from order line items
-    totalProductsSold = orders.reduce((sum, order) => {
-      return sum + order.line_items.reduce((itemSum, item) => itemSum + item.quantity, 0);
-    }, 0);
-    
-    // Calculate conversion rate if we have stats
-    if (stats && stats.totalOrders && stats.totalVisitors) {
-      const rate = (stats.totalOrders / stats.totalVisitors) * 100;
-      conversionRate = `${rate.toFixed(1)}%`;
-    }
-  } else if (stats) {
-    // Fallback to stats if available
-    dailyRevenue = stats.totalRevenue ? parseFloat(stats.totalRevenue) / 7 : 0; // Divide weekly revenue by 7
-    monthlyRevenue = stats.totalRevenue ? parseFloat(stats.totalRevenue) * 4 : 0; // Multiply weekly revenue by 4
-    totalProductsSold = stats.totalItems || 0;
-  }
-
-  // Format top products from WooCommerce data
-  const topProductsList = products && products.length > 0
-    ? products
-        .filter(product => product.name && product.id)
-        .sort((a, b) => (b.total_sales || 0) - (a.total_sales || 0))
-        .slice(0, 4)
-        .map(product => ({
-          id: product.id,
-          name: product.name,
-          sales: product.total_sales || 0,
-          revenue: parseFloat(product.price || '0') * (product.total_sales || 0),
-          image: product.images && product.images.length > 0 ? product.images[0].src : '/placeholder.svg'
-        }))
-    : [];
-
-  // Format recent orders for the table component
-  const recentOrders = orders && orders.length > 0
-    ? orders.slice(0, 4).map(order => ({
-        orderId: order.id,
-        customerName: `${order.billing.first_name} ${order.billing.last_name}`,
-        orderDate: new Date(order.date_created).toLocaleDateString(),
-        totalAmount: parseFloat(order.total),
-        status: order.status.charAt(0).toUpperCase() + order.status.slice(1)
-      }))
-    : [];
 
   // Notify if no data available but API connected
   useEffect(() => {
@@ -134,6 +38,13 @@ const KpiOverview = () => {
       }
     }
   }, [isLoading, stats, orders, products, toast]);
+
+  // Debug logging
+  useEffect(() => {
+    console.log("WooCommerce stats:", stats);
+    console.log("WooCommerce orders:", orders);
+    console.log("WooCommerce products:", products);
+  }, [stats, orders, products]);
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
