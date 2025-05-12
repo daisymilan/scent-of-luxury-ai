@@ -24,12 +24,14 @@ const InventoryPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortColumn, setSortColumn] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [activeTab, setActiveTab] = useState('all');
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const fetchedProducts = await getProducts();
+        console.log("Fetched products:", fetchedProducts);
         setProducts(fetchedProducts);
       } catch (error: any) {
         console.error('Failed to fetch products:', error);
@@ -79,8 +81,123 @@ const InventoryPage: React.FC = () => {
     });
   }, [products, sortColumn, sortOrder]);
 
-  const filteredProducts = sortedProducts.filter((product: any) =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase())
+  // Filter products based on search query and stock status
+  const getFilteredProducts = (stockStatus?: string) => {
+    return sortedProducts.filter((product: any) => {
+      const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      if (stockStatus) {
+        return matchesSearch && product.stock_status === stockStatus;
+      }
+      
+      return matchesSearch;
+    });
+  };
+
+  const filteredProducts = getFilteredProducts();
+  const inStockProducts = getFilteredProducts('instock');
+  const outOfStockProducts = getFilteredProducts('outofstock');
+
+  // Shared table component to avoid duplication
+  const ProductsTable = ({ products }: { products: any[] }) => (
+    <div className="relative mt-4 overflow-auto">
+      <Table>
+        <TableCaption>A comprehensive list of products in your inventory.</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead>
+              <Button variant="ghost" size="sm" onClick={() => handleSort('name')}>
+                Product Name
+                {sortColumn === 'name' && (
+                  <>
+                    {sortOrder === 'asc' ? (
+                      <ArrowDownIcon className="ml-1 h-4 w-4" />
+                    ) : (
+                      <ArrowUpIcon className="ml-1 h-4 w-4" />
+                    )}
+                  </>
+                )}
+              </Button>
+            </TableHead>
+            <TableHead>
+              <Button variant="ghost" size="sm" onClick={() => handleSort('sku')}>
+                SKU
+                {sortColumn === 'sku' && (
+                  <>
+                    {sortOrder === 'asc' ? (
+                      <ArrowDownIcon className="ml-1 h-4 w-4" />
+                    ) : (
+                      <ArrowUpIcon className="ml-1 h-4 w-4" />
+                    )}
+                  </>
+                )}
+              </Button>
+            </TableHead>
+            <TableHead>
+              <Button variant="ghost" size="sm" onClick={() => handleSort('stock_quantity')}>
+                Stock
+                {sortColumn === 'stock_quantity' && (
+                  <>
+                    {sortOrder === 'asc' ? (
+                      <ArrowDownIcon className="ml-1 h-4 w-4" />
+                    ) : (
+                      <ArrowUpIcon className="ml-1 h-4 w-4" />
+                    )}
+                  </>
+                )}
+              </Button>
+            </TableHead>
+            <TableHead className="text-right">Price</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {products.length > 0 ? (
+            products.map((product: any) => (
+              <TableRow key={product.id}>
+                <TableCell className="font-medium">{product.name}</TableCell>
+                <TableCell>{product.sku}</TableCell>
+                <TableCell>
+                  {product.stock_quantity !== null ? product.stock_quantity : 'N/A'}
+                </TableCell>
+                <TableCell className="text-right">${product.price}</TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={4} className="text-center">
+                No products found.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
+  // Shared search and filter controls
+  const TableControls = () => (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="relative">
+        <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+        <Input
+          type="search"
+          placeholder="Search products..."
+          className="pl-8 shadow-sm"
+          value={searchQuery}
+          onChange={handleSearch}
+        />
+      </div>
+      <div className="flex items-center space-x-2">
+        <Button variant="outline" size="sm">
+          <Filter className="mr-2 h-4 w-4" />
+          Filter
+        </Button>
+        <Button variant="outline" size="sm">
+          <Download className="mr-2 h-4 w-4" />
+          Export
+        </Button>
+      </div>
+    </div>
   );
 
   return (
@@ -96,119 +213,25 @@ const InventoryPage: React.FC = () => {
           <CardDescription>Manage your product inventory and track stock levels.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="all" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList>
               <TabsTrigger value="all">All Products</TabsTrigger>
               <TabsTrigger value="instock">In Stock</TabsTrigger>
               <TabsTrigger value="outofstock">Out of Stock</TabsTrigger>
             </TabsList>
             <TabsContent value="all" className="pt-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="relative">
-                  <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                  <Input
-                    type="search"
-                    placeholder="Search products..."
-                    className="pl-8 shadow-sm"
-                    value={searchQuery}
-                    onChange={handleSearch}
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm">
-                    <Filter className="mr-2 h-4 w-4" />
-                    Filter
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Download className="mr-2 h-4 w-4" />
-                    Export
-                  </Button>
-                </div>
-              </div>
-
-              <div className="relative mt-4 overflow-auto">
-                <Table>
-                  <TableCaption>A comprehensive list of products in your inventory.</TableCaption>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>
-                        <Button variant="ghost" size="sm" onClick={() => handleSort('name')}>
-                          Product Name
-                          {sortColumn === 'name' && (
-                            <>
-                              {sortOrder === 'asc' ? (
-                                <ArrowDownIcon className="ml-1 h-4 w-4" />
-                              ) : (
-                                <ArrowUpIcon className="ml-1 h-4 w-4" />
-                              )}
-                            </>
-                          )}
-                        </Button>
-                      </TableHead>
-                      <TableHead>
-                        <Button variant="ghost" size="sm" onClick={() => handleSort('sku')}>
-                          SKU
-                          {sortColumn === 'sku' && (
-                            <>
-                              {sortOrder === 'asc' ? (
-                                <ArrowDownIcon className="ml-1 h-4 w-4" />
-                              ) : (
-                                <ArrowUpIcon className="ml-1 h-4 w-4" />
-                              )}
-                            </>
-                          )}
-                        </Button>
-                      </TableHead>
-                      <TableHead>
-                        <Button variant="ghost" size="sm" onClick={() => handleSort('stock_quantity')}>
-                          Stock
-                          {sortColumn === 'stock_quantity' && (
-                            <>
-                              {sortOrder === 'asc' ? (
-                                <ArrowDownIcon className="ml-1 h-4 w-4" />
-                              ) : (
-                                <ArrowUpIcon className="ml-1 h-4 w-4" />
-                              )}
-                            </>
-                          )}
-                        </Button>
-                      </TableHead>
-                      <TableHead className="text-right">Price</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredProducts.map((product: any) => (
-                      <TableRow key={product.id}>
-                        <TableCell className="font-medium">{product.name}</TableCell>
-                        <TableCell>{product.sku}</TableCell>
-                        <TableCell>
-                          {product.stock_quantity !== null ? product.stock_quantity : 'N/A'}
-                        </TableCell>
-                        <TableCell className="text-right">${product.price}</TableCell>
-                      </TableRow>
-                    ))}
-                    {filteredProducts.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center">
-                          No products found.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+              <TableControls />
+              <ProductsTable products={filteredProducts} />
             </TabsContent>
-            <TabsContent value="instock">
-              <div>
-                <h2>In Stock Products</h2>
-                {/* Content for in-stock products */}
-              </div>
+            
+            <TabsContent value="instock" className="pt-4">
+              <TableControls />
+              <ProductsTable products={inStockProducts} />
             </TabsContent>
-            <TabsContent value="outofstock">
-              <div>
-                <h2>Out of Stock Products</h2>
-                {/* Content for out-of-stock products */}
-              </div>
+            
+            <TabsContent value="outofstock" className="pt-4">
+              <TableControls />
+              <ProductsTable products={outOfStockProducts} />
             </TabsContent>
           </Tabs>
         </CardContent>
