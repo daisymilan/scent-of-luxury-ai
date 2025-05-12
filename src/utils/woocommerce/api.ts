@@ -3,7 +3,7 @@
  * WooCommerce API utility functions
  */
 import { WooCommerceConfig, getWooCommerceConfig } from './config';
-import { WooProduct, WooOrder } from './types';
+import { WooProduct, WooOrder, WooCustomer, WooProductVariation } from './types';
 
 // API Request functions
 export const fetchWooCommerceData = async <T,>(
@@ -89,6 +89,74 @@ export const getProducts = async (
   }
 };
 
+// Get a single product by ID
+export const getProductById = async (
+  productId: number,
+  config?: WooCommerceConfig
+): Promise<WooProduct> => {
+  const wooConfig = config || getWooCommerceConfig();
+  if (!wooConfig) throw new Error('WooCommerce config not found');
+  
+  try {
+    return await fetchWooCommerceData<WooProduct>(`products/${productId}`, wooConfig);
+  } catch (error) {
+    console.error(`Error fetching WooCommerce product ${productId}:`, error);
+    throw error;
+  }
+};
+
+// Get a product variation by product ID and variation ID
+export const getProductVariation = async (
+  productId: number,
+  variationId: number,
+  config?: WooCommerceConfig
+): Promise<WooProductVariation> => {
+  const wooConfig = config || getWooCommerceConfig();
+  if (!wooConfig) throw new Error('WooCommerce config not found');
+  
+  try {
+    return await fetchWooCommerceData<WooProductVariation>(
+      `products/${productId}/variations/${variationId}`, 
+      wooConfig
+    );
+  } catch (error) {
+    console.error(`Error fetching product variation ${variationId} for product ${productId}:`, error);
+    throw error;
+  }
+};
+
+// Get a single order by ID
+export const getOrderById = async (
+  orderId: number,
+  config?: WooCommerceConfig
+): Promise<WooOrder> => {
+  const wooConfig = config || getWooCommerceConfig();
+  if (!wooConfig) throw new Error('WooCommerce config not found');
+  
+  try {
+    return await fetchWooCommerceData<WooOrder>(`orders/${orderId}`, wooConfig);
+  } catch (error) {
+    console.error(`Error fetching WooCommerce order ${orderId}:`, error);
+    throw error;
+  }
+};
+
+// Get a single customer by ID
+export const getCustomerById = async (
+  customerId: number,
+  config?: WooCommerceConfig
+): Promise<WooCustomer> => {
+  const wooConfig = config || getWooCommerceConfig();
+  if (!wooConfig) throw new Error('WooCommerce config not found');
+  
+  try {
+    return await fetchWooCommerceData<WooCustomer>(`customers/${customerId}`, wooConfig);
+  } catch (error) {
+    console.error(`Error fetching WooCommerce customer ${customerId}:`, error);
+    throw error;
+  }
+};
+
 // Create a new product in WooCommerce
 export const createWooProduct = async (
   product: Partial<WooProduct>,
@@ -146,3 +214,4 @@ export const createWooOrder = async (
     throw error;
   }
 };
+

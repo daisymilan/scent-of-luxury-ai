@@ -11,3 +11,8 @@ export * from './useProducts';
 export * from './useOrders';
 export * from './useCustomers';
 export * from './useStats';
+export * from './hooks';
+
+// Export direct access to the staging MIN API endpoint
+export const MIN_API_URL = 'https://staging.min.com/int';
+

@@ -30,6 +30,32 @@ export interface WooProduct {
   }>;
 }
 
+export interface WooProductVariation {
+  id: number;
+  description: string;
+  permalink: string;
+  sku: string;
+  price: string;
+  regular_price: string;
+  sale_price: string;
+  date_created: string;
+  on_sale: boolean;
+  purchasable: boolean;
+  virtual: boolean;
+  stock_quantity: number | null;
+  stock_status: string;
+  attributes: Array<{
+    id: number;
+    name: string;
+    option: string;
+  }>;
+  image: {
+    id: number;
+    src: string;
+    alt: string;
+  };
+}
+
 export interface WooOrder {
   id: number;
   status: string;
@@ -107,3 +133,4 @@ export interface WooCustomer {
   date_created: string;
   date_modified: string;
 }
+
