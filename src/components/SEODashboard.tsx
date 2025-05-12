@@ -1,234 +1,215 @@
-
-import { useState, useEffect } from 'react';
-import { BarChart2, CheckCircle, Circle, Info, Search, Settings, TrendingDown, TrendingUp } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableFooter,
+  TableHead,
+  TableRow,
+  TableCell,
+} from "@/components/ui/table"
+import { ArrowDown, ArrowUp, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { WooProduct } from '@/utils/woocommerce/types';
+import { Skeleton } from '@/components/ui/skeleton';
+import { WooProduct } from '@/utils/woocommerce';
 
-// Define the props interface for SEODashboard
-interface SEODashboardProps {
-  categories?: any[];
-  productsWithSEO?: WooProduct[];
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
 }
 
-// Generate data based on WooCommerce product data
-const SEODashboard = ({ categories, productsWithSEO }: SEODashboardProps) => {
-  const [keywords, setKeywords] = useState([
-    { keyword: "Luxury Fragrances", position: 2, volume: 5400, change: 1 },
-    { keyword: "Niche Perfumes", position: 4, volume: 3200, change: -1 },
-    { keyword: "Exclusive Scents", position: 7, volume: 1800, change: 2 }
-  ]);
-  
-  const [pages, setPages] = useState([
-    { url: "/collections/luxury", traffic: 1240, conversion: 3.5 },
-    { url: "/products/signature-collection", traffic: 980, conversion: 4.2 },
-    { url: "/collections/limited-edition", traffic: 720, conversion: 2.8 }
-  ]);
+interface SEODashboardProps {
+  categories: Category[];
+  productsWithSEO: WooProduct[];
+}
 
-  // Process product data if available
-  useEffect(() => {
-    if (productsWithSEO && productsWithSEO.length > 0) {
-      console.log('Processing SEO data from', productsWithSEO.length, 'products');
-      
-      // Create pages data from products
-      const productPages = productsWithSEO.slice(0, 3).map(product => ({
-        url: `/products/${product.id}`,
-        traffic: Math.floor(Math.random() * 1000) + 200,
-        conversion: parseFloat((Math.random() * 5 + 1).toFixed(1))
-      }));
-      
-      if (productPages.length > 0) {
-        setPages(productPages);
-      }
-      
-      // Extract possible keywords from product names and categories
-      if (categories && categories.length > 0) {
-        const categoryKeywords = categories.slice(0, 3).map(cat => ({
-          keyword: cat.name,
-          position: Math.floor(Math.random() * 10) + 1,
-          volume: Math.floor(Math.random() * 5000) + 500,
-          change: Math.floor(Math.random() * 5) - 2
-        }));
-        
-        if (categoryKeywords.length > 0) {
-          setKeywords(categoryKeywords);
-        }
-      }
+const SEODashboard: React.FC<SEODashboardProps> = ({ categories, productsWithSEO }) => {
+  const [selectedCategory, setSelectedCategory] = React.useState<string>("");
+  const [searchQuery, setSearchQuery] = React.useState<string>("");
+  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('asc');
+
+  // Filter products based on selected category and search query
+  const filteredProducts = React.useMemo(() => {
+    let filtered = productsWithSEO || [];
+
+    if (selectedCategory && selectedCategory !== "all") {
+      filtered = filtered.filter(product =>
+        product.categories?.some(cat => cat.slug === selectedCategory)
+      );
     }
-  }, [productsWithSEO, categories]);
 
-  // Calculate optimization percentages based on data
-  const metaTagsCompletion = productsWithSEO ? 
-    Math.round((productsWithSEO.filter(p => p.name && p.name.length > 10).length / productsWithSEO.length) * 100) : 92;
-  
-  const contentOptimization = productsWithSEO ?
-    Math.round((productsWithSEO.filter(p => p.description && p.description.length > 50).length / productsWithSEO.length) * 100) : 65;
-  
+    if (searchQuery) {
+      filtered = filtered.filter(product =>
+        product.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    return filtered;
+  }, [productsWithSEO, selectedCategory, searchQuery]);
+
+  // Sort products based on SEO score
+  const sortedProducts = React.useMemo(() => {
+    const sorted = [...filteredProducts];
+    sorted.sort((a, b) => {
+      const aScore = a.meta_data?.find(meta => meta.key === 'rank_math_seo_score')?.value || 0;
+      const bScore = b.meta_data?.find(meta => meta.key === 'rank_math_seo_score')?.value || 0;
+
+      if (sortOrder === 'asc') {
+        return aScore - bScore;
+      } else {
+        return bScore - aScore;
+      }
+    });
+    return sorted;
+  }, [filteredProducts, sortOrder]);
+
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategory(value);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const toggleSortOrder = () => {
+    setSortOrder(prevOrder => (prevOrder === 'asc' ? 'desc' : 'asc'));
+  };
+
   return (
-    <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-      <Card className="col-span-full lg:col-span-1">
-        <CardHeader className="pb-2 flex flex-row items-center justify-between">
-          <div className="flex items-center">
-            <CardTitle className="text-lg font-medium">Keyword Rankings</CardTitle>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 ml-1">
-                  <Info size={14} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="max-w-xs text-xs">Rankings are updated daily from Google Search Console data</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          <Button className="h-8 text-xs" size="sm" variant="outline">
-            <Settings size={14} className="mr-1" /> Configure
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {keywords.map((keyword, index) => (
-              <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-white border border-gray-100">
-                <div className="flex-1">
-                  <div className="flex items-center">
-                    <span className="font-medium text-sm">{keyword.keyword}</span>
-                    {keyword.position <= 3 && (
-                      <Badge variant="outline" className="ml-2 bg-green-50 text-green-700 border-green-200 text-xs">
-                        Top 3
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center mt-1 text-xs text-gray-500">
-                    <span className="mr-4">Position: {keyword.position}</span>
-                    <span>Volume: {keyword.volume.toLocaleString()}/mo</span>
-                  </div>
-                </div>
-                <div className={`flex items-center ${
-                  keyword.change > 0 ? 'text-green-600' : 
-                  keyword.change < 0 ? 'text-red-600' : 'text-gray-500'
-                }`}>
-                  {keyword.change > 0 ? (
-                    <TrendingUp size={16} className="mr-1" />
-                  ) : keyword.change < 0 ? (
-                    <TrendingDown size={16} className="mr-1" />
-                  ) : (
-                    <Circle size={16} className="mr-1" />
-                  )}
-                  <span className="text-sm">
-                    {keyword.change > 0 ? `+${keyword.change}` : keyword.change}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+    <Card>
+      <CardHeader>
+        <CardTitle>SEO Dashboard</CardTitle>
+        <CardDescription>Analyze and improve your product SEO</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-4">
+          <div className="flex items-center space-x-4">
+            <Label htmlFor="category">Category</Label>
+            <Select onValueChange={handleCategoryChange}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories?.map((category) => (
+                  <SelectItem key={category.id} value={category.slug}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-      <Card className="col-span-full lg:col-span-1">
-        <CardHeader className="pb-2 flex flex-row items-center justify-between">
-          <CardTitle className="text-lg font-medium">Top Pages</CardTitle>
-          <Button className="h-8 text-xs" size="sm" variant="outline">
-            <BarChart2 size={14} className="mr-1" /> Full Report
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {pages.map((page, index) => (
-              <div key={index} className="p-3 rounded-lg bg-white border border-gray-100">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center overflow-hidden">
-                    <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center text-primary mr-3 flex-shrink-0">
-                      <Search size={16} />
-                    </div>
-                    <div className="truncate">
-                      <p className="font-medium text-sm truncate">{page.url}</p>
-                      <div className="flex items-center mt-1">
-                        <span className="text-xs text-gray-500 mr-3">
-                          {page.traffic.toLocaleString()} visits/mo
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {page.conversion}% conversion
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card className="col-span-full">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-medium">SEO Optimization Status</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <div className="border rounded-lg p-4">
-              <div className="flex items-center mb-3">
-                <div className="h-8 w-8 rounded bg-green-100 flex items-center justify-center text-green-600 mr-3">
-                  <CheckCircle size={18} />
-                </div>
-                <h3 className="font-medium">Meta Tags</h3>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm text-gray-600">All product pages have optimized meta tags.</p>
-                <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div className="bg-green-500 h-1.5 rounded-full" style={{ width: `${metaTagsCompletion}%` }}></div>
-                </div>
-                <p className="text-xs text-gray-500">{metaTagsCompletion}% complete</p>
-              </div>
-            </div>
-            
-            <div className="border rounded-lg p-4">
-              <div className="flex items-center mb-3">
-                <div className="h-8 w-8 rounded bg-yellow-100 flex items-center justify-center text-yellow-600 mr-3">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 16V12M12 8H12.01M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-                <h3 className="font-medium">Content Optimization</h3>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm text-gray-600">Some product descriptions need improvement.</p>
-                <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div className="bg-yellow-500 h-1.5 rounded-full" style={{ width: `${contentOptimization}%` }}></div>
-                </div>
-                <p className="text-xs text-gray-500">{contentOptimization}% complete</p>
-              </div>
-            </div>
-            
-            <div className="border rounded-lg p-4">
-              <div className="flex items-center mb-3">
-                <div className="h-8 w-8 rounded bg-green-100 flex items-center justify-center text-green-600 mr-3">
-                  <CheckCircle size={18} />
-                </div>
-                <h3 className="font-medium">Schema Markup</h3>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm text-gray-600">Rich snippets implemented on all pages.</p>
-                <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div className="bg-green-500 h-1.5 rounded-full" style={{ width: '100%' }}></div>
-                </div>
-                <p className="text-xs text-gray-500">100% complete</p>
-              </div>
+            <Label htmlFor="search">Search</Label>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <Input
+                id="search"
+                placeholder="Search products..."
+                className="pl-8"
+                onChange={handleSearchChange}
+              />
             </div>
           </div>
-          
-          <div className="mt-6 flex justify-end">
-            <Button className="mr-2" variant="outline">Run SEO Audit</Button>
-            <Button>Fix Issues</Button>
+
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50px]">
+                    <Button variant="ghost" size="sm" onClick={toggleSortOrder}>
+                      SEO Score
+                      {sortOrder === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />}
+                    </Button>
+                  </TableHead>
+                  <TableHead>Product</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Category</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {!productsWithSEO ? (
+                  <>
+                    <TableRow>
+                      <TableCell>
+                        <Skeleton className="h-4 w-[75px]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-[150px]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-[200px]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-[100px]" />
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>
+                        <Skeleton className="h-4 w-[75px]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-[150px]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-[200px]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-[100px]" />
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>
+                        <Skeleton className="h-4 w-[75px]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-[150px]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-[200px]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-[100px]" />
+                      </TableCell>
+                    </TableRow>
+                  </>
+                ) : sortedProducts.map((product) => {
+                  const seoScore = product.meta_data?.find(meta => meta.key === 'rank_math_seo_score')?.value || 0;
+                  return (
+                    <TableRow key={product.id}>
+                      <TableCell>
+                        <Badge variant="secondary">{seoScore}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {product.name}
+                      </TableCell>
+                      <TableCell>
+                        {product.short_description && (
+                          <p className="text-sm text-gray-500 mt-1 line-clamp-2" 
+                             dangerouslySetInnerHTML={{ __html: product.short_description }} />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {product.categories?.map((category) => (
+                          <div key={category.id}>
+                            {category.name}
+                          </div>
+                        ))}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

@@ -96,10 +96,10 @@ const Index = () => {
           />
         )}
         
-        {activeTab === 'carts' && (
+        {activeTab === 'carts' && orders && products && (
           <AbandonedCartRecovery 
-            orders={orders}
-            products={products}
+            abandonedOrders={orders.filter(order => order.status === 'pending' || order.status === 'on-hold')}
+            allProducts={products}
           />
         )}
       </div>

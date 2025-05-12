@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import DashboardHeader from '@/components/DashboardHeader';
@@ -8,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { WooCustomer, WooOrder, WooProduct } from '@/lib/mockData';
 import { useToast } from '@/hooks/use-toast';
-import { WOO_API_BASE_URL, WOO_API_CREDENTIALS, WOO_API_AUTH_PARAMS } from '@/utils/woocommerce';
+import { WOO_API_BASE_URL } from '@/utils/woocommerce';
+import { WOO_API_CREDENTIALS, WOO_API_AUTH_PARAMS } from '@/utils/woocommerce/config';
 
 // Column mapping for B2B leads import
 export const B2BColumnMapping = {
