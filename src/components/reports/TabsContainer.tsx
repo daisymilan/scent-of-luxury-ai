@@ -1,36 +1,61 @@
 
 import { FC, ReactNode } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ErrorDisplay from './ErrorDisplay';
 
 export interface TabItem {
   value: string;
   label: string;
   content: ReactNode;
+  hasError?: boolean;
+  errorMessage?: string;
 }
 
 interface TabsContainerProps {
   tabs: TabItem[];
   activeTab: string;
   onTabChange: (value: string) => void;
+  onErrorClose?: () => void;
 }
 
-const TabsContainer: FC<TabsContainerProps> = ({ tabs, activeTab, onTabChange }) => {
+const TabsContainer: FC<TabsContainerProps> = ({ 
+  tabs, 
+  activeTab, 
+  onTabChange,
+  onErrorClose
+}) => {
+  // Find the active tab to check for errors
+  const currentTab = tabs.find(tab => tab.value === activeTab);
+  const showInlineError = currentTab?.hasError && currentTab?.errorMessage;
+
   return (
-    <Tabs value={activeTab} onValueChange={onTabChange}>
-      <TabsList className="mb-6">
+    <>
+      <Tabs value={activeTab} onValueChange={onTabChange}>
+        <TabsList className="mb-6">
+          {tabs.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        
+        {showInlineError && onErrorClose && (
+          <ErrorDisplay 
+            isVisible={true}
+            message={currentTab.errorMessage || ""}
+            onClose={onErrorClose}
+            asDialog={false}
+            errorType={currentTab.errorMessage?.includes('401') ? 'auth' : 'api'}
+          />
+        )}
+        
         {tabs.map((tab) => (
-          <TabsTrigger key={tab.value} value={tab.value}>
-            {tab.label}
-          </TabsTrigger>
+          <TabsContent key={tab.value} value={tab.value}>
+            {tab.content}
+          </TabsContent>
         ))}
-      </TabsList>
-      
-      {tabs.map((tab) => (
-        <TabsContent key={tab.value} value={tab.value}>
-          {tab.content}
-        </TabsContent>
-      ))}
-    </Tabs>
+      </Tabs>
+    </>
   );
 };
 
