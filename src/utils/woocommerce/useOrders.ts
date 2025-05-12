@@ -20,10 +20,14 @@ export const useWooOrders = (
   
   useEffect(() => {
     const config = getWooCommerceConfig();
-    if (!config) return;
+    if (!config) {
+      setError(new Error('WooCommerce configuration not found'));
+      return;
+    }
     
     const fetchOrders = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         // Build endpoint with query parameters
         let endpoint = `orders?per_page=${limit}`;
@@ -33,8 +37,10 @@ export const useWooOrders = (
         if (dateBefore) endpoint += `&before=${dateBefore}`;
         
         const data = await fetchWooCommerceData<WooOrder[]>(endpoint, config);
+        console.log(`Fetched ${data.length} orders successfully`);
         setOrders(data);
       } catch (err) {
+        console.error('Error fetching orders:', err);
         setError(err as Error);
       } finally {
         setIsLoading(false);

@@ -18,10 +18,14 @@ export const useWooCustomers = (
   
   useEffect(() => {
     const config = getWooCommerceConfig();
-    if (!config) return;
+    if (!config) {
+      setError(new Error('WooCommerce configuration not found'));
+      return;
+    }
     
     const fetchCustomers = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         // Build endpoint with query parameters
         let endpoint = `customers?per_page=${limit}`;
@@ -29,8 +33,10 @@ export const useWooCustomers = (
         if (role) endpoint += `&role=${role}`;
         
         const data = await fetchWooCommerceData<WooCustomer[]>(endpoint, config);
+        console.log(`Fetched ${data.length} customers successfully`);
         setCustomers(data);
       } catch (err) {
+        console.error('Error fetching customers:', err);
         setError(err as Error);
       } finally {
         setIsLoading(false);

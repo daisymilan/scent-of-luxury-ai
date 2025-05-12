@@ -10,8 +10,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 const ReorderReminderPage: React.FC = () => {
   const { user } = useAuth();
   // Fix: Update the hook calls to match the expected number of arguments
-  const { orders, isLoading: ordersLoading } = useWooOrders(100); 
-  const { customers, isLoading: customersLoading } = useWooCustomers(100);
+  const { orders, isLoading: ordersLoading, error: ordersError } = useWooOrders(100); 
+  const { customers, isLoading: customersLoading, error: customersError } = useWooCustomers(100);
   
   const [stats, setStats] = useState({
     customersForReorder: 0,
@@ -57,6 +57,7 @@ const ReorderReminderPage: React.FC = () => {
   }, [orders, customers, ordersLoading, customersLoading]);
   
   const isLoading = ordersLoading || customersLoading;
+  const hasError = ordersError || customersError;
   
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

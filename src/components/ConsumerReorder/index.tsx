@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useWooOrders, useWooCustomers } from '@/utils/woocommerce';
 import { processCustomerData, Customer } from './customerUtils';
 import LoadingState from './LoadingState';
 import EmptyState from './EmptyState';
+import ErrorState from './ErrorState';
 import TableActions from './TableActions';
 import ReminderDialog from './ReminderDialog';
 import CustomerTable from './CustomerTable';
@@ -21,27 +23,48 @@ const ConsumerReorderReminder: React.FC = () => {
   const [sendingReminders, setSendingReminders] = useState<boolean>(false);
   const [processedCustomers, setProcessedCustomers] = useState<Customer[]>([]);
   const [refreshKey, setRefreshKey] = useState<number>(0);
+  const [error, setError] = useState<string | null>(null);
   
   const { toast } = useToast();
   
-  // Fix: Update the hook calls to match the expected number of arguments
-  // useWooOrders accepts (limit, status, customer, dateAfter, dateBefore)
-  const { orders, isLoading: isLoadingOrders } = useWooOrders(100); 
-  // useWooCustomers accepts (limit, searchTerm, role)
-  const { customers, isLoading: isLoadingCustomers } = useWooCustomers(100);
+  // Fix: Update the hook calls to match the expected arguments
+  const { orders, isLoading: isLoadingOrders, error: ordersError } = useWooOrders(100); 
+  const { customers, isLoading: isLoadingCustomers, error: customersError } = useWooCustomers(100);
   
-  // Process the data to create our customer reorder list
   useEffect(() => {
+    // Reset error state on refresh
+    setError(null);
+    
+    // Check for API errors
+    if (ordersError) {
+      setError(`Order data error: ${ordersError.message}`);
+      console.error('Orders error:', ordersError);
+      return;
+    }
+    
+    if (customersError) {
+      setError(`Customer data error: ${customersError.message}`);
+      console.error('Customers error:', customersError);
+      return;
+    }
+    
+    // Process the data to create our customer reorder list
     if (!isLoadingOrders && !isLoadingCustomers && orders && customers) {
       console.log('Processing customer data with:', { 
         ordersCount: orders.length, 
         customersCount: customers.length 
       });
       
-      const processed = processCustomerData(orders, customers);
-      setProcessedCustomers(processed);
+      try {
+        const processed = processCustomerData(orders, customers);
+        console.log('Processed customers:', processed);
+        setProcessedCustomers(processed);
+      } catch (err) {
+        console.error('Error processing customer data:', err);
+        setError(err instanceof Error ? err.message : 'Unknown error processing customer data');
+      }
     }
-  }, [orders, customers, isLoadingOrders, isLoadingCustomers, refreshKey]);
+  }, [orders, customers, isLoadingOrders, isLoadingCustomers, ordersError, customersError, refreshKey]);
   
   const toggleCustomerSelection = (customerId: string) => {
     setSelectedCustomers(prev => 
@@ -85,6 +108,11 @@ const ConsumerReorderReminder: React.FC = () => {
     }, 1500);
   };
   
+  // If there's an error, show the error state
+  if (error) {
+    return <ErrorState errorMessage={error} onRetry={handleRetry} />;
+  }
+  
   // If there's no data yet, show a loading state
   if (isLoadingOrders || isLoadingCustomers) {
     return <LoadingState />;
@@ -115,6 +143,10 @@ const ConsumerReorderReminder: React.FC = () => {
             onSelectAll={selectAllCustomers}
             onClearSelection={clearSelection}
           />
+          
+          <Button onClick={() => setDialogOpen(true)} disabled={selectedCustomers.length === 0} className="ml-auto">
+            Send Reminder ({selectedCustomers.length})
+          </Button>
           
           <ReminderDialog 
             open={dialogOpen}

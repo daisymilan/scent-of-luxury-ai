@@ -73,25 +73,36 @@ export const processCustomerData = (orders: WooOrder[], customers: WooCustomer[]
   
   console.log(`Found purchase data for ${Object.keys(customerPurchases).length} customers`);
   
-  // Fix: Create a list of valid customer IDs with purchase data
-  const validCustomerIds = Object.keys(customerPurchases).map(id => parseInt(id));
+  // Debug to see what IDs are available
+  const customerIds = customers.map(c => c.id);
+  const purchaseIds = Object.keys(customerPurchases).map(id => parseInt(id));
+  console.log('Customer IDs in dataset:', customerIds);
+  console.log('Customer IDs with purchases:', purchaseIds);
   
-  // Combine with customer info - corrected filtering logic
-  const processed: Customer[] = customers
-    .filter(customer => validCustomerIds.includes(customer.id)) // Fix: Use validCustomerIds for filtering
-    .map(customer => ({
-      id: customer.id.toString(),
-      name: customer.first_name || customer.last_name 
-        ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() 
-        : customer.username || customer.email.split('@')[0],
-      email: customer.email,
-      lastPurchase: customerPurchases[customer.id].lastPurchase,
-      lastPurchaseDate: customerPurchases[customer.id].lastPurchaseDate,
-      daysSince: customerPurchases[customer.id].daysSince,
-      purchaseCount: customerPurchases[customer.id].purchaseCount
-    }))
-    .sort((a, b) => b.daysSince - a.daysSince); // Sort by days since last purchase (descending)
+  // Check for overlap
+  const overlap = customerIds.filter(id => purchaseIds.includes(id));
+  console.log('Overlapping customer IDs:', overlap);
+  
+  // Combine with customer info - debug filtering explicitly
+  const processed: Customer[] = [];
+  
+  customers.forEach(customer => {
+    // Check if this customer has purchase history
+    if (customerPurchases[customer.id]) {
+      processed.push({
+        id: customer.id.toString(),
+        name: customer.first_name || customer.last_name 
+          ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() 
+          : customer.username || customer.email.split('@')[0],
+        email: customer.email,
+        lastPurchase: customerPurchases[customer.id].lastPurchase,
+        lastPurchaseDate: customerPurchases[customer.id].lastPurchaseDate,
+        daysSince: customerPurchases[customer.id].daysSince,
+        purchaseCount: customerPurchases[customer.id].purchaseCount
+      });
+    }
+  });
   
   console.log(`Processed ${processed.length} customers with purchase data`);
-  return processed;
+  return processed.sort((a, b) => b.daysSince - a.daysSince); // Sort by days since last purchase (descending)
 };
