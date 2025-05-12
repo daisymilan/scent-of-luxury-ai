@@ -53,6 +53,11 @@ const ReportsPage = () => {
   // Current date and time for the "last updated" display
   const currentDateTime = new Date().toLocaleString();
 
+  // Check if we have any authentication errors
+  const hasAuthError = Object.values(tabErrors).some(
+    error => error.includes('401') || error.toLowerCase().includes('auth')
+  );
+
   // Define tabs configuration
   const tabs: TabItem[] = [
     {
@@ -85,13 +90,21 @@ const ReportsPage = () => {
     }
   ];
 
+  const navigateToIntegrations = () => {
+    setActiveTab("integrations");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <DashboardHeader />
       
       <main className="flex-1 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <PageHeader lastUpdated={currentDateTime} />
+          <PageHeader 
+            lastUpdated={currentDateTime} 
+            onNavigateToIntegrations={navigateToIntegrations}
+            hasAuthError={hasAuthError}
+          />
           <TabsContainer 
             tabs={tabs} 
             activeTab={activeTab} 
@@ -106,7 +119,7 @@ const ReportsPage = () => {
         isVisible={errorDialogOpen}
         message={errorMessage}
         onClose={() => setErrorDialogOpen(false)}
-        errorType={errorMessage.includes('401') ? 'auth' : 'api'}
+        errorType={errorMessage.includes('401') ? 'api' : 'api'}
       />
     </div>
   );

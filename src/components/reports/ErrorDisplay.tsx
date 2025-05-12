@@ -9,7 +9,7 @@ interface ErrorDisplayProps {
   message: string;
   onClose: () => void;
   asDialog?: boolean;
-  errorType?: 'api' | 'network' | 'validation' | 'auth' | 'unknown';
+  errorType?: 'api' | 'network' | 'validation' | 'unknown';
 }
 
 const ErrorDisplay: FC<ErrorDisplayProps> = ({ 
@@ -24,10 +24,13 @@ const ErrorDisplay: FC<ErrorDisplayProps> = ({
   // Handle specific error cases
   let title = "Error Loading Data";
   let description = message;
+  let displayErrorType = errorType;
 
-  if (message.includes("401") || errorType === 'auth') {
+  if (message.includes("401") || message.toLowerCase().includes("auth")) {
     title = "WooCommerce Authentication Error";
     description = "Failed to authenticate with the WooCommerce API. Please check your API credentials in the Integrations tab.";
+    // Set to an allowed error type from the interface
+    displayErrorType = 'api';
   }
   
   return asDialog ? (
@@ -36,7 +39,7 @@ const ErrorDisplay: FC<ErrorDisplayProps> = ({
       onOpenChange={onClose}
       title={title}
       description={description}
-      errorType={errorType}
+      errorType={displayErrorType}
     />
   ) : (
     <Alert variant="destructive" className="mb-6">
