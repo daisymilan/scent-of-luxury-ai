@@ -20,16 +20,22 @@ const ConsumerReorderReminder: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const [sendingReminders, setSendingReminders] = useState<boolean>(false);
   const [processedCustomers, setProcessedCustomers] = useState<Customer[]>([]);
+  const [refreshKey, setRefreshKey] = useState<number>(0);
   
   const { toast } = useToast();
   
   // Fix the per_page parameter to be within allowed limits (max 100)
-  const { orders, isLoading: isLoadingOrders } = useWooOrders(100); 
-  const { customers, isLoading: isLoadingCustomers } = useWooCustomers(100);
+  const { orders, isLoading: isLoadingOrders } = useWooOrders(100, undefined, undefined, undefined, undefined, refreshKey); 
+  const { customers, isLoading: isLoadingCustomers } = useWooCustomers(100, undefined, undefined, refreshKey);
   
   // Process the data to create our customer reorder list
   useEffect(() => {
     if (!isLoadingOrders && !isLoadingCustomers && orders && customers) {
+      console.log('Processing customer data with:', { 
+        ordersCount: orders.length, 
+        customersCount: customers.length 
+      });
+      
       const processed = processCustomerData(orders, customers);
       setProcessedCustomers(processed);
     }
@@ -44,11 +50,20 @@ const ConsumerReorderReminder: React.FC = () => {
   };
   
   const selectAllCustomers = () => {
-    setSelectedCustomers(processedCustomers.map(c => c.id));
+    setProcessedCustomers.length > 0 && setSelectedCustomers(processedCustomers.map(c => c.id));
   };
   
   const clearSelection = () => {
     setSelectedCustomers([]);
+  };
+  
+  const handleRetry = () => {
+    // Force refresh by incrementing the refresh key
+    setRefreshKey(prev => prev + 1);
+    toast({
+      title: "Refreshing data",
+      description: "Attempting to reload customer and order data..."
+    });
   };
   
   const sendReminders = () => {
@@ -73,9 +88,15 @@ const ConsumerReorderReminder: React.FC = () => {
     return <LoadingState />;
   }
   
-  // If we have no customers or orders, show an empty state
-  if (processedCustomers.length === 0) {
-    return <EmptyState />;
+  // If we have no customers or orders, or no processed customers, show an empty state
+  if (!orders?.length || !customers?.length || processedCustomers.length === 0) {
+    return (
+      <EmptyState 
+        ordersCount={orders?.length || 0} 
+        customersCount={customers?.length || 0}
+        onRetry={handleRetry}
+      />
+    );
   }
   
   return (
