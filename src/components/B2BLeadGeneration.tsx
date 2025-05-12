@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Check, Mail, MessageSquare, Plus, Search, BarChart3, Calendar, TagIcon, Map, Upload } from 'lucide-react';
@@ -369,7 +370,6 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
   ];
   
   return (
-    
     <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
       <Card className="col-span-full lg:col-span-2">
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
@@ -774,4 +774,63 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
                       <p className="font-medium text-lg">€{selectedLead.totalSpent?.toLocaleString() || '0'}</p>
                     </div>
                     <div>
-                      <
+                      <Label className="text-sm text-gray-500">Last Order</Label>
+                      <p className="font-medium">{selectedLead.lastOrder || 'No orders yet'}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Orders table would go here */}
+                  <div className="text-center py-8 text-gray-500">
+                    No order history available for this lead.
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="interactions">
+                <div className="space-y-4">
+                  <div className="flex justify-between">
+                    <h3 className="font-medium">Recent Interactions</h3>
+                    <Button variant="outline" size="sm">
+                      <Plus size={14} className="mr-1" /> Add Interaction
+                    </Button>
+                  </div>
+                  
+                  {/* This would be populated with real interaction data */}
+                  <div className="space-y-3">
+                    <div className="border rounded-md p-3">
+                      <div className="flex justify-between">
+                        <div className="flex items-center">
+                          <Mail className="h-4 w-4 mr-2 text-blue-500" />
+                          <span className="font-medium">Initial Email</span>
+                        </div>
+                        <span className="text-xs text-gray-500">2 days ago</span>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Sent initial partnership opportunity email.
+                      </p>
+                    </div>
+                    
+                    <div className="border rounded-md p-3">
+                      <div className="flex justify-between">
+                        <div className="flex items-center">
+                          <MessageSquare className="h-4 w-4 mr-2 text-green-500" />
+                          <span className="font-medium">Phone Call</span>
+                        </div>
+                        <span className="text-xs text-gray-500">Yesterday</span>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Discussed product lineup and potential distribution channels.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default B2BLeadGeneration;

@@ -113,7 +113,7 @@ const GrokConfig = () => {
       toast({
         title: "Cannot Reset Hardcoded Configuration",
         description: "The API is configured with hardcoded credentials that cannot be reset",
-        variant: "destructive", // Changed from "warning" to "destructive" to match allowed types
+        variant: "destructive", 
       });
       return;
     }
