@@ -6,9 +6,13 @@
 export interface WooProduct {
   id: number;
   name: string;
+  slug?: string;
+  permalink?: string;
   price: string;
   regular_price: string;
   sale_price: string;
+  description?: string;
+  short_description?: string;
   stock_quantity: number | null;
   stock_status: string;
   total_sales: number;
@@ -27,6 +31,11 @@ export interface WooProduct {
     id: number;
     name: string;
     options: string[];
+  }>;
+  meta_data?: Array<{
+    id: number;
+    key: string;
+    value: any;
   }>;
 }
 

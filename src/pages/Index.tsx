@@ -99,10 +99,11 @@ const Index = () => {
           />
         )}
         
-        {activeTab === 'carts' && orders && products && (
+        {activeTab === 'carts' && (
           <AbandonedCartRecovery 
-            orders={abandonedOrders}
-            products={products}
+            wooOrders={abandonedOrders}
+            wooProducts={products}
+            wooCustomers={customers}
           />
         )}
       </div>

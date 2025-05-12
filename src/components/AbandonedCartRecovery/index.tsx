@@ -3,14 +3,15 @@ import { ShoppingCart, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { WooOrder, WooCustomer, WooProduct } from '@/lib/mockData';
+import { WooOrder, WooCustomer, WooProduct } from '@/utils/woocommerce/types';
 import { useState, useMemo } from 'react';
 import RecoveryStats from './RecoveryStats';
 import AbandonedCartList from './AbandonedCartList';
 import RecoveryAutomations from './RecoveryAutomations';
 import { processAbandonedCartData, AbandonedCart, calculateRecoveryStats } from './utils';
 import { useQuery } from '@tanstack/react-query';
-import { WOO_API_BASE_URL, WOO_API_AUTH_PARAMS } from '@/utils/woocommerce';
+import { WOO_API_BASE_URL } from '@/utils/woocommerce';
+import { getWooAuthParams } from '@/utils/woocommerce/hooks';
 import { useToast } from '@/hooks/use-toast';
 
 interface AbandonedCartRecoveryProps {
@@ -26,6 +27,9 @@ const AbandonedCartRecovery = ({
 }: AbandonedCartRecoveryProps) => {
   const [activeTab, setActiveTab] = useState('active');
   const { toast } = useToast();
+  
+  // Get authentication parameters
+  const authParams = getWooAuthParams();
 
   // If props aren't provided, fetch the data directly
   const { data: fetchedOrders } = useQuery({
@@ -36,7 +40,7 @@ const AbandonedCartRecovery = ({
       
       try {
         const response = await fetch(
-          `${WOO_API_BASE_URL}/orders?status=pending,on-hold&per_page=100&${WOO_API_AUTH_PARAMS}`,
+          `${WOO_API_BASE_URL}/orders?status=pending,on-hold&per_page=100&${authParams}`,
           {
             headers: {
               'Content-Type': 'application/json',
@@ -71,7 +75,7 @@ const AbandonedCartRecovery = ({
       
       try {
         const response = await fetch(
-          `${WOO_API_BASE_URL}/customers?per_page=100&${WOO_API_AUTH_PARAMS}`,
+          `${WOO_API_BASE_URL}/customers?per_page=100&${authParams}`,
           {
             headers: {
               'Content-Type': 'application/json',
@@ -101,7 +105,7 @@ const AbandonedCartRecovery = ({
       
       try {
         const response = await fetch(
-          `${WOO_API_BASE_URL}/products?per_page=100&${WOO_API_AUTH_PARAMS}`,
+          `${WOO_API_BASE_URL}/products?per_page=100&${authParams}`,
           {
             headers: {
               'Content-Type': 'application/json',

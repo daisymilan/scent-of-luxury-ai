@@ -1,5 +1,5 @@
 
-import { WooOrder, WooCustomer, WooProduct } from '@/lib/mockData';
+import { WooOrder, WooCustomer, WooProduct } from '@/utils/woocommerce/types';
 
 // Define a type for our processed abandoned cart data
 export interface AbandonedCart {

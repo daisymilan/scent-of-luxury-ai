@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,7 @@ import {
 import { ArrowDown, ArrowUp, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { WooProduct } from '@/utils/woocommerce';
+import { WooProduct } from '@/utils/woocommerce/types';
 
 interface Category {
   id: number;
@@ -60,10 +61,13 @@ const SEODashboard: React.FC<SEODashboardProps> = ({ categories, productsWithSEO
       const aScore = a.meta_data?.find(meta => meta.key === 'rank_math_seo_score')?.value || 0;
       const bScore = b.meta_data?.find(meta => meta.key === 'rank_math_seo_score')?.value || 0;
 
+      const aScoreNum = typeof aScore === 'string' ? parseInt(aScore, 10) : Number(aScore);
+      const bScoreNum = typeof bScore === 'string' ? parseInt(bScore, 10) : Number(bScore);
+
       if (sortOrder === 'asc') {
-        return aScore - bScore;
+        return aScoreNum - bScoreNum;
       } else {
-        return bScore - aScore;
+        return bScoreNum - aScoreNum;
       }
     });
     return sorted;
