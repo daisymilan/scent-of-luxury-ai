@@ -93,56 +93,59 @@ const SEODashboard: React.FC<SEODashboardProps> = ({ categories, productsWithSEO
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>AIOSEO Dashboard</CardTitle>
-        <CardDescription>Analyze and improve your product SEO with data from All in One SEO</CardDescription>
+    <Card className="border-0 shadow-md">
+      <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 pb-6">
+        <CardTitle className="text-slate-800 text-2xl font-semibold">All in One SEO Analysis</CardTitle>
+        <CardDescription className="text-slate-600">
+          Analyze and improve your product SEO with data from All in One SEO
+        </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="grid gap-4">
-          <div className="flex items-center space-x-4">
-            <Label htmlFor="category">Category</Label>
-            <Select onValueChange={handleCategoryChange}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories?.map((category) => (
-                  <SelectItem key={category.id} value={category.slug}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <CardContent className="p-6">
+        <div className="grid gap-6">
+          <div className="flex flex-col md:flex-row md:items-center md:space-x-4 space-y-4 md:space-y-0">
+            <div className="flex items-center space-x-2">
+              <Label htmlFor="category" className="text-sm font-medium text-slate-700 whitespace-nowrap">Filter by:</Label>
+              <Select onValueChange={handleCategoryChange}>
+                <SelectTrigger className="w-[180px] border-slate-300 bg-white">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories?.map((category) => (
+                    <SelectItem key={category.id} value={category.slug}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Label htmlFor="search">Search</Label>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
+            <div className="flex-1 relative flex items-center">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 id="search"
                 placeholder="Search products..."
-                className="pl-8"
+                className="pl-10 border-slate-300 bg-white"
                 onChange={handleSearchChange}
               />
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto bg-white rounded-md border border-slate-200">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px]">
-                    <Button variant="ghost" size="sm" onClick={toggleSortOrder}>
+              <TableHeader className="bg-slate-50">
+                <TableRow className="border-slate-200">
+                  <TableHead className="w-[90px] font-semibold text-slate-700">
+                    <Button variant="ghost" size="sm" onClick={toggleSortOrder} className="flex items-center">
                       SEO Score
                       {sortOrder === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />}
                     </Button>
                   </TableHead>
-                  <TableHead>Product</TableHead>
-                  <TableHead>SEO Title</TableHead>
-                  <TableHead>Focus Keyword</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Category</TableHead>
+                  <TableHead className="font-semibold text-slate-700">Product</TableHead>
+                  <TableHead className="font-semibold text-slate-700">SEO Title</TableHead>
+                  <TableHead className="font-semibold text-slate-700">Focus Keyword</TableHead>
+                  <TableHead className="font-semibold text-slate-700">Description</TableHead>
+                  <TableHead className="font-semibold text-slate-700">Category</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -196,29 +199,29 @@ const SEODashboard: React.FC<SEODashboardProps> = ({ categories, productsWithSEO
                   const focusKeyword = product.meta_data?.find(meta => meta.key === '_aioseo_focus_keyword')?.value || '';
                   
                   return (
-                    <TableRow key={product.id}>
-                      <TableCell>
-                        <Badge className={getScoreColor(Number(seoScore))}>{seoScore}</Badge>
+                    <TableRow key={product.id} className="border-slate-200 hover:bg-slate-50">
+                      <TableCell className="py-3">
+                        <Badge className={`${getScoreColor(Number(seoScore))} font-semibold px-3 py-1 rounded-md`}>{seoScore}</Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="font-medium text-slate-700">
                         {product.name}
                       </TableCell>
                       <TableCell>
-                        <div className="line-clamp-2 max-w-xs">
+                        <div className="line-clamp-2 max-w-xs text-slate-700">
                           {seoTitle}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-slate-700">
                         {focusKeyword || "-"}
                       </TableCell>
                       <TableCell>
-                        <div className="line-clamp-2 max-w-xs">
+                        <div className="line-clamp-2 max-w-xs text-slate-600 text-sm">
                           {seoDescription || "-"}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-slate-700">
                         {product.categories?.map((category) => (
-                          <div key={category.id}>
+                          <div key={category.id} className="text-sm">
                             {category.name}
                           </div>
                         ))}
@@ -228,6 +231,9 @@ const SEODashboard: React.FC<SEODashboardProps> = ({ categories, productsWithSEO
                 })}
               </TableBody>
             </Table>
+          </div>
+          <div className="text-center text-sm text-slate-500 pt-2">
+            Showing {sortedProducts?.length || 0} products with AIOSEO data
           </div>
         </div>
       </CardContent>
