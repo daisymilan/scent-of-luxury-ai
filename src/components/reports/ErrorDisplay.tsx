@@ -29,7 +29,6 @@ const ErrorDisplay: FC<ErrorDisplayProps> = ({
   if (message.includes("401") || message.toLowerCase().includes("auth")) {
     title = "WooCommerce Authentication Error";
     description = "Failed to authenticate with the WooCommerce API. Please check your API credentials in the Integrations tab.";
-    // Set to an allowed error type from the interface
     displayErrorType = 'api';
   }
   

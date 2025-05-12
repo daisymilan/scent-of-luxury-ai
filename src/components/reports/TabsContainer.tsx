@@ -45,7 +45,7 @@ const TabsContainer: FC<TabsContainerProps> = ({
             message={currentTab.errorMessage || ""}
             onClose={onErrorClose}
             asDialog={false}
-            errorType={currentTab.errorMessage?.includes('401') ? 'api' : 'api'}
+            errorType="api"
           />
         )}
         

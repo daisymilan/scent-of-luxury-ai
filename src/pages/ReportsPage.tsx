@@ -119,7 +119,7 @@ const ReportsPage = () => {
         isVisible={errorDialogOpen}
         message={errorMessage}
         onClose={() => setErrorDialogOpen(false)}
-        errorType={errorMessage.includes('401') ? 'api' : 'api'}
+        errorType="api"
       />
     </div>
   );
