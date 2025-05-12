@@ -1,11 +1,16 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import DashboardHeader from '@/components/DashboardHeader';
 import KpiOverview from '@/components/KpiOverview';
 import { useAuth } from '@/contexts/AuthContext';
 import { Separator } from '@/components/ui/separator';
+import { useWooStats, useWooOrders, useWooProducts, useWooCustomers } from '@/utils/woocommerce';
+import B2BLeadGeneration from '@/components/B2BLeadGeneration';
+import SEODashboard from '@/components/SEODashboard';
+import AbandonedCartRecovery from '@/components/AbandonedCartRecovery';
 
 const Index = () => {
+  const [activeTab, setActiveTab] = useState('overview');
   const { user } = useAuth();
   const currentDate = new Date();
   const formattedDate = new Intl.DateTimeFormat('en-US', {
@@ -16,6 +21,14 @@ const Index = () => {
     minute: 'numeric',
     hour12: true
   }).format(currentDate);
+
+  // Fetch data from WooCommerce API for all components
+  const { stats, isLoading: isStatsLoading } = useWooStats('week');
+  const { orders, isLoading: isOrdersLoading } = useWooOrders(50); // Increased to get more data
+  const { products, isLoading: isProductsLoading } = useWooProducts(50); // Increased to get more data
+  const { customers, isLoading: isCustomersLoading } = useWooCustomers(50); // Fetch customers for B2B
+
+  const isLoading = isStatsLoading || isOrdersLoading || isProductsLoading || isCustomersLoading;
 
   return (
     <div className="container mx-auto px-4 pb-8">
@@ -29,23 +42,66 @@ const Index = () => {
       
       <div className="mb-8">
         <nav className="flex border-b border-gray-200">
-          <button className="px-6 py-3 bg-black text-white font-medium">
+          <button 
+            className={`px-6 py-3 ${activeTab === 'overview' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-50'} font-medium`}
+            onClick={() => setActiveTab('overview')}
+          >
             Overview
           </button>
-          <button className="px-6 py-3 text-gray-600 hover:bg-gray-50">
+          <button 
+            className={`px-6 py-3 ${activeTab === 'b2b' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-50'} font-medium`}
+            onClick={() => setActiveTab('b2b')}
+          >
             B2B Leads
           </button>
-          <button className="px-6 py-3 text-gray-600 hover:bg-gray-50">
+          <button 
+            className={`px-6 py-3 ${activeTab === 'seo' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-50'} font-medium`}
+            onClick={() => setActiveTab('seo')}
+          >
             SEO
           </button>
-          <button className="px-6 py-3 text-gray-600 hover:bg-gray-50">
+          <button 
+            className={`px-6 py-3 ${activeTab === 'carts' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-50'} font-medium`}
+            onClick={() => setActiveTab('carts')}
+          >
             Abandoned Carts
           </button>
         </nav>
       </div>
       
       <div className="space-y-8">
-        <KpiOverview />
+        {activeTab === 'overview' && <KpiOverview />}
+        
+        {activeTab === 'b2b' && (
+          <B2BLeadGeneration 
+            wooCustomers={customers} 
+            wooOrders={orders}
+            wooProducts={products}
+          />
+        )}
+        
+        {activeTab === 'seo' && (
+          <SEODashboard 
+            categories={products?.reduce((acc, product) => {
+              if (product.categories) {
+                product.categories.forEach(cat => {
+                  if (!acc.some(c => c.id === cat.id)) {
+                    acc.push(cat);
+                  }
+                });
+              }
+              return acc;
+            }, [])}
+            productsWithSEO={products}
+          />
+        )}
+        
+        {activeTab === 'carts' && (
+          <AbandonedCartRecovery 
+            orders={orders}
+            products={products}
+          />
+        )}
       </div>
     </div>
   );
