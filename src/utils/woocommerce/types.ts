@@ -8,6 +8,7 @@ export interface WooProduct {
   name: string;
   slug?: string;
   permalink?: string;
+  sku?: string;  // Added sku property
   price: string;
   regular_price: string;
   sale_price: string;

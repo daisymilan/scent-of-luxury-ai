@@ -1,241 +1,172 @@
 
-import React, { useState, useEffect } from 'react';
-import { Helmet } from 'react-helmet';
+import { useState } from 'react';
+import { useAllWooProducts } from '@/utils/woocommerce';
 import DashboardHeader from '@/components/DashboardHeader';
-import { getProducts } from '@/utils/woocommerce/api';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { SearchIcon, ArrowDownIcon, ArrowUpIcon, Filter, Download } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ErrorDialog } from '@/components/ui/error-dialog';
+import { Search } from 'lucide-react';
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from '@/components/ui/table';
-import { useToast } from '@/hooks/use-toast';
 
-const InventoryPage: React.FC = () => {
-  const [products, setProducts] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortColumn, setSortColumn] = useState('');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [activeTab, setActiveTab] = useState('all');
-  const { toast } = useToast();
+const InventoryPage = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const fetchedProducts = await getProducts();
-        console.log("Fetched products:", fetchedProducts);
-        setProducts(fetchedProducts);
-      } catch (error: any) {
-        console.error('Failed to fetch products:', error);
-        toast({
-          title: "Error fetching products",
-          description: error.message || "Failed to load products. Please try again.",
-          variant: "destructive",
-        });
-      }
-    };
+  const { allProducts, isLoading, error } = useAllWooProducts();
 
-    fetchProducts();
-  }, [toast]);
-
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(event.target.value);
-  };
-
-  const handleSort = (column: string) => {
-    if (column === sortColumn) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortColumn(column);
-      setSortOrder('asc');
-    }
-  };
-
-  const sortedProducts = React.useMemo(() => {
-    if (!sortColumn) return products;
-
-    return [...products].sort((a: any, b: any) => {
-      const aValue = a[sortColumn];
-      const bValue = b[sortColumn];
-
-      if (aValue === null || aValue === undefined) return sortOrder === 'asc' ? -1 : 1;
-      if (bValue === null || bValue === undefined) return sortOrder === 'asc' ? 1 : -1;
-
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
-      }
-
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortOrder === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-      }
-
-      return 0;
-    });
-  }, [products, sortColumn, sortOrder]);
-
-  // Filter products based on search query and stock status
-  const getFilteredProducts = (stockStatus?: string) => {
-    return sortedProducts.filter((product: any) => {
-      const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      if (stockStatus) {
-        return matchesSearch && product.stock_status === stockStatus;
-      }
-      
-      return matchesSearch;
-    });
-  };
-
-  const filteredProducts = getFilteredProducts();
-  const inStockProducts = getFilteredProducts('instock');
-  const outOfStockProducts = getFilteredProducts('outofstock');
-
-  // Shared table component to avoid duplication
-  const ProductsTable = ({ products }: { products: any[] }) => (
-    <div className="relative mt-4 overflow-auto">
-      <Table>
-        <TableCaption>A comprehensive list of products in your inventory.</TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead>
-              <Button variant="ghost" size="sm" onClick={() => handleSort('name')}>
-                Product Name
-                {sortColumn === 'name' && (
-                  <>
-                    {sortOrder === 'asc' ? (
-                      <ArrowDownIcon className="ml-1 h-4 w-4" />
-                    ) : (
-                      <ArrowUpIcon className="ml-1 h-4 w-4" />
-                    )}
-                  </>
-                )}
-              </Button>
-            </TableHead>
-            <TableHead>
-              <Button variant="ghost" size="sm" onClick={() => handleSort('sku')}>
-                SKU
-                {sortColumn === 'sku' && (
-                  <>
-                    {sortOrder === 'asc' ? (
-                      <ArrowDownIcon className="ml-1 h-4 w-4" />
-                    ) : (
-                      <ArrowUpIcon className="ml-1 h-4 w-4" />
-                    )}
-                  </>
-                )}
-              </Button>
-            </TableHead>
-            <TableHead>
-              <Button variant="ghost" size="sm" onClick={() => handleSort('stock_quantity')}>
-                Stock
-                {sortColumn === 'stock_quantity' && (
-                  <>
-                    {sortOrder === 'asc' ? (
-                      <ArrowDownIcon className="ml-1 h-4 w-4" />
-                    ) : (
-                      <ArrowUpIcon className="ml-1 h-4 w-4" />
-                    )}
-                  </>
-                )}
-              </Button>
-            </TableHead>
-            <TableHead className="text-right">Price</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {products.length > 0 ? (
-            products.map((product: any) => (
-              <TableRow key={product.id}>
-                <TableCell className="font-medium">{product.name}</TableCell>
-                <TableCell>{product.sku}</TableCell>
-                <TableCell>
-                  {product.stock_quantity !== null ? product.stock_quantity : 'N/A'}
-                </TableCell>
-                <TableCell className="text-right">${product.price}</TableCell>
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={4} className="text-center">
-                No products found.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </div>
+  // Filter products based on search term
+  const filteredProducts = allProducts.filter(product => 
+    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Shared search and filter controls
-  const TableControls = () => (
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <div className="relative">
-        <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-        <Input
-          type="search"
-          placeholder="Search products..."
-          className="pl-8 shadow-sm"
-          value={searchQuery}
-          onChange={handleSearch}
-        />
-      </div>
-      <div className="flex items-center space-x-2">
-        <Button variant="outline" size="sm">
-          <Filter className="mr-2 h-4 w-4" />
-          Filter
-        </Button>
-        <Button variant="outline" size="sm">
-          <Download className="mr-2 h-4 w-4" />
-          Export
-        </Button>
-      </div>
-    </div>
-  );
+  // Handle search input changes
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
+  // Handle errors
+  if (error && !errorDialogOpen) {
+    setErrorMessage(`Failed to load inventory data: ${error.message}`);
+    setErrorDialogOpen(true);
+  }
 
   return (
-    <div>
-      <Helmet>
-        <title>Inventory - MIN NEW YORK</title>
-      </Helmet>
-      <DashboardHeader title="Inventory" />
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <DashboardHeader />
+      
+      <main className="flex-1 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+            <div>
+              <h1 className="text-3xl font-semibold">MIN NEW YORK Inventory</h1>
+              <p className="text-gray-500">Manage your product inventory</p>
+            </div>
+            <div className="mt-4 sm:mt-0">
+              <span className="text-sm text-gray-500 mr-2">Total Products:</span>
+              <span className="text-sm font-medium">{allProducts.length}</span>
+            </div>
+          </div>
 
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>Products Overview</CardTitle>
-          <CardDescription>Manage your product inventory and track stock levels.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList>
-              <TabsTrigger value="all">All Products</TabsTrigger>
-              <TabsTrigger value="instock">In Stock</TabsTrigger>
-              <TabsTrigger value="outofstock">Out of Stock</TabsTrigger>
-            </TabsList>
-            <TabsContent value="all" className="pt-4">
-              <TableControls />
-              <ProductsTable products={filteredProducts} />
-            </TabsContent>
-            
-            <TabsContent value="instock" className="pt-4">
-              <TableControls />
-              <ProductsTable products={inStockProducts} />
-            </TabsContent>
-            
-            <TabsContent value="outofstock" className="pt-4">
-              <TableControls />
-              <ProductsTable products={outOfStockProducts} />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="flex gap-4">
+                <div className="flex items-center w-full max-w-sm space-x-2">
+                  <Input 
+                    type="text"
+                    placeholder="Search products by name or SKU..."
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    className="flex-1"
+                  />
+                  <Button variant="outline" size="icon">
+                    <Search className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Product Inventory</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="space-y-4">
+                  {[...Array(10)].map((_, i) => (
+                    <div key={i} className="flex justify-between items-center">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  ))}
+                </div>
+              ) : filteredProducts.length === 0 ? (
+                <div className="text-center py-10">
+                  <p className="text-gray-500">No products found matching your search criteria.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Image</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>SKU</TableHead>
+                        <TableHead>Price</TableHead>
+                        <TableHead>Stock</TableHead>
+                        <TableHead className="text-right">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredProducts.map(product => (
+                        <TableRow key={product.id}>
+                          <TableCell>
+                            {product.images && product.images.length > 0 ? (
+                              <img 
+                                src={product.images[0].src} 
+                                alt={product.name} 
+                                className="h-12 w-12 object-cover rounded"
+                              />
+                            ) : (
+                              <div className="h-12 w-12 bg-gray-200 rounded flex items-center justify-center text-xs">
+                                No img
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="font-medium">{product.name}</TableCell>
+                          <TableCell>{product.sku || 'N/A'}</TableCell>
+                          <TableCell>
+                            ${product.price || '0.00'}
+                            {product.regular_price !== product.price && (
+                              <span className="text-xs text-gray-500 ml-2 line-through">
+                                ${product.regular_price}
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {product.stock_quantity !== null ? product.stock_quantity : 'N/A'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span 
+                              className={`px-2 py-1 rounded text-xs ${
+                                product.stock_status === 'instock' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-red-100 text-red-800'
+                              }`}
+                            >
+                              {product.stock_status === 'instock' ? 'In Stock' : 'Out of Stock'}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+
+      {/* Error Dialog */}
+      <ErrorDialog
+        open={errorDialogOpen}
+        onOpenChange={setErrorDialogOpen}
+        title="Error Loading Inventory"
+        description={errorMessage}
+        errorType="api"
+      />
     </div>
   );
 };
