@@ -15,6 +15,7 @@ interface ErrorDialogProps {
   onOpenChange: (open: boolean) => void;
   title: string;
   description: string;
+  id?: string; // Added the id property as optional
   errorType?: 'api' | 'network' | 'validation' | 'unknown';
   showHelp?: boolean;
   onHelp?: () => void;

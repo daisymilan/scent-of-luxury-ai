@@ -124,8 +124,9 @@ const AiAssistant = () => {
       <ErrorDialog
         open={errorDialogOpen}
         onOpenChange={setErrorDialogOpen}
+        title="Error"
         description={errorMessage}
-        id={errorId}
+        errorType="api"
         showHelp={true}
         onHelp={() => {
           window.open('https://minnewyorkofficial.app.n8n.cloud/help', '_blank');
