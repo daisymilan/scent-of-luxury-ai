@@ -4,7 +4,6 @@
  */
 import { useState, useEffect } from 'react';
 import { WooProduct } from './types';
-import { fetchWooCommerceData } from './api';
 import { getWooCommerceConfig } from './config';
 
 export const useWooProducts = (
@@ -36,15 +35,20 @@ export const useWooProducts = (
         if (orderBy) endpoint += `&orderby=${orderBy}`;
         if (order) endpoint += `&order=${order}`;
         
-        const response = await fetch(
-          `${config.url}/wp-json/wc/v${config.version}/${endpoint}`, 
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            cache: 'no-store'
-          }
-        );
+        // Add authentication parameters directly in the URL
+        const url = new URL(`${config.url}/wp-json/wc/v${config.version}/${endpoint}`);
+        url.searchParams.append('consumer_key', config.consumerKey);
+        url.searchParams.append('consumer_secret', config.consumerSecret);
+        
+        console.log('Fetching products from URL:', url.toString());
+        
+        const response = await fetch(url.toString(), {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          cache: 'no-store'
+        });
         
         // Get total from headers
         const totalItems = response.headers.get('x-wp-total');
@@ -59,6 +63,8 @@ export const useWooProducts = (
         }
         
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error('API error response:', errorText);
           throw new Error(`API error: ${response.status}`);
         }
         
@@ -95,16 +101,21 @@ export const useAllWooProducts = () => {
       
       try {
         // First get total count
-        const countResponse = await fetch(
-          `${config.url}/wp-json/wc/v${config.version}/products?per_page=1`, 
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            }
+        const countUrl = new URL(`${config.url}/wp-json/wc/v${config.version}/products`);
+        countUrl.searchParams.append('per_page', '1');
+        countUrl.searchParams.append('consumer_key', config.consumerKey);
+        countUrl.searchParams.append('consumer_secret', config.consumerSecret);
+        
+        const countResponse = await fetch(countUrl.toString(), {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
           }
-        );
+        });
         
         if (!countResponse.ok) {
+          const errorText = await countResponse.text();
+          console.error('Count API error response:', errorText);
           throw new Error(`API error: ${countResponse.status}`);
         }
         
@@ -112,17 +123,24 @@ export const useAllWooProducts = () => {
         const totalCount = totalHeader ? parseInt(totalHeader) : 100;
         
         // Then fetch all products in one request with a large per_page
-        const response = await fetch(
-          `${config.url}/wp-json/wc/v${config.version}/products?per_page=${totalCount}`, 
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            cache: 'no-store'
-          }
-        );
+        const url = new URL(`${config.url}/wp-json/wc/v${config.version}/products`);
+        url.searchParams.append('per_page', totalCount.toString());
+        url.searchParams.append('consumer_key', config.consumerKey);
+        url.searchParams.append('consumer_secret', config.consumerSecret);
+        
+        console.log('Fetching all products from URL:', url.toString());
+        
+        const response = await fetch(url.toString(), {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          cache: 'no-store'
+        });
         
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Products API error response:', errorText);
           throw new Error(`API error: ${response.status}`);
         }
         

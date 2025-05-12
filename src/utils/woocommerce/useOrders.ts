@@ -4,27 +4,25 @@
  */
 import { useState, useEffect } from 'react';
 import { WooOrder } from './types';
-import { fetchWooCommerceData } from './api';
 import { getWooCommerceConfig } from './config';
 
 export const useWooOrders = (
-  limit: number = 100,
+  limit: number = 10,
   page: number = 1,
-  status?: string, 
-  customer?: number, 
-  dateAfter?: string, 
+  status?: string,
+  customer?: number,
+  dateAfter?: string,
   dateBefore?: string
 ) => {
   const [orders, setOrders] = useState<WooOrder[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   
   useEffect(() => {
     const config = getWooCommerceConfig();
-    if (!config) {
-      setError(new Error('WooCommerce configuration not found'));
-      return;
-    }
+    if (!config) return;
     
     const fetchOrders = async () => {
       setIsLoading(true);
@@ -37,8 +35,40 @@ export const useWooOrders = (
         if (dateAfter) endpoint += `&after=${dateAfter}`;
         if (dateBefore) endpoint += `&before=${dateBefore}`;
         
-        console.log(`Fetching orders with endpoint: ${endpoint}`);
-        const data = await fetchWooCommerceData<WooOrder[]>(endpoint, config);
+        // Add authentication parameters directly in the URL
+        const url = new URL(`${config.url}/wp-json/wc/v${config.version}/${endpoint}`);
+        url.searchParams.append('consumer_key', config.consumerKey);
+        url.searchParams.append('consumer_secret', config.consumerSecret);
+        
+        console.log('Fetching orders from URL:', url.toString());
+        
+        const response = await fetch(url.toString(), {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          cache: 'no-store'
+        });
+        
+        // Get total from headers
+        const totalItems = response.headers.get('x-wp-total');
+        const totalPagesHeader = response.headers.get('x-wp-totalpages');
+        
+        if (totalItems) {
+          setTotalOrders(parseInt(totalItems));
+        }
+        
+        if (totalPagesHeader) {
+          setTotalPages(parseInt(totalPagesHeader));
+        }
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('API error response:', errorText);
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
         console.log(`Fetched ${data.length} orders successfully`);
         setOrders(data);
       } catch (err) {
@@ -52,5 +82,5 @@ export const useWooOrders = (
     fetchOrders();
   }, [limit, page, status, customer, dateAfter, dateBefore]);
   
-  return { orders, isLoading, error };
+  return { orders, isLoading, error, totalOrders, totalPages };
 };

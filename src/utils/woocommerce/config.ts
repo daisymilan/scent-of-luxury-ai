@@ -11,7 +11,7 @@ export interface WooCommerceConfig {
   version: string;
 }
 
-// Updated configuration with proper URL formatting
+// Updated configuration with proper URL formatting - removing trailing slashes to ensure consistent URLs
 export const HARDCODED_WOO_CONFIG: WooCommerceConfig | null = {
   url: 'https://staging.min.com/int',
   consumerKey: 'ck_83b6276178dfd425fb2618461bfb02aad3fd6d67',
@@ -45,12 +45,20 @@ export const testWooCommerceConnection = async (): Promise<boolean> => {
     url.searchParams.append('consumer_key', config.consumerKey);
     url.searchParams.append('consumer_secret', config.consumerSecret);
     
+    console.log('Testing connection to:', url.toString());
+    
     const response = await fetch(url.toString(), {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-      }
+      },
+      cache: 'no-store'
     });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Connection test error:', errorText);
+    }
     
     return response.ok;
   } catch (error) {

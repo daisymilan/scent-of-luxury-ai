@@ -4,25 +4,23 @@
  */
 import { useState, useEffect } from 'react';
 import { WooCustomer } from './types';
-import { fetchWooCommerceData } from './api';
 import { getWooCommerceConfig } from './config';
 
 export const useWooCustomers = (
-  limit: number = 100,
+  limit: number = 10,
   page: number = 1,
-  searchTerm?: string, 
+  search?: string,
   role?: string
 ) => {
   const [customers, setCustomers] = useState<WooCustomer[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [totalCustomers, setTotalCustomers] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   
   useEffect(() => {
     const config = getWooCommerceConfig();
-    if (!config) {
-      setError(new Error('WooCommerce configuration not found'));
-      return;
-    }
+    if (!config) return;
     
     const fetchCustomers = async () => {
       setIsLoading(true);
@@ -30,11 +28,43 @@ export const useWooCustomers = (
       try {
         // Build endpoint with query parameters
         let endpoint = `customers?per_page=${limit}&page=${page}`;
-        if (searchTerm) endpoint += `&search=${encodeURIComponent(searchTerm)}`;
+        if (search) endpoint += `&search=${encodeURIComponent(search)}`;
         if (role) endpoint += `&role=${role}`;
         
-        console.log(`Fetching customers with endpoint: ${endpoint}`);
-        const data = await fetchWooCommerceData<WooCustomer[]>(endpoint, config);
+        // Add authentication parameters directly in the URL
+        const url = new URL(`${config.url}/wp-json/wc/v${config.version}/${endpoint}`);
+        url.searchParams.append('consumer_key', config.consumerKey);
+        url.searchParams.append('consumer_secret', config.consumerSecret);
+        
+        console.log('Fetching customers from URL:', url.toString());
+        
+        const response = await fetch(url.toString(), {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          cache: 'no-store'
+        });
+        
+        // Get total from headers
+        const totalItems = response.headers.get('x-wp-total');
+        const totalPagesHeader = response.headers.get('x-wp-totalpages');
+        
+        if (totalItems) {
+          setTotalCustomers(parseInt(totalItems));
+        }
+        
+        if (totalPagesHeader) {
+          setTotalPages(parseInt(totalPagesHeader));
+        }
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('API error response:', errorText);
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
         console.log(`Fetched ${data.length} customers successfully`);
         setCustomers(data);
       } catch (err) {
@@ -46,7 +76,7 @@ export const useWooCustomers = (
     };
     
     fetchCustomers();
-  }, [limit, page, searchTerm, role]);
+  }, [limit, page, search, role]);
   
-  return { customers, isLoading, error };
+  return { customers, isLoading, error, totalCustomers, totalPages };
 };
