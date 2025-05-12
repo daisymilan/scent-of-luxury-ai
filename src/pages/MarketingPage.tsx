@@ -102,13 +102,13 @@ const MarketingPage = () => {
             </div>
             <div className="mt-4 sm:mt-0">
               <span className="text-sm text-gray-500 mr-2">Last updated:</span>
-              <span className="text-sm font-medium">May 8, 2025, {new Date().toLocaleTimeString()}</span>
+              <span className="text-sm font-medium">May 12, 2025, {new Date().toLocaleTimeString()}</span>
             </div>
           </div>
           
           <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
             <TabsList>
-              <TabsTrigger value="seo">SEO Analysis</TabsTrigger>
+              <TabsTrigger value="seo">AI SEO Analysis</TabsTrigger>
               <TabsTrigger value="keywords">Keywords</TabsTrigger>
             </TabsList>
             
