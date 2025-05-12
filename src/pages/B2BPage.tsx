@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import DashboardHeader from '@/components/DashboardHeader';
@@ -56,7 +57,7 @@ const B2BPage = () => {
         console.error('Error fetching customers:', error);
         toast({
           title: "Data Fetch Error",
-          description: "Could not load customer data from WooCommerce. Using fallback data.",
+          description: "Could not load customer data from WooCommerce.",
           variant: "destructive",
         });
         return null;
@@ -84,7 +85,7 @@ const B2BPage = () => {
         console.error('Error fetching orders:', error);
         toast({
           title: "Data Fetch Error",
-          description: "Could not load order data from WooCommerce. Using fallback data.",
+          description: "Could not load order data from WooCommerce.",
           variant: "destructive",
         });
         return null;
@@ -112,7 +113,7 @@ const B2BPage = () => {
         console.error('Error fetching products:', error);
         toast({
           title: "Data Fetch Error",
-          description: "Could not load product data from WooCommerce. Using fallback data.",
+          description: "Could not load product data from WooCommerce.",
           variant: "destructive",
         });
         return null;

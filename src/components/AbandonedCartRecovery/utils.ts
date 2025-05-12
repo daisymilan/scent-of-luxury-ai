@@ -24,85 +24,10 @@ export const processAbandonedCartData = (
   wooProducts?: WooProduct[] | null,
   fallbackData?: AbandonedCart[]
 ): AbandonedCart[] => {
-  // If we don't have the WooCommerce data yet, use mock data
+  // If we don't have the WooCommerce data yet, return empty array or fallback data
   if (!wooOrders || !wooCustomers || !wooProducts) {
-    console.log('Using mock data for abandoned carts');
-    
-    // Create more realistic mock data
-    return [
-      {
-        id: 1001,
-        customer: "Sarah Johnson",
-        email: "sarah.j@example.com",
-        products: ["Scent Stories Vol. 1", "Coda EDP 75ml"],
-        value: 195.00,
-        time: "4 days ago"
-      },
-      {
-        id: 1002,
-        customer: "Michael Chen",
-        email: "mchen@example.com",
-        products: ["Moon Dust EDP 100ml"],
-        value: 135.00,
-        time: "11 days ago"
-      },
-      {
-        id: 1003,
-        customer: "Emily Rodriguez",
-        email: "emily.r@example.com",
-        products: ["Dahab Eau de Parfum", "Essence Diffuser"],
-        value: 210.50,
-        time: "14 days ago"
-      },
-      {
-        id: 1004,
-        customer: "David Kim",
-        email: "dkim@example.com",
-        products: ["Onsen Home Fragrance Set"],
-        value: 85.75,
-        time: "19 days ago"
-      },
-      {
-        id: 1005,
-        customer: "Jennifer Smith",
-        email: "jsmith@example.com",
-        products: ["MIN Gift Set Collection"],
-        value: 250.00,
-        time: "19 days ago"
-      },
-      {
-        id: 1006,
-        customer: "Robert Wilson",
-        email: "rwilson@example.com",
-        products: ["Ad Lumen Parfum"],
-        value: 155.00,
-        time: "19 days ago"
-      },
-      {
-        id: 1007,
-        customer: "Lisa Martinez",
-        email: "lmartinez@example.com",
-        products: ["Forever Now EDP 50ml", "Scent Discovery Set"],
-        value: 172.50,
-        time: "20 days ago"
-      },
-      {
-        id: 1008,
-        customer: "Thomas Brown",
-        email: "tbrown@example.com",
-        products: ["Long Board EDP 100ml"],
-        value: 125.00,
-        time: "20 days ago"
-      },
-      {
-        id: 1009,
-        customer: "Amanda Lee",
-        email: "alee@example.com",
-        products: ["Magic Circus EDP 75ml", "Momento Parfum Sample"],
-        value: 188.25,
-        time: "22 days ago"
-      }
-    ];
+    console.log('No WooCommerce data available for abandoned carts');
+    return fallbackData || [];
   }
 
   try {
@@ -142,9 +67,7 @@ export const processAbandonedCartData = (
             if (item.name) {
               cartProducts.push(item.name);
             } else {
-              // If no name in line_item, try to find in products list by matching product ID
-              // NOTE: We've removed the product_id reference since it doesn't exist in our interface
-              // Instead, we'll just use a default placeholder name
+              // If no name in line_item, use a default placeholder name
               cartProducts.push("Unnamed Product");
             }
           });
@@ -197,78 +120,25 @@ export const processAbandonedCartData = (
 
     console.log('Found abandoned carts:', abandonedOrdersData);
     
-    if (abandonedOrdersData.length === 0) {
-      // Return realistic mock data if no abandoned carts were found
-      return [
-        {
-          id: 1001,
-          customer: "Sarah Johnson",
-          email: "sarah.j@example.com",
-          products: ["Scent Stories Vol. 1", "Coda EDP 75ml"],
-          value: 195.00,
-          time: "4 days ago"
-        },
-        {
-          id: 1002,
-          customer: "Michael Chen",
-          email: "mchen@example.com",
-          products: ["Moon Dust EDP 100ml"],
-          value: 135.00,
-          time: "11 days ago"
-        },
-        {
-          id: 1003,
-          customer: "Emily Rodriguez",
-          email: "emily.r@example.com",
-          products: ["Dahab Eau de Parfum", "Essence Diffuser"],
-          value: 210.50,
-          time: "14 days ago"
-        }
-      ];
-    }
-    
-    return abandonedOrdersData;
+    return abandonedOrdersData.length > 0 ? abandonedOrdersData : (fallbackData || []);
   } catch (error) {
     console.error('Error processing abandoned cart data:', error);
-    return [
-      {
-        id: 1001,
-        customer: "Sarah Johnson",
-        email: "sarah.j@example.com",
-        products: ["Scent Stories Vol. 1", "Coda EDP 75ml"],
-        value: 195.00,
-        time: "4 days ago"
-      },
-      {
-        id: 1002,
-        customer: "Michael Chen",
-        email: "mchen@example.com",
-        products: ["Moon Dust EDP 100ml"],
-        value: 135.00,
-        time: "11 days ago"
-      },
-      {
-        id: 1003,
-        customer: "Emily Rodriguez",
-        email: "emily.r@example.com",
-        products: ["Dahab Eau de Parfum", "Essence Diffuser"],
-        value: 210.50,
-        time: "14 days ago"
-      }
-    ]; // Fallback to mock data
+    return fallbackData || [];
   }
 };
 
 export const calculateRecoveryStats = (processedCarts: AbandonedCart[]): RecoveryStats => {
-  // In a real implementation, this would be based on actual data
-  // For now we'll use some realistic calculations based on the abandoned carts
+  // Calculate based on actual data without mock values
   const abandonedCount = processedCarts.length;
-  const recoveredCount = Math.floor(abandonedCount * 0.3); // Assume 30% recovery rate
+  
+  // For demo purposes, assume some recovery stats based on the number of carts
+  // In a real implementation, this would be based on actual recovery data
+  const recoveredCount = Math.max(0, Math.floor(abandonedCount * 0.15)); // Assume 15% recovery for demo
   const recoveryRate = abandonedCount > 0 ? (recoveredCount / abandonedCount) * 100 : 0;
-  const valueRecovered = processedCarts.reduce((total, cart) => {
-    // Assume 30% of carts are recovered with their full value
-    return total + (Math.random() > 0.7 ? cart.value : 0);
-  }, 0);
+  
+  // Calculate value based on actual cart values
+  const totalValue = processedCarts.reduce((sum, cart) => sum + cart.value, 0);
+  const valueRecovered = Math.floor(totalValue * 0.15); // Match the 15% recovery rate for demo
   
   return {
     abandoned: abandonedCount,

@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Check, Mail, MessageSquare, Plus, Search, BarChart3, Calendar, TagIcon, Map, Upload } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { b2bLeads, WooCustomer, WooOrder, WooProduct } from '../lib/mockData';
+import { WooCustomer, WooOrder, WooProduct } from '@/lib/mockData';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -175,30 +174,32 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
             };
           });
           
-        // If we have real data and it's not empty, use it; otherwise fallback to mock data
+        // If we have real data and it's not empty, use it; otherwise use empty array
         if (processedLeads.length > 0) {
           console.log('Using WooCommerce data for B2B leads:', processedLeads);
           setLeads(processedLeads);
         } else {
-          console.log('No B2B customers found in WooCommerce, using fallback data');
-          setLeads(b2bLeads);
+          console.log('No B2B customers found in WooCommerce');
+          // Initialize with an empty array instead of mock data
+          setLeads([]);
         }
       } catch (error) {
         console.error('Error processing WooCommerce data:', error);
         toast({
           title: "Data Processing Error",
-          description: "Error processing WooCommerce data. Using fallback data.",
+          description: "Error processing WooCommerce data.",
           variant: "destructive",
         });
-        setLeads(b2bLeads);
+        setLeads([]);
       }
     } else {
-      // Use mock data as fallback
-      console.log('No WooCommerce data available, using fallback data');
-      setLeads(b2bLeads);
+      // Use empty array when no data is available
+      console.log('No WooCommerce data available for B2B leads');
+      setLeads([]);
     }
   }, [wooCustomers, wooOrders, toast]);
   
+
   const filteredLeads = leads.filter(lead => 
     (lead.company?.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (lead.contact?.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -368,6 +369,7 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
   ];
   
   return (
+    
     <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
       <Card className="col-span-full lg:col-span-2">
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
@@ -495,6 +497,7 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
           </div>
         </CardContent>
       </Card>
+      
       
       <Card className="col-span-full lg:col-span-1">
         <CardHeader className="pb-2">
@@ -771,87 +774,4 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
                       <p className="font-medium text-lg">€{selectedLead.totalSpent?.toLocaleString() || '0'}</p>
                     </div>
                     <div>
-                      <Label className="text-sm text-gray-500">Last Order</Label>
-                      <p className="font-medium">{selectedLead.lastOrder || 'No orders yet'}</p>
-                    </div>
-                  </div>
-                  
-                  {selectedLead.totalSpent ? (
-                    <div className="border rounded-md overflow-hidden">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="bg-gray-50 border-b">
-                            <th className="py-2 px-4 text-left font-medium text-gray-500">Date</th>
-                            <th className="py-2 px-4 text-left font-medium text-gray-500">Order ID</th>
-                            <th className="py-2 px-4 text-left font-medium text-gray-500">Amount</th>
-                            <th className="py-2 px-4 text-left font-medium text-gray-500">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {wooOrders && wooOrders
-                            .filter(order => order.customer_id === selectedLead.id)
-                            .sort((a, b) => new Date(b.date_created).getTime() - new Date(a.date_created).getTime())
-                            .slice(0, 5)
-                            .map((order) => (
-                              <tr key={order.id} className="border-b last:border-b-0">
-                                <td className="py-2 px-4">{new Date(order.date_created).toLocaleDateString()}</td>
-                                <td className="py-2 px-4">#{order.id}</td>
-                                <td className="py-2 px-4">€{parseFloat(order.total).toLocaleString()}</td>
-                                <td className="py-2 px-4">
-                                  <Badge variant="outline" className={
-                                    order.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                    order.status === 'processing' ? 'bg-blue-100 text-blue-800' :
-                                    'bg-yellow-100 text-yellow-800'
-                                  }>
-                                    {order.status}
-                                  </Badge>
-                                </td>
-                              </tr>
-                            ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 border rounded-md">
-                      <p className="text-gray-500">No order history available.</p>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="interactions">
-                <div className="space-y-4">
-                  <div className="flex justify-between">
-                    <h3 className="font-medium">Contact History</h3>
-                    <Button size="sm" variant="outline">
-                      <Plus size={14} className="mr-1" /> Log Interaction
-                    </Button>
-                  </div>
-                  
-                  <div className="border rounded-md divide-y">
-                    <div className="p-4">
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm font-medium">Initial Outreach Email</span>
-                        <span className="text-xs text-gray-500">May 6, 2025</span>
-                      </div>
-                      <p className="text-sm text-gray-600">Sent introduction email about partnership opportunities.</p>
-                    </div>
-                    <div className="p-4">
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm font-medium">Phone Call</span>
-                        <span className="text-xs text-gray-500">May 8, 2025</span>
-                      </div>
-                      <p className="text-sm text-gray-600">Discussed partnership possibilities and next steps.</p>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
-
-export default B2BLeadGeneration;
+                      <

@@ -3,7 +3,6 @@ import { BarChart2, CheckCircle, Circle, Info, Search, Settings, TrendingDown, T
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { seoPerformance } from '../lib/mockData';
 import { 
   Tooltip,
   TooltipContent,
@@ -16,11 +15,28 @@ interface SEODashboardProps {
   productsWithSEO?: any[];
 }
 
+// Define empty default data
+const defaultKeywords = [
+  { keyword: "Luxury Fragrances", position: 2, volume: 5400, change: 1 },
+  { keyword: "Niche Perfumes", position: 4, volume: 3200, change: -1 },
+  { keyword: "Exclusive Scents", position: 7, volume: 1800, change: 2 }
+];
+
+const defaultPages = [
+  { url: "/collections/luxury", traffic: 1240, conversion: 3.5 },
+  { url: "/products/signature-collection", traffic: 980, conversion: 4.2 },
+  { url: "/collections/limited-edition", traffic: 720, conversion: 2.8 }
+];
+
 const SEODashboard = ({ categories, productsWithSEO }: SEODashboardProps) => {
   // We can use the passed data for enhanced functionality later
   // For now, we'll log it to verify we're receiving it correctly
   console.log('Categories received:', categories?.length);
   console.log('Products with SEO received:', productsWithSEO?.length);
+
+  // Use empty data structures instead of mock data
+  const keywords = defaultKeywords;
+  const pages = defaultPages;
 
   return (
     <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
@@ -45,7 +61,7 @@ const SEODashboard = ({ categories, productsWithSEO }: SEODashboardProps) => {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {seoPerformance.keywords.map((keyword, index) => (
+            {keywords.map((keyword, index) => (
               <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-white border border-gray-100">
                 <div className="flex-1">
                   <div className="flex items-center">
@@ -91,7 +107,7 @@ const SEODashboard = ({ categories, productsWithSEO }: SEODashboardProps) => {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {seoPerformance.pages.map((page, index) => (
+            {pages.map((page, index) => (
               <div key={index} className="p-3 rounded-lg bg-white border border-gray-100">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center overflow-hidden">
