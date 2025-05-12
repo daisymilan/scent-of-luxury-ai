@@ -73,29 +73,27 @@ export const processCustomerData = (orders: WooOrder[], customers: WooCustomer[]
   
   console.log(`Found purchase data for ${Object.keys(customerPurchases).length} customers`);
   
-  // Debug to see what IDs are available
-  const customerIds = customers.map(c => c.id);
-  const purchaseIds = Object.keys(customerPurchases).map(id => parseInt(id));
-  console.log('Customer IDs in dataset:', customerIds);
-  console.log('Customer IDs with purchases:', purchaseIds);
-  
-  // Check for overlap
-  const overlap = customerIds.filter(id => purchaseIds.includes(id));
-  console.log('Overlapping customer IDs:', overlap);
-  
-  // FIX: Don't filter customers to only those with purchase history
-  // Instead, create mock purchase history for each customer if real data isn't available
+  // Create processed customer data - give all customers a simulated purchase history if real data not available
   const processed: Customer[] = [];
   
+  // Use all customers, simulating data for those without real purchase history
   customers.forEach(customer => {
+    // Default simulated values
+    const randomDaysSince = Math.floor(Math.random() * 120) + 30; // Between 30-150 days
+    const date = new Date();
+    date.setDate(date.getDate() - randomDaysSince);
+    
+    // Create display name
+    const displayName = customer.first_name || customer.last_name 
+      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() 
+      : customer.username || customer.email.split('@')[0];
+    
     // Check if this customer has purchase history
     if (customerPurchases[customer.id]) {
       // Use real purchase data
       processed.push({
         id: customer.id.toString(),
-        name: customer.first_name || customer.last_name 
-          ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() 
-          : customer.username || customer.email.split('@')[0],
+        name: displayName,
         email: customer.email,
         lastPurchase: customerPurchases[customer.id].lastPurchase,
         lastPurchaseDate: customerPurchases[customer.id].lastPurchaseDate,
@@ -104,15 +102,9 @@ export const processCustomerData = (orders: WooOrder[], customers: WooCustomer[]
       });
     } else {
       // Create simulated purchase data for demo purposes
-      const randomDaysSince = Math.floor(Math.random() * 120) + 30; // Between 30-150 days
-      const date = new Date();
-      date.setDate(date.getDate() - randomDaysSince);
-      
       processed.push({
         id: customer.id.toString(),
-        name: customer.first_name || customer.last_name 
-          ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() 
-          : customer.username || customer.email.split('@')[0],
+        name: displayName,
         email: customer.email,
         lastPurchase: "MIN Sample Fragrance",
         lastPurchaseDate: date.toISOString(),

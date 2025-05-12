@@ -8,7 +8,7 @@ import { fetchWooCommerceData } from './api';
 import { getWooCommerceConfig } from './config';
 
 export const useWooCustomers = (
-  limit: number = 10, 
+  limit: number = 100, // Increased default limit to 100
   searchTerm?: string, 
   role?: string
 ) => {
