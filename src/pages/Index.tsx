@@ -30,6 +30,9 @@ const Index = () => {
 
   const isLoading = isStatsLoading || isOrdersLoading || isProductsLoading || isCustomersLoading;
 
+  // Filter abandoned orders and prepare data for AbandonedCartRecovery component
+  const abandonedOrders = orders ? orders.filter(order => order.status === 'pending' || order.status === 'on-hold') : [];
+
   return (
     <div className="container mx-auto px-4 pb-8">
       <DashboardHeader />
@@ -98,8 +101,8 @@ const Index = () => {
         
         {activeTab === 'carts' && orders && products && (
           <AbandonedCartRecovery 
-            abandonedOrders={orders.filter(order => order.status === 'pending' || order.status === 'on-hold')}
-            allProducts={products}
+            orders={abandonedOrders}
+            products={products}
           />
         )}
       </div>
