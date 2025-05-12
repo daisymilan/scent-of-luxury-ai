@@ -36,16 +36,13 @@ const SEODashboard: React.FC<SEODashboardProps> = ({ categories, productsWithSEO
   const sortedProducts = useMemo(() => {
     const sorted = [...filteredProducts];
     sorted.sort((a, b) => {
-      const aScore = a.meta_data?.find(meta => meta.key === '_aioseo_seo_score')?.value || 0;
-      const bScore = b.meta_data?.find(meta => meta.key === '_aioseo_seo_score')?.value || 0;
-
-      const aScoreNum = typeof aScore === 'string' ? parseInt(aScore, 10) : Number(aScore);
-      const bScoreNum = typeof bScore === 'string' ? parseInt(bScore, 10) : Number(bScore);
-
+      const aScore = Number(a.meta_data?.find(meta => meta.key === '_aioseo_seo_score')?.value || 0);
+      const bScore = Number(b.meta_data?.find(meta => meta.key === '_aioseo_seo_score')?.value || 0);
+      
       if (sortOrder === 'asc') {
-        return aScoreNum - bScoreNum;
+        return aScore - bScore;
       } else {
-        return bScoreNum - aScoreNum;
+        return bScore - aScore;
       }
     });
     return sorted;

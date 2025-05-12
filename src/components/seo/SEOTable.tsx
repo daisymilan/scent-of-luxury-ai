@@ -21,6 +21,14 @@ const SEOTable: React.FC<SEOTableProps> = ({
   onToggleSortOrder,
   getScoreColor
 }) => {
+  if (!products || products.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        No products with SEO data found.
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-x-auto bg-white rounded-md border border-slate-200">
       <Table>
@@ -61,6 +69,9 @@ const SEOTable: React.FC<SEOTableProps> = ({
             </>
           ) : products.map((product) => {
             const { seoScore, seoTitle, seoDescription, focusKeyword } = extractSEOData(product);
+            
+            // Debug SEO score
+            console.log(`Product ${product.id} - ${product.name} SEO Score:`, seoScore);
             
             return (
               <TableRow key={product.id} className="border-slate-200 hover:bg-slate-50">

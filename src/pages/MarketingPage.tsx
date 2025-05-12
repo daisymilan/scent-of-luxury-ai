@@ -65,16 +65,20 @@ const MarketingPage = () => {
         
         const products = await response.json();
         
-        // Process products to extract AIOSEO metadata
-        return products.map(product => ({
-          ...product,
-          seo: {
-            title: product.meta_data?.find(meta => meta.key === '_aioseo_title')?.value || product.name,
-            description: product.meta_data?.find(meta => meta.key === '_aioseo_description')?.value || '',
-            focusKeyword: product.meta_data?.find(meta => meta.key === '_aioseo_focus_keyword')?.value || '',
-            score: product.meta_data?.find(meta => meta.key === '_aioseo_seo_score')?.value || 0
-          }
-        }));
+        // Process products to include SEO scores for debugging
+        console.log("Raw product data:", products[0]?.meta_data);
+        
+        // Add debug info for SEO data extraction
+        const processedProducts = products.map(product => {
+          const seoScore = product.meta_data?.find(meta => meta.key === '_aioseo_seo_score')?.value || 0;
+          console.log(`Product ${product.id} - SEO Score: ${seoScore}, Meta data:`, 
+            product.meta_data?.filter(meta => meta.key.includes('aioseo'))
+          );
+          
+          return product;
+        });
+        
+        return processedProducts;
       } catch (error) {
         console.error('Error fetching products with AIOSEO data:', error);
         toast({
