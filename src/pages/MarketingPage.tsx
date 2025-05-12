@@ -45,9 +45,9 @@ const MarketingPage = () => {
     staleTime: 30 * 60 * 1000, // 30 minutes
   });
 
-  // Fetch products with their metadata for SEO analysis
+  // Fetch products with their AIOSEO metadata for analysis
   const { data: productsWithSEO, isLoading: isLoadingSEOProducts } = useQuery({
-    queryKey: ['wooProductsWithSEO'],
+    queryKey: ['wooProductsWithAIOSEO'],
     queryFn: async () => {
       try {
         const response = await fetch(
@@ -65,20 +65,21 @@ const MarketingPage = () => {
         
         const products = await response.json();
         
-        // Process products to extract SEO metadata
+        // Process products to extract AIOSEO metadata
         return products.map(product => ({
           ...product,
           seo: {
-            title: product.meta_data?.find(meta => meta.key === '_yoast_wpseo_title')?.value || product.name,
-            description: product.meta_data?.find(meta => meta.key === '_yoast_wpseo_metadesc')?.value || '',
-            keywords: product.meta_data?.find(meta => meta.key === '_yoast_wpseo_metakeywords')?.value || '',
+            title: product.meta_data?.find(meta => meta.key === '_aioseo_title')?.value || product.name,
+            description: product.meta_data?.find(meta => meta.key === '_aioseo_description')?.value || '',
+            focusKeyword: product.meta_data?.find(meta => meta.key === '_aioseo_focus_keyword')?.value || '',
+            score: product.meta_data?.find(meta => meta.key === '_aioseo_seo_score')?.value || 0
           }
         }));
       } catch (error) {
-        console.error('Error fetching products with SEO data:', error);
+        console.error('Error fetching products with AIOSEO data:', error);
         toast({
           title: "Data Fetch Error",
-          description: "Could not load SEO data from WooCommerce.",
+          description: "Could not load AIOSEO data from WooCommerce.",
           variant: "destructive",
         });
         return null;
@@ -108,7 +109,7 @@ const MarketingPage = () => {
           
           <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
             <TabsList>
-              <TabsTrigger value="seo">AI SEO Analysis</TabsTrigger>
+              <TabsTrigger value="seo">AIOSEO Analysis</TabsTrigger>
               <TabsTrigger value="keywords">Keywords</TabsTrigger>
             </TabsList>
             
