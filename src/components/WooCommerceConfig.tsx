@@ -66,13 +66,16 @@ const WooCommerceConfig = () => {
     const savedConfig = getWooCommerceConfig();
     if (savedConfig) {
       if (savedConfig === HARDCODED_WOO_CONFIG) {
-        // Using hardcoded credentials
+        // Using hardcoded credentials - mask them for display
         setConfig({
           ...savedConfig,
           consumerKey: savedConfig.consumerKey.substring(0, 10) + '...',
           consumerSecret: savedConfig.consumerSecret.substring(0, 10) + '...'
         });
         setIsConfigured(true);
+        
+        // Test connection immediately
+        handleTest(savedConfig);
         
         toast({
           title: "Connected to MIN NEW YORK WooCommerce",
@@ -82,6 +85,9 @@ const WooCommerceConfig = () => {
         // Using localStorage config
         setConfig(savedConfig);
         setIsConfigured(true);
+        
+        // Test connection immediately
+        handleTest(savedConfig);
       }
     }
   }, [toast]);
@@ -134,34 +140,40 @@ const WooCommerceConfig = () => {
     });
   };
   
-  // Test connection
-  const handleTest = async () => {
+  // Test connection with provided config
+  const handleTest = async (testConfig = null) => {
     setIsTestingConnection(true);
     
     try {
       // Get actual config for testing (not the display version with hidden credentials)
-      const testConfig = HARDCODED_WOO_CONFIG || getWooCommerceConfig();
+      const configToTest = testConfig || HARDCODED_WOO_CONFIG || getWooCommerceConfig();
       
-      if (!testConfig) {
+      if (!configToTest) {
         throw new Error("No configuration found");
       }
       
-      // Attempt to make a simple request to test the connection
+      // Attempt to make a simple request to test the connection - use products endpoint
+      const endpointUrl = `${configToTest.url}/wp-json/wc/v${configToTest.version}/products?per_page=1`;
+      const queryParams = `consumer_key=${configToTest.consumerKey}&consumer_secret=${configToTest.consumerSecret}`;
+      
+      console.log(`Testing connection to: ${endpointUrl}?${queryParams}`);
+      
       const response = await fetch(
-        `${testConfig.url}/wp-json/wc/v${testConfig.version}/products?per_page=1`,
+        `${endpointUrl}?${queryParams}`,
         {
           headers: {
-            'Authorization': `Basic ${btoa(`${testConfig.consumerKey}:${testConfig.consumerSecret}`)}`,
             'Content-Type': 'application/json',
           },
+          cache: 'no-store'
         }
       );
       
       if (!response.ok) {
-        throw new Error(`API test failed: ${response.statusText}`);
+        throw new Error(`API test failed: ${response.status} ${response.statusText}`);
       }
       
-      await response.json(); // Just to confirm we got valid JSON back
+      const data = await response.json();
+      console.log('Connection test successful:', data);
       
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 5000);
