@@ -26,12 +26,13 @@ const ConsumerReorderReminder: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [page, setPage] = useState<number>(1);
   
   const { toast } = useToast();
   
-  // Fix: Update the hook calls to match the expected arguments
-  const { orders, isLoading: isLoadingOrders, error: ordersError } = useWooOrders(100); 
-  const { customers, isLoading: isLoadingCustomers, error: customersError } = useWooCustomers(100);
+  // Updated: Add page parameter to the hooks
+  const { orders, isLoading: isLoadingOrders, error: ordersError } = useWooOrders(100, page); 
+  const { customers, isLoading: isLoadingCustomers, error: customersError } = useWooCustomers(100, page);
   
   useEffect(() => {
     // Reset error state on refresh

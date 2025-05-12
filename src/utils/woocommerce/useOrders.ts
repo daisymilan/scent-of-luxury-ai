@@ -8,7 +8,8 @@ import { fetchWooCommerceData } from './api';
 import { getWooCommerceConfig } from './config';
 
 export const useWooOrders = (
-  limit: number = 100, // Increased default limit to 100
+  limit: number = 100,
+  page: number = 1,
   status?: string, 
   customer?: number, 
   dateAfter?: string, 
@@ -30,7 +31,7 @@ export const useWooOrders = (
       setError(null);
       try {
         // Build endpoint with query parameters
-        let endpoint = `orders?per_page=${limit}`;
+        let endpoint = `orders?per_page=${limit}&page=${page}`;
         if (status) endpoint += `&status=${status}`;
         if (customer) endpoint += `&customer=${customer}`;
         if (dateAfter) endpoint += `&after=${dateAfter}`;
@@ -49,7 +50,7 @@ export const useWooOrders = (
     };
     
     fetchOrders();
-  }, [limit, status, customer, dateAfter, dateBefore]);
+  }, [limit, page, status, customer, dateAfter, dateBefore]);
   
   return { orders, isLoading, error };
 };

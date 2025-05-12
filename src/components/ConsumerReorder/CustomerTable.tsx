@@ -30,8 +30,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
-  const handleViewDetails = (customer: Customer, e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleViewDetails = (customer: Customer) => {
     setSelectedCustomer(customer);
     setDetailsDialogOpen(true);
   };
@@ -88,7 +87,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                   )}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button size="sm" variant="ghost" onClick={(e) => handleViewDetails(customer, e)}>
+                  <Button size="sm" variant="ghost" onClick={() => handleViewDetails(customer)}>
                     View Details
                   </Button>
                 </TableCell>

@@ -9,9 +9,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const ReorderReminderPage: React.FC = () => {
   const { user } = useAuth();
-  // Fix: Update the hook calls to match the expected number of arguments
-  const { orders, isLoading: ordersLoading, error: ordersError } = useWooOrders(100); 
-  const { customers, isLoading: customersLoading, error: customersError } = useWooCustomers(100);
+  const { orders, isLoading: ordersLoading, error: ordersError } = useWooOrders(100, 1); 
+  const { customers, isLoading: customersLoading, error: customersError } = useWooCustomers(100, 1);
   
   const [stats, setStats] = useState({
     customersForReorder: 0,
@@ -29,7 +28,10 @@ const ReorderReminderPage: React.FC = () => {
       // Track the most recent purchase date for each customer
       orders.forEach(order => {
         const customerId = order.customer_id;
+        if (!customerId) return;
+        
         const orderDate = new Date(order.date_created);
+        if (isNaN(orderDate.getTime())) return;
         
         if (!customerLastPurchase[customerId] || orderDate > customerLastPurchase[customerId]) {
           customerLastPurchase[customerId] = orderDate;

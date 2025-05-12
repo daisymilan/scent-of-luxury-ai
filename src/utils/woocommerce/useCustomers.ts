@@ -8,7 +8,8 @@ import { fetchWooCommerceData } from './api';
 import { getWooCommerceConfig } from './config';
 
 export const useWooCustomers = (
-  limit: number = 100, // Increased default limit to 100
+  limit: number = 100,
+  page: number = 1,
   searchTerm?: string, 
   role?: string
 ) => {
@@ -28,7 +29,7 @@ export const useWooCustomers = (
       setError(null);
       try {
         // Build endpoint with query parameters
-        let endpoint = `customers?per_page=${limit}`;
+        let endpoint = `customers?per_page=${limit}&page=${page}`;
         if (searchTerm) endpoint += `&search=${encodeURIComponent(searchTerm)}`;
         if (role) endpoint += `&role=${role}`;
         
@@ -45,7 +46,7 @@ export const useWooCustomers = (
     };
     
     fetchCustomers();
-  }, [limit, searchTerm, role]);
+  }, [limit, page, searchTerm, role]);
   
   return { customers, isLoading, error };
 };
