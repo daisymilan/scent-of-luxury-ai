@@ -1,13 +1,15 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardHeader from '@/components/DashboardHeader';
 import KpiOverview from '@/components/KpiOverview';
 import { useAuth } from '@/contexts/AuthContext';
 import { Separator } from '@/components/ui/separator';
-import { useWooStats, useWooOrders, useWooProducts, useWooCustomers } from '@/utils/woocommerce';
+import { useWooStats, useWooOrders, useWooProducts, useWooCustomers, getWooCommerceConfig } from '@/utils/woocommerce';
 import B2BLeadGeneration from '@/components/B2BLeadGeneration';
 import SEODashboard from '@/components/SEODashboard';
 import AbandonedCartRecovery from '@/components/AbandonedCartRecovery';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle, CheckCircle } from 'lucide-react';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -22,13 +24,33 @@ const Index = () => {
     hour12: true
   }).format(currentDate);
 
+  // Check if WooCommerce is configured
+  const wooConfig = getWooCommerceConfig();
+  const [wooConfigured, setWooConfigured] = useState(!!wooConfig);
+
   // Fetch data from WooCommerce API for all components
-  const { stats, isLoading: isStatsLoading } = useWooStats('week');
-  const { orders, isLoading: isOrdersLoading } = useWooOrders(50); // Increased to get more data
-  const { products, isLoading: isProductsLoading } = useWooProducts(50); // Increased to get more data
-  const { customers, isLoading: isCustomersLoading } = useWooCustomers(50); // Fetch customers for B2B
+  const { stats, isLoading: isStatsLoading, error: statsError } = useWooStats('week');
+  const { orders, isLoading: isOrdersLoading, error: ordersError } = useWooOrders(50); // Increased to get more data
+  const { products, isLoading: isProductsLoading, error: productsError } = useWooProducts(50); // Increased to get more data
+  const { customers, isLoading: isCustomersLoading, error: customersError } = useWooCustomers(50); // Fetch customers for B2B
 
   const isLoading = isStatsLoading || isOrdersLoading || isProductsLoading || isCustomersLoading;
+  const hasError = !!(statsError || ordersError || productsError || customersError);
+  const errorMessage = statsError?.message || ordersError?.message || productsError?.message || customersError?.message;
+
+  // Debug WooCommerce API status
+  useEffect(() => {
+    console.log("WooCommerce API Status:", {
+      configured: wooConfigured,
+      isLoading,
+      hasError,
+      errorMessage,
+      stats: stats ? "Available" : "Not available",
+      ordersCount: orders?.length || 0,
+      productsCount: products?.length || 0,
+      customersCount: customers?.length || 0
+    });
+  }, [wooConfigured, isLoading, hasError, stats, orders, products, customers, errorMessage]);
 
   // Filter abandoned orders and prepare data for AbandonedCartRecovery component
   const abandonedOrders = orders ? orders.filter(order => order.status === 'pending' || order.status === 'on-hold') : [];
@@ -42,6 +64,36 @@ const Index = () => {
         <p className="text-gray-600">Welcome back to your luxury fragrance dashboard, {user?.name}</p>
         <div className="text-sm text-gray-500 mt-4 text-right">Last updated: {formattedDate}</div>
       </div>
+      
+      {!wooConfigured && (
+        <Alert className="mb-6 bg-amber-50 border-amber-200">
+          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertTitle>WooCommerce API Not Configured</AlertTitle>
+          <AlertDescription>
+            Please visit the Reports page to configure your WooCommerce API connection.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {hasError && (
+        <Alert className="mb-6 bg-red-50 border-red-200">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertTitle>WooCommerce API Error</AlertTitle>
+          <AlertDescription>
+            {errorMessage || "Error connecting to WooCommerce API. Please check your connection and credentials."}
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {wooConfigured && !hasError && !isLoading && (
+        <Alert className="mb-6 bg-green-50 border-green-200">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <AlertTitle>WooCommerce Connected</AlertTitle>
+          <AlertDescription>
+            Successfully connected to MIN NEW YORK WooCommerce API.
+          </AlertDescription>
+        </Alert>
+      )}
       
       <div className="mb-8">
         <nav className="flex border-b border-gray-200">

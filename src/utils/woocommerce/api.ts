@@ -1,7 +1,7 @@
 /**
  * WooCommerce API utility functions
  */
-import { WooCommerceConfig, getWooCommerceConfig } from './config';
+import { WooCommerceConfig, getWooCommerceConfig, WOO_API_AUTH_PARAMS } from './config';
 import { WooProduct, WooOrder, WooCustomer, WooProductVariation } from './types';
 
 // API Request functions
@@ -25,54 +25,29 @@ export const fetchWooCommerceData = async <T,>(
       const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         // Adding cache: 'no-store' to prevent caching issues
         cache: 'no-store'
       });
       
       if (!response.ok) {
-        console.error(`WooCommerce API error (${response.status}): ${response.statusText}`);
         throw new Error(`WooCommerce API error: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
+      console.log(`Successfully fetched data for endpoint: ${endpoint}`, data);
       return data as T;
     } catch (error) {
       console.error(`WooCommerce API fetch error (attempt ${attempt + 1}/${maxRetries + 1}):`, error);
       lastError = error instanceof Error ? error : new Error(String(error));
       
-      // Try basic auth on next attempt if we failed with query params
-      if (attempt === 0) {
-        try {
-          const credentials = btoa(`${config.consumerKey}:${config.consumerSecret}`);
-          const response = await fetch(
-            `${config.url}/wp-json/wc/v${config.version}/${endpoint}`,
-            {
-              headers: {
-                'Authorization': `Basic ${credentials}`,
-                'Content-Type': 'application/json',
-              },
-              cache: 'no-store'
-            }
-          );
-          
-          if (!response.ok) {
-            throw new Error(`WooCommerce API error: ${response.status} ${response.statusText}`);
-          }
-          
-          const data = await response.json();
-          return data as T;
-        } catch (secondError) {
-          console.error('WooCommerce API fetch error with basic auth:', secondError);
-        }
+      // Add a small delay before retrying
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
       }
       
       attempt++;
-      
-      // Add a small delay before retrying
-      if (attempt <= maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-      }
     }
   }
   

@@ -9,22 +9,33 @@ import { getWooCommerceConfig } from './config';
 
 export const useWooStats = (dateRange?: 'week' | 'month' | 'year') => {
   const [stats, setStats] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start with loading state
   const [error, setError] = useState<Error | null>(null);
   
   useEffect(() => {
     const config = getWooCommerceConfig();
-    if (!config) return;
+    if (!config) {
+      console.error('WooCommerce configuration not found');
+      setIsLoading(false);
+      setError(new Error('WooCommerce configuration not found'));
+      return;
+    }
     
     const fetchStats = async () => {
       setIsLoading(true);
       try {
+        console.log('Fetching WooCommerce stats with config:', config);
         // WooCommerce doesn't have a direct stats endpoint
         // So we fetch some key data to build our own stats
         const [products, orders] = await Promise.all([
           fetchWooCommerceData<WooProduct[]>('products?per_page=100', config),
           fetchWooCommerceData<WooOrder[]>('orders?per_page=100', config),
         ]);
+        
+        console.log('Successfully fetched products and orders:', { 
+          productsCount: products?.length, 
+          ordersCount: orders?.length 
+        });
         
         // Get date range for filtering
         const now = new Date();
@@ -80,7 +91,7 @@ export const useWooStats = (dateRange?: 'week' | 'month' | 'year') => {
           .sort((a, b) => b.revenue - a.revenue)
           .slice(0, 5);
         
-        setStats({
+        const statsData = {
           totalProducts,
           totalOrders,
           totalRevenue: totalRevenue.toFixed(2),
@@ -90,8 +101,12 @@ export const useWooStats = (dateRange?: 'week' | 'month' | 'year') => {
             start: startDate.toISOString(),
             end: now.toISOString(),
           }
-        });
+        };
+        
+        console.log('Calculated WooCommerce stats:', statsData);
+        setStats(statsData);
       } catch (err) {
+        console.error('Error fetching WooCommerce stats:', err);
         setError(err as Error);
       } finally {
         setIsLoading(false);
