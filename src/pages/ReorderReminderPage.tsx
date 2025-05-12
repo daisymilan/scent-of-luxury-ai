@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const ReorderReminderPage: React.FC = () => {
   const { user } = useAuth();
-  // Fix the per_page parameter to be within allowed limits (max 100)
+  // Fix: Update the hook calls to match the expected number of arguments
   const { orders, isLoading: ordersLoading } = useWooOrders(100); 
   const { customers, isLoading: customersLoading } = useWooCustomers(100);
   

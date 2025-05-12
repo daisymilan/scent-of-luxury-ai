@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -24,9 +23,11 @@ const ConsumerReorderReminder: React.FC = () => {
   
   const { toast } = useToast();
   
-  // Fix the per_page parameter to be within allowed limits (max 100)
-  const { orders, isLoading: isLoadingOrders } = useWooOrders(100, undefined, undefined, undefined, undefined, refreshKey); 
-  const { customers, isLoading: isLoadingCustomers } = useWooCustomers(100, undefined, undefined, refreshKey);
+  // Fix: Update the hook calls to match the expected number of arguments
+  // useWooOrders accepts (limit, status, customer, dateAfter, dateBefore)
+  const { orders, isLoading: isLoadingOrders } = useWooOrders(100); 
+  // useWooCustomers accepts (limit, searchTerm, role)
+  const { customers, isLoading: isLoadingCustomers } = useWooCustomers(100);
   
   // Process the data to create our customer reorder list
   useEffect(() => {
