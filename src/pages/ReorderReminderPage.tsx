@@ -9,7 +9,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const ReorderReminderPage: React.FC = () => {
   const { user } = useAuth();
-  const { orders, isLoading: ordersLoading } = useWooOrders(200);
+  // Fix the per_page parameter to be within allowed limits (max 100)
+  const { orders, isLoading: ordersLoading } = useWooOrders(100); 
   const { customers, isLoading: customersLoading } = useWooCustomers(100);
   
   const [stats, setStats] = useState({

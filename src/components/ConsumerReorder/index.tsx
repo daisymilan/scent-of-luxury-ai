@@ -23,7 +23,7 @@ const ConsumerReorderReminder: React.FC = () => {
   
   const { toast } = useToast();
   
-  // Fetch orders and customers from WooCommerce API
+  // Fix the per_page parameter to be within allowed limits (max 100)
   const { orders, isLoading: isLoadingOrders } = useWooOrders(100); 
   const { customers, isLoading: isLoadingCustomers } = useWooCustomers(100);
   
