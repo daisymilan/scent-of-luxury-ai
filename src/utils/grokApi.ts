@@ -12,8 +12,8 @@ export const DEFAULT_GROK_CONFIG: GrokApiConfig = {
 };
 
 // Try to load hardcoded API credentials from environment variables
-const GROK_API_KEY = process.env.GROK_API_KEY;
-const GROK_API_URL = process.env.GROK_API_URL;
+const GROK_API_KEY = import.meta.env.VITE_GROK_API_KEY || '';
+const GROK_API_URL = import.meta.env.VITE_GROK_API_URL || '';
 
 // Create a hardcoded config object if environment variables are available
 export const HARDCODED_GROK_CONFIG: GrokApiConfig | null = GROK_API_KEY ? {
