@@ -73,9 +73,12 @@ export const processCustomerData = (orders: WooOrder[], customers: WooCustomer[]
   
   console.log(`Found purchase data for ${Object.keys(customerPurchases).length} customers`);
   
-  // Combine with customer info
+  // Fix: Create a list of valid customer IDs with purchase data
+  const validCustomerIds = Object.keys(customerPurchases).map(id => parseInt(id));
+  
+  // Combine with customer info - corrected filtering logic
   const processed: Customer[] = customers
-    .filter(customer => customerPurchases[customer.id]) // Only include customers with purchases
+    .filter(customer => validCustomerIds.includes(customer.id)) // Fix: Use validCustomerIds for filtering
     .map(customer => ({
       id: customer.id.toString(),
       name: customer.first_name || customer.last_name 
@@ -92,4 +95,3 @@ export const processCustomerData = (orders: WooOrder[], customers: WooCustomer[]
   console.log(`Processed ${processed.length} customers with purchase data`);
   return processed;
 };
-

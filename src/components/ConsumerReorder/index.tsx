@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -40,7 +41,7 @@ const ConsumerReorderReminder: React.FC = () => {
       const processed = processCustomerData(orders, customers);
       setProcessedCustomers(processed);
     }
-  }, [orders, customers, isLoadingOrders, isLoadingCustomers]);
+  }, [orders, customers, isLoadingOrders, isLoadingCustomers, refreshKey]);
   
   const toggleCustomerSelection = (customerId: string) => {
     setSelectedCustomers(prev => 
@@ -51,7 +52,7 @@ const ConsumerReorderReminder: React.FC = () => {
   };
   
   const selectAllCustomers = () => {
-    setProcessedCustomers.length > 0 && setSelectedCustomers(processedCustomers.map(c => c.id));
+    processedCustomers.length > 0 && setSelectedCustomers(processedCustomers.map(c => c.id));
   };
   
   const clearSelection = () => {
