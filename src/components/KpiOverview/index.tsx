@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import KpiCards from './KpiCards';
 import RevenueTrendChart from './RevenueTrendChart';
 import TopSellingProducts from './TopSellingProducts';
+import RecentOrdersTable from '@/components/RecentOrdersTable';
 
 const KpiOverview = () => {
   const { stats, isLoading: isStatsLoading } = useWooStats('week');
@@ -135,6 +136,17 @@ const KpiOverview = () => {
         }))
     : [];
 
+  // Format recent orders for the table component
+  const recentOrders = orders && orders.length > 0
+    ? orders.slice(0, 4).map(order => ({
+        orderId: order.id,
+        customerName: `${order.billing.first_name} ${order.billing.last_name}`,
+        orderDate: new Date(order.date_created).toLocaleDateString(),
+        totalAmount: parseFloat(order.total),
+        status: order.status.charAt(0).toUpperCase() + order.status.slice(1)
+      }))
+    : [];
+
   // Notify if no data available but API connected
   useEffect(() => {
     if (!isLoading) {
@@ -179,6 +191,42 @@ const KpiOverview = () => {
           { id: 4, name: "Sample Product 4", sales: 21, revenue: 2100, image: "/placeholder.svg" }
         ]}
       />
+      
+      {/* Add RecentOrdersTable to show the order data */}
+      <div className="col-span-full mt-6">
+        <RecentOrdersTable 
+          orders={recentOrders.length > 0 ? recentOrders : [
+            {
+              orderId: 123456,
+              customerName: 'John Smith',
+              orderDate: '2025-05-01',
+              totalAmount: 129.99,
+              status: 'Delivered'
+            },
+            {
+              orderId: 123457,
+              customerName: 'Sarah Johnson',
+              orderDate: '2025-05-03',
+              totalAmount: 79.50,
+              status: 'Shipped'
+            },
+            {
+              orderId: 123458,
+              customerName: 'Michael Brown',
+              orderDate: '2025-05-05',
+              totalAmount: 249.99,
+              status: 'Processing'
+            },
+            {
+              orderId: 123459,
+              customerName: 'Emily Davis',
+              orderDate: '2025-05-07',
+              totalAmount: 54.25,
+              status: 'Delivered'
+            }
+          ]}
+        />
+      </div>
     </div>
   );
 };
