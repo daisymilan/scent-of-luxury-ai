@@ -25,6 +25,7 @@ export function useSpeechHandler({
 }: SpeechHandlerProps) {
   const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
+  const transcriptSubmittedRef = useRef(false);
   
   // Initialize speech synthesis hook
   const speechSynthesis = useSpeechSynthesis();
@@ -35,11 +36,16 @@ export function useSpeechHandler({
     recognitionRef.current = createSpeechRecognition({
       onResult: (transcript) => {
         console.log('Voice recognized:', transcript);
-        setQuery('');
-        setDisplayedQuery(transcript);
         
-        // Immediately submit the query after voice recognition
-        handleQuerySubmit(transcript);
+        // Prevent duplicate submissions
+        if (!transcriptSubmittedRef.current && transcript.trim() !== '') {
+          transcriptSubmittedRef.current = true;
+          setQuery('');
+          setDisplayedQuery(transcript);
+          
+          // Immediately submit the query after voice recognition
+          handleQuerySubmit(transcript);
+        }
       },
       onError: (event) => {
         console.error('Speech recognition error:', event.error);
@@ -61,6 +67,8 @@ export function useSpeechHandler({
       },
       onEnd: () => {
         setIsListening(false);
+        // Reset the submission flag when recognition ends
+        transcriptSubmittedRef.current = false;
       }
     });
     
@@ -83,6 +91,7 @@ export function useSpeechHandler({
       }
       
       speechSynthesis.stop();
+      transcriptSubmittedRef.current = false;
     };
   }, [toast, handleQuerySubmit, setDisplayedQuery, setIsListening, setQuery, setSpeechSupport, setShowSpeechAlert]);
   
@@ -97,6 +106,9 @@ export function useSpeechHandler({
     }
     
     setIsListening(true);
+    // Reset the submission flag when starting to listen
+    transcriptSubmittedRef.current = false;
+    
     try {
       recognitionRef.current.start();
       toast({
@@ -126,6 +138,9 @@ export function useSpeechHandler({
       }
       setIsListening(false);
     }
+    
+    // Reset the submission flag
+    transcriptSubmittedRef.current = false;
   };
   
   const handleReadAloud = (response: string) => {

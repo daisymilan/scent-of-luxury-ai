@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { callGrokApi, getGrokApiConfig } from '@/utils/grokApi';
 
 interface WebhookCallOptions {
@@ -98,6 +98,8 @@ export function useWebhookCall({ webhookUrl, user, onError }: WebhookCallOptions
   const [isWebhookFailed, setIsWebhookFailed] = useState(false);
   const [response, setResponse] = useState('');
   const [rawResponse, setRawResponse] = useState<any>(null);
+  const pendingQueryRef = useRef<string | null>(null);
+  const processingQueryRef = useRef(false);
   
   const prepareWebhookPayload = (query: string) => {
     return {
@@ -162,6 +164,16 @@ export function useWebhookCall({ webhookUrl, user, onError }: WebhookCallOptions
   };
   
   const callWebhook = async (query: string) => {
+    // Prevent duplicate calls for the same query in quick succession
+    if (processingQueryRef.current) {
+      console.log('Already processing a query. Skipping duplicate request.');
+      pendingQueryRef.current = query;
+      return { success: false, response: '', skipped: true };
+    }
+    
+    processingQueryRef.current = true;
+    pendingQueryRef.current = null;
+    
     setIsThinking(true);
     setResponse('');
     setRawResponse(null);
@@ -176,14 +188,30 @@ export function useWebhookCall({ webhookUrl, user, onError }: WebhookCallOptions
       
       try {
         const data = await callWebhookApi(webhookUrl, webhookPayload);
-        return handleWebhookSuccess(data);
+        const result = handleWebhookSuccess(data);
+        processingQueryRef.current = false;
+        
+        // Process any pending query that came in while we were processing
+        if (pendingQueryRef.current) {
+          const pendingQuery = pendingQueryRef.current;
+          pendingQueryRef.current = null;
+          // Small delay to prevent UI jank
+          setTimeout(() => callWebhook(pendingQuery), 100);
+        }
+        
+        setIsThinking(false);
+        return result;
       } catch (error) {
-        return await handleWebhookFailure(error, query);
+        const result = await handleWebhookFailure(error, query);
+        processingQueryRef.current = false;
+        setIsThinking(false);
+        return result;
       }
     } catch (error) {
-      return handleError(error);
-    } finally {
+      const result = handleError(error);
+      processingQueryRef.current = false;
       setIsThinking(false);
+      return result;
     }
   };
   
