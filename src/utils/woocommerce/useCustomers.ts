@@ -32,6 +32,7 @@ export const useWooCustomers = (
         if (searchTerm) endpoint += `&search=${encodeURIComponent(searchTerm)}`;
         if (role) endpoint += `&role=${role}`;
         
+        console.log(`Fetching customers with endpoint: ${endpoint}`);
         const data = await fetchWooCommerceData<WooCustomer[]>(endpoint, config);
         console.log(`Fetched ${data.length} customers successfully`);
         setCustomers(data);

@@ -36,6 +36,7 @@ export const useWooOrders = (
         if (dateAfter) endpoint += `&after=${dateAfter}`;
         if (dateBefore) endpoint += `&before=${dateBefore}`;
         
+        console.log(`Fetching orders with endpoint: ${endpoint}`);
         const data = await fetchWooCommerceData<WooOrder[]>(endpoint, config);
         console.log(`Fetched ${data.length} orders successfully`);
         setOrders(data);

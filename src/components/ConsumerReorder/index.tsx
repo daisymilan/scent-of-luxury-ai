@@ -11,6 +11,7 @@ import ErrorState from './ErrorState';
 import TableActions from './TableActions';
 import ReminderDialog from './ReminderDialog';
 import CustomerTable from './CustomerTable';
+import { RefreshCw } from 'lucide-react';
 
 const ConsumerReorderReminder: React.FC = () => {
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
@@ -24,6 +25,7 @@ const ConsumerReorderReminder: React.FC = () => {
   const [processedCustomers, setProcessedCustomers] = useState<Customer[]>([]);
   const [refreshKey, setRefreshKey] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   
   const { toast } = useToast();
   
@@ -59,6 +61,7 @@ const ConsumerReorderReminder: React.FC = () => {
         const processed = processCustomerData(orders, customers);
         console.log('Processed customers:', processed);
         setProcessedCustomers(processed);
+        setIsRefreshing(false);
       } catch (err) {
         console.error('Error processing customer data:', err);
         setError(err instanceof Error ? err.message : 'Unknown error processing customer data');
@@ -82,12 +85,13 @@ const ConsumerReorderReminder: React.FC = () => {
     setSelectedCustomers([]);
   };
   
-  const handleRetry = () => {
+  const handleRefresh = () => {
+    setIsRefreshing(true);
     // Force refresh by incrementing the refresh key
     setRefreshKey(prev => prev + 1);
     toast({
       title: "Refreshing data",
-      description: "Attempting to reload customer and order data..."
+      description: "Reloading customer and order data..."
     });
   };
   
@@ -110,11 +114,11 @@ const ConsumerReorderReminder: React.FC = () => {
   
   // If there's an error, show the error state
   if (error) {
-    return <ErrorState errorMessage={error} onRetry={handleRetry} />;
+    return <ErrorState errorMessage={error} onRetry={handleRefresh} />;
   }
   
   // If there's no data yet, show a loading state
-  if (isLoadingOrders || isLoadingCustomers) {
+  if (isLoadingOrders || isLoadingCustomers || isRefreshing) {
     return <LoadingState />;
   }
   
@@ -124,16 +128,22 @@ const ConsumerReorderReminder: React.FC = () => {
       <EmptyState 
         ordersCount={orders?.length || 0} 
         customersCount={customers?.length || 0}
-        onRetry={handleRetry}
+        onRetry={handleRefresh}
       />
     );
   }
   
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Consumer Reorder Reminders</CardTitle>
-        <CardDescription>Send targeted reminders to customers who may need to reorder products</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <div>
+          <CardTitle>Consumer Reorder Reminders</CardTitle>
+          <CardDescription>Send targeted reminders to customers who may need to reorder products</CardDescription>
+        </div>
+        <Button onClick={handleRefresh} variant="outline" size="sm">
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Refresh Data
+        </Button>
       </CardHeader>
       <CardContent>
         <div className="mb-6 flex flex-col sm:flex-row justify-between gap-4">
