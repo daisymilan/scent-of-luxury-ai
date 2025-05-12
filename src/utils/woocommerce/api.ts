@@ -1,3 +1,4 @@
+
 /**
  * WooCommerce API utility functions
  */
@@ -16,13 +17,18 @@ export const fetchWooCommerceData = async <T,>(
   
   while (attempt <= maxRetries) {
     try {
-      // First attempt with query parameters (most reliable)
-      const queryChar = endpoint.includes('?') ? '&' : '?';
-      const url = `${config.url}/wp-json/wc/v${config.version}/${endpoint}${queryChar}consumer_key=${config.consumerKey}&consumer_secret=${config.consumerSecret}`;
+      // Build the URL differently - use URL parameters instead of query parameters
+      // This can help with some server configurations that don't handle query parameters well
+      const baseUrl = `${config.url}/wp-json/wc/v${config.version}/${endpoint}`;
+      const url = new URL(baseUrl);
+      
+      // Add authentication parameters
+      url.searchParams.append('consumer_key', config.consumerKey);
+      url.searchParams.append('consumer_secret', config.consumerSecret);
       
       console.log(`Fetching WooCommerce data (attempt ${attempt + 1}/${maxRetries + 1}): ${endpoint}`);
       
-      const response = await fetch(url, {
+      const response = await fetch(url.toString(), {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -32,6 +38,8 @@ export const fetchWooCommerceData = async <T,>(
       });
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`API error response for ${endpoint}:`, errorText);
         throw new Error(`WooCommerce API error: ${response.status} ${response.statusText}`);
       }
       

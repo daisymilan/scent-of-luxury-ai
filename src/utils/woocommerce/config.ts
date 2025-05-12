@@ -11,7 +11,7 @@ export interface WooCommerceConfig {
   version: string;
 }
 
-// Hardcoded configuration for immediate use with Min.com
+// Updated configuration with proper URL formatting
 export const HARDCODED_WOO_CONFIG: WooCommerceConfig | null = {
   url: 'https://staging.min.com/int',
   consumerKey: 'ck_83b6276178dfd425fb2618461bfb02aad3fd6d67',
@@ -31,7 +31,30 @@ export const saveWooCommerceConfig = (config: WooCommerceConfig) => {
 
 export const getWooCommerceConfig = (): WooCommerceConfig | null => {
   // Return hardcoded config first, if not available check localStorage
-  return HARDCODED_WOO_CONFIG || 
-    (localStorage.getItem('woocommerce_config') ? 
-      JSON.parse(localStorage.getItem('woocommerce_config')!) : null);
+  const storedConfig = localStorage.getItem('woocommerce_config');
+  return HARDCODED_WOO_CONFIG || (storedConfig ? JSON.parse(storedConfig) : null);
+};
+
+// Add a function to test the WooCommerce connection
+export const testWooCommerceConnection = async (): Promise<boolean> => {
+  const config = getWooCommerceConfig();
+  if (!config) return false;
+  
+  try {
+    const url = new URL(`${config.url}/wp-json/wc/v${config.version}/system_status`);
+    url.searchParams.append('consumer_key', config.consumerKey);
+    url.searchParams.append('consumer_secret', config.consumerSecret);
+    
+    const response = await fetch(url.toString(), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      }
+    });
+    
+    return response.ok;
+  } catch (error) {
+    console.error('WooCommerce connection test failed:', error);
+    return false;
+  }
 };

@@ -11,6 +11,8 @@ import { useChartData } from './hooks/useChartData';
 import { useMetricsCalculator } from './hooks/useMetricsCalculator';
 import { useFormattedProducts } from './hooks/useFormattedProducts';
 import { useFormattedOrders } from './hooks/useFormattedOrders';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle, CheckCircle } from 'lucide-react';
 
 const KpiOverview = () => {
   const { stats, isLoading: isStatsLoading, error: statsError } = useWooStats('week');
@@ -74,29 +76,52 @@ const KpiOverview = () => {
   }, [isLoading, hasError, hasData, toastUI, errorMessage]);
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-      <KpiCards 
-        isLoading={isLoading}
-        dailyRevenue={dailyRevenue}
-        monthlyRevenue={monthlyRevenue}
-        totalProductsSold={totalProductsSold}
-        conversionRate={conversionRate}
-      />
+    <div className="space-y-6">
+      {/* API Status Alert */}
+      {hasError && (
+        <Alert className="bg-red-50 border-red-200">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertTitle>WooCommerce API Error</AlertTitle>
+          <AlertDescription>
+            {errorMessage || "Error connecting to WooCommerce API. Please check your connection and credentials."}
+          </AlertDescription>
+        </Alert>
+      )}
       
-      <RevenueTrendChart 
-        isLoading={isLoading} 
-        dailyChartData={dailyChartData} 
-      />
-      
-      <TopSellingProducts 
-        isLoading={isLoading}
-        topProductsList={topProductsList}
-      />
-      
-      <div className="col-span-full mt-6">
-        <RecentOrdersTable 
-          orders={recentOrders}
+      {!isLoading && !hasError && hasData && (
+        <Alert className="bg-green-50 border-green-200">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <AlertTitle>WooCommerce Connected</AlertTitle>
+          <AlertDescription>
+            Successfully connected to WooCommerce API and loaded data.
+          </AlertDescription>
+        </Alert>
+      )}
+    
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <KpiCards 
+          isLoading={isLoading}
+          dailyRevenue={dailyRevenue}
+          monthlyRevenue={monthlyRevenue}
+          totalProductsSold={totalProductsSold}
+          conversionRate={conversionRate}
         />
+        
+        <RevenueTrendChart 
+          isLoading={isLoading} 
+          dailyChartData={dailyChartData} 
+        />
+        
+        <TopSellingProducts 
+          isLoading={isLoading}
+          topProductsList={topProductsList}
+        />
+        
+        <div className="col-span-full mt-6">
+          <RecentOrdersTable 
+            orders={recentOrders}
+          />
+        </div>
       </div>
     </div>
   );

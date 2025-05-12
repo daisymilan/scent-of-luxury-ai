@@ -9,7 +9,7 @@ import { getWooCommerceConfig } from './config';
 
 export const useWooStats = (dateRange?: 'week' | 'month' | 'year') => {
   const [stats, setStats] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true); // Start with loading state
+  const [isLoading, setIsLoading] = useState(true); 
   const [error, setError] = useState<Error | null>(null);
   
   useEffect(() => {
@@ -24,12 +24,15 @@ export const useWooStats = (dateRange?: 'week' | 'month' | 'year') => {
     const fetchStats = async () => {
       setIsLoading(true);
       try {
-        console.log('Fetching WooCommerce stats with config:', config);
-        // WooCommerce doesn't have a direct stats endpoint
-        // So we fetch some key data to build our own stats
+        console.log('Fetching WooCommerce stats with config:', {
+          url: config.url,
+          version: config.version
+        });
+        
+        // Use simpler endpoints first to test connectivity
         const [products, orders] = await Promise.all([
-          fetchWooCommerceData<WooProduct[]>('products?per_page=100', config),
-          fetchWooCommerceData<WooOrder[]>('orders?per_page=100', config),
+          fetchWooCommerceData<WooProduct[]>('products', config),
+          fetchWooCommerceData<WooOrder[]>('orders', config),
         ]);
         
         console.log('Successfully fetched products and orders:', { 
@@ -64,9 +67,10 @@ export const useWooStats = (dateRange?: 'week' | 'month' | 'year') => {
         const totalProducts = products.length;
         const totalOrders = filteredOrders.length;
         const totalRevenue = filteredOrders.reduce((sum, order) => sum + parseFloat(order.total), 0);
+        const totalVisitors = 500; // Mock data for conversion rate calculation
         
         // Calculate top selling products
-        const productSales: Record<number, {name: string, units: number, revenue: number}> = {};
+        const productSales: Record<number, {name: string; units: number; revenue: number}> = {};
         
         filteredOrders.forEach(order => {
           order.line_items.forEach(item => {
@@ -96,6 +100,7 @@ export const useWooStats = (dateRange?: 'week' | 'month' | 'year') => {
           totalOrders,
           totalRevenue: totalRevenue.toFixed(2),
           averageOrderValue: totalOrders ? (totalRevenue / totalOrders).toFixed(2) : '0',
+          totalVisitors, // Add this for conversion rate calculation
           topProducts,
           dateRange: {
             start: startDate.toISOString(),

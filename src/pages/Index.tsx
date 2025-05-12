@@ -4,15 +4,16 @@ import DashboardHeader from '@/components/DashboardHeader';
 import KpiOverview from '@/components/KpiOverview';
 import { useAuth } from '@/contexts/AuthContext';
 import { Separator } from '@/components/ui/separator';
-import { useWooStats, useWooOrders, useWooProducts, useWooCustomers, getWooCommerceConfig } from '@/utils/woocommerce';
+import { useWooStats, useWooOrders, useWooProducts, useWooCustomers, getWooCommerceConfig, testWooCommerceConnection } from '@/utils/woocommerce';
 import B2BLeadGeneration from '@/components/B2BLeadGeneration';
 import SEODashboard from '@/components/SEODashboard';
 import AbandonedCartRecovery from '@/components/AbandonedCartRecovery';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  const [apiConnectionStatus, setApiConnectionStatus] = useState<'checking' | 'connected' | 'failed'>('checking');
   const { user } = useAuth();
   const currentDate = new Date();
   const formattedDate = new Intl.DateTimeFormat('en-US', {
@@ -28,6 +29,21 @@ const Index = () => {
   const wooConfig = getWooCommerceConfig();
   const [wooConfigured, setWooConfigured] = useState(!!wooConfig);
 
+  // Test API connection when component mounts
+  useEffect(() => {
+    if (wooConfigured) {
+      testWooCommerceConnection()
+        .then(connected => {
+          setApiConnectionStatus(connected ? 'connected' : 'failed');
+        })
+        .catch(() => {
+          setApiConnectionStatus('failed');
+        });
+    } else {
+      setApiConnectionStatus('failed');
+    }
+  }, [wooConfigured]);
+
   // Fetch data from WooCommerce API for all components
   const { stats, isLoading: isStatsLoading, error: statsError } = useWooStats('week');
   const { orders, isLoading: isOrdersLoading, error: ordersError } = useWooOrders(50); // Increased to get more data
@@ -42,6 +58,7 @@ const Index = () => {
   useEffect(() => {
     console.log("WooCommerce API Status:", {
       configured: wooConfigured,
+      connectionStatus: apiConnectionStatus,
       isLoading,
       hasError,
       errorMessage,
@@ -50,7 +67,7 @@ const Index = () => {
       productsCount: products?.length || 0,
       customersCount: customers?.length || 0
     });
-  }, [wooConfigured, isLoading, hasError, stats, orders, products, customers, errorMessage]);
+  }, [wooConfigured, apiConnectionStatus, isLoading, hasError, stats, orders, products, customers, errorMessage]);
 
   // Filter abandoned orders and prepare data for AbandonedCartRecovery component
   const abandonedOrders = orders ? orders.filter(order => order.status === 'pending' || order.status === 'on-hold') : [];
@@ -65,17 +82,27 @@ const Index = () => {
         <div className="text-sm text-gray-500 mt-4 text-right">Last updated: {formattedDate}</div>
       </div>
       
-      {!wooConfigured && (
+      {apiConnectionStatus === 'checking' && (
+        <Alert className="mb-6 bg-blue-50 border-blue-200">
+          <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+          <AlertTitle>Checking WooCommerce API Connection</AlertTitle>
+          <AlertDescription>
+            Please wait while we verify the connection to your WooCommerce store...
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {apiConnectionStatus === 'failed' && (
         <Alert className="mb-6 bg-amber-50 border-amber-200">
           <AlertCircle className="h-4 w-4 text-amber-600" />
-          <AlertTitle>WooCommerce API Not Configured</AlertTitle>
+          <AlertTitle>WooCommerce API Not Connected</AlertTitle>
           <AlertDescription>
             Please visit the Reports page to configure your WooCommerce API connection.
           </AlertDescription>
         </Alert>
       )}
       
-      {hasError && (
+      {apiConnectionStatus === 'connected' && hasError && (
         <Alert className="mb-6 bg-red-50 border-red-200">
           <AlertCircle className="h-4 w-4 text-red-600" />
           <AlertTitle>WooCommerce API Error</AlertTitle>
@@ -85,7 +112,7 @@ const Index = () => {
         </Alert>
       )}
       
-      {wooConfigured && !hasError && !isLoading && (
+      {apiConnectionStatus === 'connected' && !hasError && !isLoading && (
         <Alert className="mb-6 bg-green-50 border-green-200">
           <CheckCircle className="h-4 w-4 text-green-600" />
           <AlertTitle>WooCommerce Connected</AlertTitle>
@@ -129,9 +156,9 @@ const Index = () => {
         
         {activeTab === 'b2b' && (
           <B2BLeadGeneration 
-            wooCustomers={customers} 
-            wooOrders={orders}
-            wooProducts={products}
+            wooCustomers={customers || []} 
+            wooOrders={orders || []}
+            wooProducts={products || []}
           />
         )}
         
@@ -146,16 +173,16 @@ const Index = () => {
                 });
               }
               return acc;
-            }, [])}
-            productsWithSEO={products}
+            }, []) || []}
+            productsWithSEO={products || []}
           />
         )}
         
         {activeTab === 'carts' && (
           <AbandonedCartRecovery 
             wooOrders={abandonedOrders}
-            wooProducts={products}
-            wooCustomers={customers}
+            wooProducts={products || []}
+            wooCustomers={customers || []}
           />
         )}
       </div>
