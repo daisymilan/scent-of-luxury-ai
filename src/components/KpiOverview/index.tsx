@@ -9,8 +9,8 @@ import RecentOrdersTable from '@/components/RecentOrdersTable';
 
 const KpiOverview = () => {
   const { stats, isLoading: isStatsLoading } = useWooStats('week');
-  const { orders, isLoading: isOrdersLoading } = useWooOrders(10); // Increased to fetch more orders
-  const { products, isLoading: isProductsLoading } = useWooProducts(10); // Increased to fetch more products
+  const { orders, isLoading: isOrdersLoading } = useWooOrders(10); 
+  const { products, isLoading: isProductsLoading } = useWooProducts(10);
   const [dailyChartData, setDailyChartData] = useState<{ name: string; value: number }[]>([]);
   const { toast } = useToast();
 
@@ -43,43 +43,18 @@ const KpiOverview = () => {
       console.log("Generated chart data from orders:", chartData);
       setDailyChartData(chartData);
     } else {
-      console.log("No orders available for chart data, using sample data");
-      // Use sample data if no orders
-      generateSampleChartData();
+      console.log("No orders available for chart data");
+      setDailyChartData([]);
     }
   }, [orders]);
 
-  // Generate sample chart data if no real data is available
-  const generateSampleChartData = () => {
-    // Fallback to sample data
-    const sampleDates = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (6 - i));
-      return d.toLocaleDateString();
-    });
-    
-    const sampleData = sampleDates.map(date => ({
-      name: date,
-      value: Math.floor(Math.random() * 5000) + 1000
-    }));
-    
-    console.log("Using sample chart data:", sampleData);
-    setDailyChartData(sampleData);
-  };
-
-  useEffect(() => {
-    if (dailyChartData.length === 0) {
-      generateSampleChartData();
-    }
-  }, [dailyChartData]);
-
   const isLoading = isStatsLoading || isOrdersLoading || isProductsLoading;
 
-  // Calculate revenue metrics with better fallbacks for empty data
+  // Calculate revenue metrics from real data only
   let dailyRevenue = 0;
   let monthlyRevenue = 0;
   let totalProductsSold = 0;
-  let conversionRate = "3.2%"; // Default fallback
+  let conversionRate = "0.0%";
 
   // Calculate metrics from orders if available
   if (orders && orders.length > 0) {
@@ -107,24 +82,23 @@ const KpiOverview = () => {
     totalProductsSold = orders.reduce((sum, order) => {
       return sum + order.line_items.reduce((itemSum, item) => itemSum + item.quantity, 0);
     }, 0);
+    
+    // Calculate conversion rate if we have stats
+    if (stats && stats.totalOrders && stats.totalVisitors) {
+      const rate = (stats.totalOrders / stats.totalVisitors) * 100;
+      conversionRate = `${rate.toFixed(1)}%`;
+    }
   } else if (stats) {
     // Fallback to stats if available
     dailyRevenue = stats.totalRevenue ? parseFloat(stats.totalRevenue) / 7 : 0; // Divide weekly revenue by 7
     monthlyRevenue = stats.totalRevenue ? parseFloat(stats.totalRevenue) * 4 : 0; // Multiply weekly revenue by 4
-    totalProductsSold = stats.totalOrders || 0;
+    totalProductsSold = stats.totalItems || 0;
   }
 
-  // If we still have no data, use sample data for demonstration
-  if (dailyRevenue === 0 && !isLoading) {
-    dailyRevenue = 1250.75;
-    monthlyRevenue = 37522.50;
-    totalProductsSold = 48;
-  }
-
-  // Format top products from WooCommerce data with fallbacks
+  // Format top products from WooCommerce data
   const topProductsList = products && products.length > 0
     ? products
-        .filter(product => product.name && product.id) // Ensure we have valid products
+        .filter(product => product.name && product.id)
         .sort((a, b) => (b.total_sales || 0) - (a.total_sales || 0))
         .slice(0, 4)
         .map(product => ({
@@ -150,16 +124,10 @@ const KpiOverview = () => {
   // Notify if no data available but API connected
   useEffect(() => {
     if (!isLoading) {
-      if (orders && orders.length === 0 && products && products.length > 0) {
+      if (!orders?.length && !products?.length && !stats) {
         toast({
-          title: "No order data available",
-          description: "Connected to WooCommerce API but no orders found. Using sample data for visualization.",
-          duration: 5000,
-        });
-      } else if (!stats && !orders?.length && !products?.length) {
-        toast({
-          title: "Data loading issue",
-          description: "Could not load store data. Using sample data instead.",
+          title: "No data available",
+          description: "Could not load store data from WooCommerce API. Please check your API connection.",
           variant: "destructive",
           duration: 5000,
         });
@@ -184,47 +152,12 @@ const KpiOverview = () => {
       
       <TopSellingProducts 
         isLoading={isLoading}
-        topProductsList={topProductsList.length > 0 ? topProductsList : [
-          { id: 1, name: "Sample Product 1", sales: 42, revenue: 4200, image: "/placeholder.svg" },
-          { id: 2, name: "Sample Product 2", sales: 36, revenue: 3600, image: "/placeholder.svg" },
-          { id: 3, name: "Sample Product 3", sales: 28, revenue: 2800, image: "/placeholder.svg" },
-          { id: 4, name: "Sample Product 4", sales: 21, revenue: 2100, image: "/placeholder.svg" }
-        ]}
+        topProductsList={topProductsList}
       />
       
-      {/* Add RecentOrdersTable to show the order data */}
       <div className="col-span-full mt-6">
         <RecentOrdersTable 
-          orders={recentOrders.length > 0 ? recentOrders : [
-            {
-              orderId: 123456,
-              customerName: 'John Smith',
-              orderDate: '2025-05-01',
-              totalAmount: 129.99,
-              status: 'Delivered'
-            },
-            {
-              orderId: 123457,
-              customerName: 'Sarah Johnson',
-              orderDate: '2025-05-03',
-              totalAmount: 79.50,
-              status: 'Shipped'
-            },
-            {
-              orderId: 123458,
-              customerName: 'Michael Brown',
-              orderDate: '2025-05-05',
-              totalAmount: 249.99,
-              status: 'Processing'
-            },
-            {
-              orderId: 123459,
-              customerName: 'Emily Davis',
-              orderDate: '2025-05-07',
-              totalAmount: 54.25,
-              status: 'Delivered'
-            }
-          ]}
+          orders={recentOrders}
         />
       </div>
     </div>
