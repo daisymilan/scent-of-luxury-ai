@@ -14,7 +14,6 @@ export const getScoreColor = (score: number): string => {
 export const extractSEOData = (product: any) => {
   // Handle cases where meta_data might be missing
   if (!product.meta_data || !Array.isArray(product.meta_data)) {
-    console.warn(`Product ${product.id} has no meta_data array:`, product);
     return {
       seoScore: 0,
       seoTitle: product.name || '',
@@ -25,9 +24,6 @@ export const extractSEOData = (product: any) => {
   
   // Extract SEO data with proper type conversion
   const seoScore = product.meta_data.find(meta => meta.key === '_aioseo_seo_score')?.value;
-  
-  // Log the raw score for debugging
-  console.log(`Raw SEO Score for ${product.name}:`, seoScore, typeof seoScore);
   
   return {
     seoScore: seoScore !== undefined ? Number(seoScore) : 0,

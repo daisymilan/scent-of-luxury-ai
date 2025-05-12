@@ -2,8 +2,11 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import SEOFilters from './seo/SEOFilters';
 import SEOTable from './seo/SEOTable';
+import { Badge } from '@/components/ui/badge';
+import { AlertCircle } from 'lucide-react';
 import { getScoreColor } from './seo/seoUtils';
 import { SEODashboardProps } from './seo/types';
 
@@ -12,6 +15,8 @@ const SEODashboard: React.FC<SEODashboardProps> = ({ categories, productsWithSEO
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isCEO = user?.role === 'CEO';
 
   // Filter products based on selected category and search query
   const filteredProducts = useMemo(() => {
@@ -60,6 +65,26 @@ const SEODashboard: React.FC<SEODashboardProps> = ({ categories, productsWithSEO
     setSortOrder(prevOrder => (prevOrder === 'asc' ? 'desc' : 'asc'));
   };
 
+  // Render pending access notice for non-CEO users
+  const renderAccessNotice = () => {
+    if (isCEO) return null;
+    
+    return (
+      <div className="bg-amber-50 p-4 mb-4 rounded-md flex items-center gap-3 border border-amber-200">
+        <AlertCircle className="h-5 w-5 text-amber-500" />
+        <div>
+          <h4 className="font-medium text-amber-800">Feature Access Pending</h4>
+          <p className="text-sm text-amber-700">
+            Full SEO analytics are available to CEO accounts. Your access is pending approval.
+          </p>
+        </div>
+        <Badge variant="outline" className="ml-auto bg-amber-100 text-amber-800 border-amber-200">
+          Pending
+        </Badge>
+      </div>
+    );
+  };
+
   return (
     <Card className="border-0 shadow-md">
       <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 pb-6">
@@ -70,12 +95,15 @@ const SEODashboard: React.FC<SEODashboardProps> = ({ categories, productsWithSEO
       </CardHeader>
       <CardContent className="p-6">
         <div className="grid gap-6">
+          {renderAccessNotice()}
+
           <SEOFilters 
             categories={categories}
             selectedCategory={selectedCategory}
             searchQuery={searchQuery}
             onCategoryChange={handleCategoryChange}
             onSearchChange={handleSearchChange}
+            disabled={!isCEO}
           />
 
           <SEOTable 
@@ -83,6 +111,7 @@ const SEODashboard: React.FC<SEODashboardProps> = ({ categories, productsWithSEO
             sortOrder={sortOrder}
             onToggleSortOrder={toggleSortOrder}
             getScoreColor={getScoreColor}
+            isCEO={isCEO}
           />
           
           <div className="text-center text-sm text-slate-500 pt-2">

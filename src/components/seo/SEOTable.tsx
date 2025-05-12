@@ -1,26 +1,34 @@
 
 import React from 'react';
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
-} from "@/components/ui/table";
-import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowDown, ArrowUp } from 'lucide-react';
-import { SEOTableProps } from './types';
+import { ArrowUpDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { extractSEOData } from './seoUtils';
 
-const SEOTable: React.FC<SEOTableProps> = ({ 
-  products, 
-  sortOrder, 
+interface Product {
+  id: number;
+  name: string;
+  categories?: Array<{id: number; name: string; slug: string}>;
+  meta_data?: Array<{key: string; value: string}>;
+}
+
+interface SEOTableProps {
+  products: Product[];
+  sortOrder: 'asc' | 'desc';
+  onToggleSortOrder: () => void;
+  getScoreColor: (score: number) => string;
+  isCEO?: boolean;
+}
+
+const SEOTable: React.FC<SEOTableProps> = ({
+  products,
+  sortOrder,
   onToggleSortOrder,
-  getScoreColor
+  getScoreColor,
+  isCEO = true
 }) => {
+  // If no products, show message
   if (!products || products.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -29,79 +37,106 @@ const SEOTable: React.FC<SEOTableProps> = ({
     );
   }
 
+  // For non-CEO users, show limited data
+  if (!isCEO) {
+    return (
+      <div className="overflow-x-auto bg-white rounded-md border border-slate-200">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-24 font-semibold">SEO Score</TableHead>
+              <TableHead className="font-semibold">Product</TableHead>
+              <TableHead className="hidden md:table-cell font-semibold">Category</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {products.slice(0, 3).map((product) => {
+              const { seoScore } = extractSEOData(product);
+              const categoryNames = product.categories?.map(c => c.name).join(', ') || '';
+              
+              return (
+                <TableRow key={product.id} className="border-slate-200 hover:bg-slate-50">
+                  <TableCell>
+                    <Badge className={`${getScoreColor(Number(seoScore))} blur-sm hover:blur-none transition-all`}>
+                      {Math.floor(Number(seoScore))}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {product.name}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell text-slate-600">
+                    {categoryNames}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+            <TableRow>
+              <TableCell colSpan={3} className="text-center py-4 text-sm text-gray-500 italic">
+                Additional data requires CEO access
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+    );
+  }
+
+  // Full table for CEO users
   return (
     <div className="overflow-x-auto bg-white rounded-md border border-slate-200">
       <Table>
-        <TableHeader className="bg-slate-50">
-          <TableRow className="border-slate-200">
-            <TableHead className="w-[90px] font-semibold text-slate-700">
-              <Button variant="ghost" size="sm" onClick={onToggleSortOrder} className="flex items-center">
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-24 font-semibold">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="hover:bg-transparent p-0 font-semibold"
+                onClick={onToggleSortOrder}
+              >
                 SEO Score
-                {sortOrder === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />}
+                <ArrowUpDown className="ml-2 h-4 w-4" />
               </Button>
             </TableHead>
-            <TableHead className="font-semibold text-slate-700">Product</TableHead>
-            <TableHead className="font-semibold text-slate-700">SEO Title</TableHead>
-            <TableHead className="font-semibold text-slate-700">Focus Keyword</TableHead>
-            <TableHead className="font-semibold text-slate-700">Description</TableHead>
-            <TableHead className="font-semibold text-slate-700">Category</TableHead>
+            <TableHead className="font-semibold">Product</TableHead>
+            <TableHead className="hidden md:table-cell font-semibold">SEO Title</TableHead>
+            <TableHead className="hidden md:table-cell font-semibold">Focus Keyword</TableHead>
+            <TableHead className="hidden lg:table-cell font-semibold">Description</TableHead>
+            <TableHead className="hidden md:table-cell font-semibold">Category</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {!products ? (
-            <>
-              <TableRow>
-                <TableCell><Skeleton className="h-4 w-[75px]" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell><Skeleton className="h-4 w-[75px]" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-              </TableRow>
-            </>
-          ) : products.map((product) => {
+          {products.map((product) => {
             const { seoScore, seoTitle, seoDescription, focusKeyword } = extractSEOData(product);
-            
-            // Debug SEO score
-            console.log(`Product ${product.id} - ${product.name} SEO Score:`, seoScore);
+            const categoryNames = product.categories?.map(c => c.name).join(', ') || '';
             
             return (
               <TableRow key={product.id} className="border-slate-200 hover:bg-slate-50">
-                <TableCell className="py-3">
-                  <Badge className={`${getScoreColor(Number(seoScore))} font-semibold px-3 py-1 rounded-md`}>
-                    {seoScore}
+                <TableCell>
+                  <Badge className={getScoreColor(Number(seoScore))}>
+                    {Math.floor(Number(seoScore))}
                   </Badge>
                 </TableCell>
-                <TableCell className="font-medium text-slate-700">
+                <TableCell className="font-medium">
                   {product.name}
                 </TableCell>
-                <TableCell>
-                  <div className="line-clamp-2 max-w-xs text-slate-700">
-                    {seoTitle}
-                  </div>
+                <TableCell className="hidden md:table-cell text-slate-600">
+                  {seoTitle || '-'}
                 </TableCell>
-                <TableCell className="text-slate-700">
-                  {focusKeyword || "-"}
+                <TableCell className="hidden md:table-cell">
+                  {focusKeyword ? (
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-100">
+                      {focusKeyword}
+                    </Badge>
+                  ) : (
+                    <span className="text-slate-400">-</span>
+                  )}
                 </TableCell>
-                <TableCell>
-                  <div className="line-clamp-2 max-w-xs text-slate-600 text-sm">
-                    {seoDescription || "-"}
-                  </div>
+                <TableCell className="hidden lg:table-cell text-slate-600 max-w-xs truncate">
+                  {seoDescription || '-'}
                 </TableCell>
-                <TableCell className="text-slate-700">
-                  {product.categories?.map((category) => (
-                    <div key={category.id} className="text-sm">
-                      {category.name}
-                    </div>
-                  ))}
+                <TableCell className="hidden md:table-cell text-slate-600">
+                  {categoryNames}
                 </TableCell>
               </TableRow>
             );
