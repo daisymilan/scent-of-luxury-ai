@@ -24,7 +24,8 @@ const ErrorDisplay: FC<ErrorDisplayProps> = ({
   // Handle specific error cases
   let title = "Error Loading Data";
   let description = message;
-  let displayErrorType = errorType;
+  // Make sure we use only valid error types
+  let displayErrorType: 'api' | 'network' | 'validation' | 'unknown' = errorType;
 
   if (message.includes("401") || message.toLowerCase().includes("auth")) {
     title = "WooCommerce Authentication Error";
