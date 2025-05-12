@@ -1,78 +1,17 @@
+
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Check, Mail, MessageSquare, Plus, Search, BarChart3, Calendar, TagIcon, Map, Upload } from 'lucide-react';
+import { Plus, Upload } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { WooCustomer, WooOrder, WooProduct } from '@/lib/mockData';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import B2BLeadImport from './B2BLeadImport';
 import { B2BLead, mergeLeadSources } from '@/utils/b2bUtils';
-
-// Type definitions for B2B leads
-interface B2BLeadDisplay {
-  id: number;
-  company: string;
-  brand?: string;
-  linkedInProfileUrl?: string;
-  contact: string;
-  firstName?: string;
-  lastName?: string;
-  jobTitle?: string;
-  email: string;
-  linkedInCompanyUrl?: string;
-  linkedInCompanyId?: string;
-  website?: string;
-  domain?: string;
-  employeeCount?: string;
-  industry?: string;
-  companyHQ?: string;
-  location?: string;
-  openProfile?: boolean;
-  premiumLinkedIn?: boolean;
-  geoTag?: string;
-  status: string;
-  score: number;
-  lastOrder?: string | null;
-  totalSpent?: number;
-  notes?: string;
-  productInterests?: string[];
-}
-
-// Status color mapping
-const statusColors = {
-  'New Lead': 'bg-blue-100 text-blue-800',
-  'Contacted': 'bg-yellow-100 text-yellow-800',
-  'Interested': 'bg-green-100 text-green-800',
-  'Negotiating': 'bg-purple-100 text-purple-800',
-  'Customer': 'bg-emerald-100 text-emerald-800',
-  'Lost': 'bg-gray-100 text-gray-800',
-};
-
-interface B2BLeadGenerationProps {
-  wooCustomers: WooCustomer[] | null;
-  wooOrders: WooOrder[] | null;
-  wooProducts: WooProduct[] | null;
-}
+import B2BLeadImport from './B2BLeadImport';
+import { B2BLeadDisplay, B2BLeadGenerationProps, SequenceStep } from './b2b/types';
+import LeadTable from './b2b/LeadTable';
+import OutreachSidebar from './b2b/OutreachSidebar';
+import EmailDialog from './b2b/EmailDialog';
+import SequenceDialog from './b2b/SequenceDialog';
+import LeadDetailDialog from './b2b/LeadDetailDialog';
 
 const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGenerationProps) => {
   const { toast } = useToast();
@@ -86,19 +25,9 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
   const [emailBody, setEmailBody] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [leads, setLeads] = useState<B2BLeadDisplay[]>([]);
-  const [leadDetailsTab, setLeadDetailsTab] = useState('overview');
-  const [visibleColumns, setVisibleColumns] = useState({
-    company: true,
-    contact: true,
-    email: true,
-    industry: true,
-    location: true,
-    status: true,
-    score: true,
-  });
   
   // Outreach sequence state
-  const [sequence, setSequence] = useState([
+  const [sequence, setSequence] = useState<SequenceStep[]>([
     { id: 1, name: 'Initial Contact Email', status: 'completed', scheduledDate: 'Sent 2 days ago' },
     { id: 2, name: 'Follow-up Email', status: 'scheduled', scheduledDate: 'Tomorrow' },
     { id: 3, name: 'Final Follow-up', status: 'scheduled', scheduledDate: 'Next week' },
@@ -198,16 +127,6 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
       setLeads([]);
     }
   }, [wooCustomers, wooOrders, toast]);
-  
-
-  const filteredLeads = leads.filter(lead => 
-    (lead.company?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (lead.contact?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (lead.email?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (lead.industry?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (lead.location?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (lead.brand?.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
   
   const handleLeadSelect = (lead: B2BLeadDisplay) => {
     setSelectedLead(lead);
@@ -342,31 +261,6 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
       description: `${newLeads.length} leads have been imported successfully`,
     });
   };
-
-  // Column definitions for the leads table
-  const columnDefinitions = [
-    { id: 'company', name: 'Company Name' },
-    { id: 'brand', name: 'Brand' },
-    { id: 'contact', name: 'Contact Name' },
-    { id: 'firstName', name: 'First Name' },
-    { id: 'lastName', name: 'Last Name' },
-    { id: 'jobTitle', name: 'Job Title' },
-    { id: 'email', name: 'Email' },
-    { id: 'linkedInProfileUrl', name: 'LinkedIn Profile' },
-    { id: 'linkedInCompanyUrl', name: 'Company LinkedIn' },
-    { id: 'linkedInCompanyId', name: 'LinkedIn Company ID' },
-    { id: 'website', name: 'Website' },
-    { id: 'domain', name: 'Domain' },
-    { id: 'employeeCount', name: 'Employee Count' },
-    { id: 'industry', name: 'Industry' },
-    { id: 'companyHQ', name: 'Company HQ' },
-    { id: 'location', name: 'Location' },
-    { id: 'openProfile', name: 'Open Profile' },
-    { id: 'premiumLinkedIn', name: 'Premium LinkedIn' },
-    { id: 'geoTag', name: 'Geo Tag' },
-    { id: 'status', name: 'Status' },
-    { id: 'score', name: 'Score' },
-  ];
   
   return (
     <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
@@ -383,201 +277,32 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
           </div>
         </CardHeader>
         <CardContent>
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-            <Input
-              type="text"
-              placeholder="Search leads by company, contact, email, industry or location..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          <div className="rounded-md border overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[180px]">Company</TableHead>
-                  <TableHead className="w-[100px]">Brand</TableHead>
-                  <TableHead className="w-[160px]">Contact</TableHead>
-                  <TableHead className="w-[150px]">Job Title</TableHead>
-                  <TableHead className="w-[150px]">Email</TableHead>
-                  <TableHead className="w-[120px]">LinkedIn</TableHead>
-                  <TableHead className="w-[150px]">Location</TableHead>
-                  <TableHead className="w-[100px]">Status</TableHead>
-                  <TableHead className="w-[80px]">Score</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredLeads.length > 0 ? (
-                  filteredLeads.map((lead) => (
-                    <TableRow 
-                      key={lead.id} 
-                      className={`cursor-pointer ${selectedLead?.id === lead.id ? 'bg-gray-50' : ''}`}
-                      onClick={() => handleLeadSelect(lead)}
-                    >
-                      <TableCell className="font-medium">{lead.company}</TableCell>
-                      <TableCell>{lead.brand || '-'}</TableCell>
-                      <TableCell>{lead.contact}</TableCell>
-                      <TableCell>{lead.jobTitle || '-'}</TableCell>
-                      <TableCell>{lead.email}</TableCell>
-                      <TableCell>
-                        {lead.linkedInProfileUrl ? (
-                          <a href={lead.linkedInProfileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline" onClick={(e) => e.stopPropagation()}>
-                            View Profile
-                          </a>
-                        ) : '-'}
-                      </TableCell>
-                      <TableCell>{lead.location || '-'}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={`${statusColors[lead.status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}>
-                          {lead.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <div className="w-10 bg-gray-200 rounded-full h-1.5 mr-2">
-                            <div 
-                              className={`h-1.5 rounded-full ${
-                                lead.score >= 80 ? 'bg-green-500' : 
-                                lead.score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                              }`} 
-                              style={{ width: `${lead.score}%` }}
-                            ></div>
-                          </div>
-                          <span>{lead.score}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedLead(lead);
-                            handleSendCustomEmail();
-                          }}>
-                            <Mail size={16} />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {
-                            e.stopPropagation();
-                            handleViewLeadDetails(lead);
-                          }}>
-                            <BarChart3 size={16} />
-                          </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <svg width="15" height="3" viewBox="0 0 15 3" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M1.5 1.5H13.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
-                                </svg>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleViewLeadDetails(lead)}>View Details</DropdownMenuItem>
-                              <DropdownMenuItem>Edit Lead</DropdownMenuItem>
-                              <DropdownMenuItem>Mark as Contacted</DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={10} className="h-24 text-center text-gray-500">
-                      {searchQuery ? 'No leads match your search criteria.' : 'No leads available.'}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <LeadTable 
+            leads={leads}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            selectedLead={selectedLead}
+            onLeadSelect={handleLeadSelect}
+            onViewLeadDetails={handleViewLeadDetails}
+            onSendCustomEmail={(lead) => {
+              setSelectedLead(lead);
+              handleSendCustomEmail();
+            }}
+          />
         </CardContent>
       </Card>
-      
       
       <Card className="col-span-full lg:col-span-1">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg font-medium">Automated Outreach</CardTitle>
         </CardHeader>
         <CardContent>
-          {selectedLead ? (
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-medium mb-1">{selectedLead.company}</h3>
-                <p className="text-sm text-gray-600">{selectedLead.contact}</p>
-                <p className="text-sm text-gray-600">{selectedLead.email}</p>
-                {selectedLead.industry && (
-                  <div className="mt-2 flex items-center text-sm text-gray-600">
-                    <TagIcon size={14} className="mr-1" /> {selectedLead.industry}
-                  </div>
-                )}
-                {selectedLead.location && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Map size={14} className="mr-1" /> {selectedLead.location}
-                  </div>
-                )}
-                {selectedLead.lastOrder && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Calendar size={14} className="mr-1" /> Last order: {selectedLead.lastOrder}
-                  </div>
-                )}
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium mb-2">Outreach Sequence</h4>
-                <div className="space-y-3">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 h-6 w-6 rounded-full bg-green-100 flex items-center justify-center text-green-600 mt-0.5 mr-3">
-                      <Check size={14} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Initial Contact Email</p>
-                      <p className="text-xs text-gray-500">Sent 2 days ago</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mt-0.5 mr-3">
-                      <span className="text-xs font-medium">2</span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Follow-up Email</p>
-                      <p className="text-xs text-gray-500">Scheduled for tomorrow</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 h-6 w-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 mt-0.5 mr-3">
-                      <span className="text-xs font-medium">3</span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Final Follow-up</p>
-                      <p className="text-xs text-gray-500">Scheduled for next week</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="pt-4 border-t border-gray-100">
-                <Button className="w-full mb-2" onClick={handleSendCustomEmail}>
-                  <Mail size={16} className="mr-2" /> Send Custom Email
-                </Button>
-                <Button variant="outline" className="w-full" onClick={handleEditSequence}>
-                  Edit Sequence
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <div className="mx-auto h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                <Mail size={24} className="text-gray-500" />
-              </div>
-              <p className="text-gray-500">Select a lead to see outreach options</p>
-            </div>
-          )}
+          <OutreachSidebar 
+            selectedLead={selectedLead}
+            sequence={sequence}
+            onSendCustomEmail={handleSendCustomEmail}
+            onEditSequence={handleEditSequence}
+          />
         </CardContent>
       </Card>
 
@@ -587,190 +312,34 @@ const B2BLeadGeneration = ({ wooCustomers, wooOrders, wooProducts }: B2BLeadGene
         onImportSuccess={handleImportSuccess}
       />
 
-      <Dialog open={emailModalOpen} onOpenChange={setEmailModalOpen}>
-        <DialogContent className="sm:max-w-[525px]">
-          <DialogHeader>
-            <DialogTitle>Send Custom Email to {selectedLead?.contact}</DialogTitle>
-            <DialogDescription>
-              Send a personalized email to this lead. This will be sent through your configured email service.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email-to">To</Label>
-              <Input id="email-to" value={selectedLead?.email || ''} disabled />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="email-subject">Subject</Label>
-              <Input 
-                id="email-subject" 
-                value={emailSubject} 
-                onChange={(e) => setEmailSubject(e.target.value)}
-                placeholder="Enter email subject..." 
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="email-body">Message</Label>
-              <Textarea
-                id="email-body"
-                value={emailBody}
-                onChange={(e) => setEmailBody(e.target.value)}
-                placeholder="Enter your message..."
-                className="min-h-[200px]"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEmailModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleSubmitEmail} disabled={isSending}>
-              {isSending ? "Sending..." : "Send Email"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EmailDialog 
+        open={emailModalOpen}
+        onOpenChange={setEmailModalOpen}
+        selectedLead={selectedLead}
+        onSend={handleSubmitEmail}
+        isSending={isSending}
+        emailSubject={emailSubject}
+        setEmailSubject={setEmailSubject}
+        emailBody={emailBody}
+        setEmailBody={setEmailBody}
+      />
 
-      <Dialog open={sequenceModalOpen} onOpenChange={setSequenceModalOpen}>
-        <DialogContent className="sm:max-w-[525px]">
-          <DialogHeader>
-            <DialogTitle>Edit Outreach Sequence</DialogTitle>
-            <DialogDescription>
-              Modify the automated outreach sequence for {selectedLead?.company}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            {sequence.map((step) => (
-              <div key={step.id} className="grid grid-cols-[auto,1fr] gap-4 items-start">
-                <div className={`h-6 w-6 rounded-full flex items-center justify-center text-sm mt-2 ${
-                  step.status === 'completed' ? 'bg-green-100 text-green-600' :
-                  'bg-blue-100 text-blue-600'
-                }`}>
-                  {step.status === 'completed' ? <Check size={14} /> : step.id}
-                </div>
-                <div className="space-y-2 w-full">
-                  <div>
-                    <Label htmlFor={`step-name-${step.id}`}>Step Name</Label>
-                    <Input
-                      id={`step-name-${step.id}`}
-                      value={step.name}
-                      onChange={(e) => updateSequenceStep(step.id, 'name', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor={`step-date-${step.id}`}>Schedule/Status</Label>
-                    <Input
-                      id={`step-date-${step.id}`}
-                      value={step.scheduledDate}
-                      onChange={(e) => updateSequenceStep(step.id, 'scheduledDate', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-            <Button variant="outline" className="mt-2">
-              <Plus size={16} className="mr-2" /> Add Step
-            </Button>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSequenceModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleUpdateSequence}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SequenceDialog 
+        open={sequenceModalOpen}
+        onOpenChange={setSequenceModalOpen}
+        selectedLead={selectedLead}
+        sequence={sequence}
+        updateSequenceStep={updateSequenceStep}
+        onSave={handleUpdateSequence}
+      />
 
-      <Dialog open={leadDetailModalOpen} onOpenChange={setLeadDetailModalOpen}>
-        <DialogContent className="sm:max-w-[700px]">
-          <DialogHeader>
-            <DialogTitle>Lead Details: {selectedLead?.company}</DialogTitle>
-            <DialogDescription>
-              Detailed information about this B2B lead and their interaction history.
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedLead && (
-            <Tabs value={leadDetailsTab} onValueChange={setLeadDetailsTab} className="w-full">
-              <TabsList className="grid grid-cols-3 mb-4">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="orders">Orders</TabsTrigger>
-                <TabsTrigger value="interactions">Interactions</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="overview" className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm text-gray-500">Company</Label>
-                    <p className="font-medium">{selectedLead.company}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm text-gray-500">Contact</Label>
-                    <p className="font-medium">{selectedLead.contact}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm text-gray-500">Email</Label>
-                    <p className="font-medium">{selectedLead.email}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm text-gray-500">Status</Label>
-                    <p>
-                      <Badge variant="outline" className={`mt-1 ${statusColors[selectedLead.status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}>
-                        {selectedLead.status}
-                      </Badge>
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm text-gray-500">Industry</Label>
-                    <p className="font-medium">{selectedLead.industry || "Unknown"}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm text-gray-500">Location</Label>
-                    <p className="font-medium">{selectedLead.location || "Unknown"}</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <Label className="text-sm text-gray-500">Score</Label>
-                  <div className="flex items-center mt-1">
-                    <div className="w-full h-2 bg-gray-200 rounded-full mr-2">
-                      <div 
-                        className={`h-2 rounded-full ${
-                          selectedLead.score >= 80 ? 'bg-green-500' : 
-                          selectedLead.score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                        }`} 
-                        style={{ width: `${selectedLead.score}%` }}
-                      ></div>
-                    </div>
-                    <span className="font-medium">{selectedLead.score}</span>
-                  </div>
-                </div>
-                
-                {selectedLead.productInterests && selectedLead.productInterests.length > 0 && (
-                  <div>
-                    <Label className="text-sm text-gray-500">Product Interests</Label>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {selectedLead.productInterests.map((product, index) => (
-                        <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700">
-                          {product}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                <div>
-                  <Label className="text-sm text-gray-500">Notes</Label>
-                  <Textarea 
-                    value={selectedLead.notes || ''} 
-                    placeholder="Add notes about this lead..."
-                    className="mt-1"
-                  />
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="orders">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <Label className="text-sm text-gray-500">Total Spent</Label>
-                      <p className="font-medium text-lg">€{selectedLead.totalSpent?.toLocaleString() || '0'}</p>
-                    </div>
-                    <div>
-                      <Label className
+      <LeadDetailDialog 
+        open={leadDetailModalOpen}
+        onOpenChange={setLeadDetailModalOpen}
+        selectedLead={selectedLead}
+      />
+    </div>
+  );
+};
+
+export default B2BLeadGeneration;
