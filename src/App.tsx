@@ -1,9 +1,11 @@
+
 // src/App.tsx - ADDING SIGNUP ROUTE
 
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "./components/ThemeProvider";
 import Index from "./pages/Index";
 import B2BPage from "./pages/B2BPage";
 import MarketingPage from "./pages/MarketingPage";
@@ -28,82 +30,84 @@ import "./styles/VoiceAuth.css";
 
 const App = () => (
   <AuthProvider>
-    <TooltipProvider>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} /> {/* Add the signup route */}
-        <Route path="/voice-login" element={<VoiceLoginPage />} />
-        <Route path="/unauthorized" element={<UnauthorizedPage />} />
-        
-        {/* Protected Routes */}
-        <Route path="/" element={
-          <ProtectedRoute>
-            <Index />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/b2b" element={
-          <ProtectedRoute requiredRole={['CEO', 'CCO', 'Commercial Director']} requireVoiceAuth={true}>
-            <B2BPage />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/marketing" element={
-          <ProtectedRoute requiredRole={['CEO', 'CCO', 'Marketing Manager']} requireVoiceAuth={true}>
-            <MarketingPage />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/social-media-ads" element={
-          <ProtectedRoute requiredRole={['CEO', 'CCO', 'Marketing Manager', 'Social Media Manager']}>
-            <SocialMediaAdsPage />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/reorder-reminder" element={
-          <ProtectedRoute requiredRole={['CEO', 'CCO', 'Marketing Manager', 'Customer Support']}>
-            <ReorderReminderPage />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/inventory" element={
-          <ProtectedRoute requiredRole={['CEO', 'CCO', 'Commercial Director', 'Regional Manager']} requireVoiceAuth={true}>
-            <InventoryPage />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/reports" element={
-          <ProtectedRoute requiredRole={['CEO', 'CCO']} requireVoiceAuth={true}>
-            <ReportsPage />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/profile" element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/preferences" element={
-          <ProtectedRoute>
-            <PreferencesPage />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/settings/system" element={
-          <ProtectedRoute requiredRole="CEO" requireVoiceAuth={true}>
-            <SystemSettingsPage />
-          </ProtectedRoute>
-        } />
-        
-        {/* Catch-all */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <Toaster />
-      <Sonner />
-      <AiAssistant />
-    </TooltipProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <TooltipProvider>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} /> {/* Add the signup route */}
+          <Route path="/voice-login" element={<VoiceLoginPage />} />
+          <Route path="/unauthorized" element={<UnauthorizedPage />} />
+          
+          {/* Protected Routes */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Index />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/b2b" element={
+            <ProtectedRoute requiredRole={['CEO', 'CCO', 'Commercial Director']} requireVoiceAuth={true}>
+              <B2BPage />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/marketing" element={
+            <ProtectedRoute requiredRole={['CEO', 'CCO', 'Marketing Manager']} requireVoiceAuth={true}>
+              <MarketingPage />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/social-media-ads" element={
+            <ProtectedRoute requiredRole={['CEO', 'CCO', 'Marketing Manager', 'Social Media Manager']}>
+              <SocialMediaAdsPage />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/reorder-reminder" element={
+            <ProtectedRoute requiredRole={['CEO', 'CCO', 'Marketing Manager', 'Customer Support']}>
+              <ReorderReminderPage />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/inventory" element={
+            <ProtectedRoute requiredRole={['CEO', 'CCO', 'Commercial Director', 'Regional Manager']} requireVoiceAuth={true}>
+              <InventoryPage />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/reports" element={
+            <ProtectedRoute requiredRole={['CEO', 'CCO']} requireVoiceAuth={true}>
+              <ReportsPage />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/preferences" element={
+            <ProtectedRoute>
+              <PreferencesPage />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/settings/system" element={
+            <ProtectedRoute requiredRole="CEO" requireVoiceAuth={true}>
+              <SystemSettingsPage />
+            </ProtectedRoute>
+          } />
+          
+          {/* Catch-all */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Toaster />
+        <Sonner />
+        <AiAssistant />
+      </TooltipProvider>
+    </ThemeProvider>
   </AuthProvider>
 );
 
