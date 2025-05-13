@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AbandonedCartList, { AbandonedCart } from './AbandonedCartList';
@@ -6,6 +5,7 @@ import RecoveryStats from './RecoveryStats';
 import RecoveryAutomations from './RecoveryAutomations';
 import { useToast } from '@/components/ui/use-toast';
 import { WooOrder, WooProduct, WooCustomer } from '@/utils/woocommerce/types';
+import { calculateRecoveryStats } from './utils';
 
 // Sample data generator function to convert WooCommerce abandoned orders to our format
 const convertWooOrdersToAbandonedCarts = (
@@ -118,6 +118,9 @@ const AbandonedCartRecovery: React.FC<AbandonedCartRecoveryProps> = ({
     });
   };
 
+  // Calculate recovery stats for the RecoveryStats component
+  const recoveryStats = calculateRecoveryStats(abandonedCarts);
+
   return (
     <div className="space-y-6">
       <div>
@@ -150,7 +153,7 @@ const AbandonedCartRecovery: React.FC<AbandonedCartRecoveryProps> = ({
         </TabsContent>
         
         <TabsContent value="stats">
-          <RecoveryStats />
+          <RecoveryStats stats={recoveryStats} />
         </TabsContent>
         
         <TabsContent value="automations">
