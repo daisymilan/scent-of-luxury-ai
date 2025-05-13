@@ -35,6 +35,7 @@ const VoiceAuthComponent: React.FC = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
       setMediaRecorder(recorder);
+      setAudioChunks([]);
       
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
@@ -47,9 +48,9 @@ const VoiceAuthComponent: React.FC = () => {
         if (audioBlob.size > 0) {
           try {
             console.log('Processing voice auth with audio size:', audioBlob.size);
-            const authResponse = await processVoiceAuth(audioBlob, 'CEO', webhookUrl);
+            const authResponse = await processVoiceAuth(audioBlob, undefined, webhookUrl);
             console.log('Voice auth response:', authResponse);
-            handleAuthResponse(authResponse);
+            await handleAuthResponse(authResponse);
           } catch (error) {
             console.error('Error processing voice auth:', error);
             toast({
@@ -63,7 +64,6 @@ const VoiceAuthComponent: React.FC = () => {
         // Stop all audio tracks
         stream.getTracks().forEach(track => track.stop());
         setIsRecording(false);
-        setAudioChunks([]);
       };
       
       recorder.start();

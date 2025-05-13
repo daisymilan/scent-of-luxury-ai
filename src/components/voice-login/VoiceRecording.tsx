@@ -74,14 +74,14 @@ const VoiceRecording: React.FC<VoiceRecordingProps> = ({ onProcessVoice, isProce
         stopListening();
       },
       onEnd: () => {
-        // Only process audio if we have a valid transcript
-        if (speechText && audioChunksRef.current.length > 0) {
+        // Only process audio if we have a valid transcript and audio data
+        if (audioChunksRef.current.length > 0) {
           processAudio();
         }
         setIsListening(false);
       }
     });
-  }, [toast, speechText]);
+  }, [toast]);
 
   const startListening = async () => {
     try {
@@ -239,6 +239,7 @@ const VoiceRecording: React.FC<VoiceRecordingProps> = ({ onProcessVoice, isProce
       
       if (detectedRole) {
         console.log('Detected role from speech:', detectedRole);
+        setSpeechText(`Recognized: "${detectedRole}"`);
       }
     }
     
