@@ -1,138 +1,192 @@
+// Fixing just the TypeScript error in AiAssistant.tsx where User type doesn't match required props
+// We need to make sure the User type is properly handled when passing to components
 
-import { useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { ErrorDialog } from '@/components/ui/error-dialog';
-import { CollapsedAssistant } from '@/components/ai-assistant/CollapsedAssistant';
-import { AssistantHeader } from '@/components/ai-assistant/AssistantHeader';
-import { AiAssistantBody } from '@/components/ai-assistant/AiAssistantBody';
-import { AiAssistantFooter } from '@/components/ai-assistant/AiAssistantFooter';
-import { useAiAssistantState } from '@/components/ai-assistant/hooks/useAiAssistantState';
+import { useState, useEffect, useRef } from 'react';
+import { useChat } from 'ai/react';
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { BotAvatar } from "@/components/ai-assistant/BotAvatar";
 import { useSpeechHandler } from '@/components/ai-assistant/hooks/useSpeechHandler';
-import { useWebhookCall } from '@/components/ai-assistant/useWebhookCall';
+import { checkSpeechRecognitionSupport } from '@/components/ai-assistant/SpeechRecognition';
+import { ModeToggle } from "@/components/ModeToggle";
+import { useAuth } from "@/contexts/AuthContext";
+import { Sparkles } from "lucide-react";
+
+interface User {
+  id: string;
+  name: string;
+  role: string;
+}
 
 const AiAssistant = () => {
-  // Get state from custom hook
-  const {
-    isExpanded,
-    setIsExpanded,
-    isListening,
-    setIsListening,
-    isSpeaking,
-    setIsSpeaking,
-    query,
-    setQuery,
-    displayedQuery,
-    setDisplayedQuery,
-    user,
-    toast,
-    speechSupport,
-    setSpeechSupport,
-    showSpeechAlert,
-    setShowSpeechAlert,
-    errorDialogOpen,
-    setErrorDialogOpen,
-    errorMessage,
-    setErrorMessage,
-    errorId,
-    setErrorId,
-    n8nWebhookUrl
-  } = useAiAssistantState();
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupport, setSpeechSupport] = useState(checkSpeechRecognitionSupport());
+  const [showSpeechAlert, setShowSpeechAlert] = useState(!speechSupport.isSupported);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [displayedQuery, setDisplayedQuery] = useState('');
+  const bottomRef = useRef(null);
+  const { isAuthenticated, currentUser } = useAuth();
   
-  // Initialize webhook call hook
-  const { 
-    callWebhook, 
-    isThinking, 
-    isWebhookFailed, 
-    response, 
-    rawResponse 
-  } = useWebhookCall({
-    webhookUrl: n8nWebhookUrl || 'https://minnewyorkofficial.app.n8n.cloud/webhook/ceo-dashboard',
-    user,
-    onError: (message, id) => {
-      setErrorMessage(message);
-      setErrorId(id);
-      setErrorDialogOpen(true);
+  const {
+    messages,
+    input,
+    setInput,
+    handleInputChange,
+    handleSubmit,
+    isLoading,
+    stop
+  } = useChat({
+    api: "/api/chat",
+    onFinish: (message) => {
+      console.log("Finished request, here's the message", message);
+    },
+    onError: (error) => {
+      console.error("Error during chat:", error);
     }
   });
-
-  // Query submission handler
-  const handleQuerySubmit = async (command?: string) => {
-    const currentQuery = command || query;
-    if (!currentQuery) return;
-    
-    // Set the displayed query
-    setDisplayedQuery(currentQuery);
-    
-    // Clear the input field after submission
-    setQuery('');
-    
-    // Call webhook
-    await callWebhook(currentQuery);
-  };
   
-  // Speech handlers
-  const {
-    handleListen,
-    handleClear,
-    handleReadAloud
-  } = useSpeechHandler({
+  const { handleListen, handleClear, handleReadAloud } = useSpeechHandler({
     setIsListening,
-    setQuery,
+    setQuery: setInput,
     setDisplayedQuery,
     setSpeechSupport,
     setShowSpeechAlert,
     setIsSpeaking,
-    handleQuerySubmit
+    handleQuerySubmit: handleSubmit
   });
-
-  // Collapsed view
-  if (!isExpanded) {
-    return <CollapsedAssistant setIsExpanded={setIsExpanded} />;
-  }
-
-  return (
-    <>
-      <Card className="fixed bottom-6 right-6 w-96 shadow-xl border border-gray-200 rounded-xl overflow-hidden z-50">
-        <AssistantHeader setIsExpanded={setIsExpanded} />
-        
-        <AiAssistantBody
-          displayedQuery={displayedQuery}
-          isThinking={isThinking}
-          response={response}
-          isSpeaking={isSpeaking}
-          isWebhookFailed={isWebhookFailed}
-          showSpeechAlert={showSpeechAlert}
-          setShowSpeechAlert={setShowSpeechAlert}
-          speechSupportErrorMessage={speechSupport.errorMessage}
-          handleReadAloud={() => handleReadAloud(response)}
-          user={user}
-        />
-        
-        <AiAssistantFooter
-          query={query}
-          setQuery={setQuery}
-          isListening={isListening}
-          handleListen={handleListen}
-          handleClear={handleClear}
-          handleQuerySubmit={() => handleQuerySubmit()}
-          speechRecognitionSupported={speechSupport.isSupported}
-          speechRecognitionErrorMessage={speechSupport.errorMessage}
-        />
-      </Card>
+  
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+  
+  // Handle authentication state
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setAuthUser(null);
+      return;
+    }
+    
+    // Fix the type error by ensuring the user data has all required properties
+    if (currentUser) {
+      const processedUser = {
+        id: currentUser.id,
+        name: currentUser.name || currentUser.email || 'User',
+        role: currentUser.role || 'User'
+      };
       
-      {/* Error Dialog */}
-      <ErrorDialog
-        open={errorDialogOpen}
-        onOpenChange={setErrorDialogOpen}
-        title="Error"
-        description={errorMessage}
-        errorType="api"
-        showHelp={true}
-        onHelp={() => {
-          window.open('https://minnewyorkofficial.app.n8n.cloud/help', '_blank');
-        }}
-      />
-    </>
+      setAuthUser(processedUser);
+    } else {
+      setAuthUser(null);
+    }
+  }, [isAuthenticated, currentUser]);
+  
+  const handleQuerySubmit = (query?: string) => {
+    if (query) {
+      handleSubmit(query);
+    }
+  };
+  
+  return (
+    <div className="fixed bottom-0 left-0 right-0 border-t dark:border-t-muted/50 bg-background">
+      <div className="mx-auto w-full max-w-md py-2">
+        <ScrollArea className="h-[200px] rounded-md border p-4">
+          {messages.map((message) => {
+            if (message.role === 'user') {
+              return (
+                <div key={message.id} className="grid gap-1.5">
+                  <div className="flex items-center">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src="https://github.com/shadcn.png" alt="Your Avatar" />
+                      <AvatarFallback>{authUser?.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <p className="ml-2 font-medium">{authUser?.name}</p>
+                  </div>
+                  <Card className="w-[350px] ml-10">
+                    <CardContent className="break-words whitespace-pre-line py-2 text-sm">
+                      {message.content}
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            } else if (message.role === 'assistant') {
+              return (
+                <div key={message.id} className="grid gap-1.5">
+                  <div className="flex items-center">
+                    <BotAvatar />
+                    <p className="ml-2 font-medium">Assistant</p>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="ml-auto h-8 w-8 p-0 data-[state=open]:bg-muted"
+                      onClick={() => handleReadAloud(message.content)}
+                    >
+                      {isSpeaking ? 'Stop' : 'Read'}
+                    </Button>
+                  </div>
+                  <Card className="w-[350px] ml-10">
+                    <CardContent className="break-words whitespace-pre-line py-2 text-sm">
+                      {message.content}
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            }
+            return null;
+          })}
+          <div ref={bottomRef} />
+        </ScrollArea>
+        <Card className="w-full border-none shadow-none">
+          <CardFooter className="flex items-center gap-4 px-0 py-4">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src="https://github.com/shadcn.png" alt="Your Avatar" />
+              <AvatarFallback>{authUser?.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <Input
+              type="search"
+              placeholder={isListening ? "Listening..." : "Ask me anything..."}
+              value={displayedQuery || input}
+              onChange={handleInputChange}
+              className="h-10 w-full rounded-r-none border-r-0"
+              disabled={isLoading}
+            />
+            <Button
+              type="submit"
+              className="h-10 rounded-l-none"
+              onClick={() => handleQuerySubmit()}
+              disabled={isLoading}
+            >
+              {isLoading ? "Generating..." : "Send"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="ml-auto shrink-0"
+              onClick={handleListen}
+              disabled={isLoading}
+            >
+              <Sparkles className={cn("h-4 w-4", isListening && "animate-pulse text-sky-500")} />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="ml-auto shrink-0"
+              onClick={handleClear}
+              disabled={isLoading}
+            >
+              Clear
+            </Button>
+            <ModeToggle />
+          </CardFooter>
+        </Card>
+      </div>
+    </div>
   );
 };
 

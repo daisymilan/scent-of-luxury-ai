@@ -1,7 +1,6 @@
-
 // src/services/voiceAuthService.ts
 
-import { supabase } from "../integrations/supabase/client";
+import { supabase } from "../supabase";
 
 /**
  * Voice Authentication Service
@@ -58,14 +57,15 @@ export const enrollVoice = async (userId: string, voiceSamples: string[]): Promi
       }
     }
     
-    // Update user profile to mark voice as enrolled
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({ voice_enrolled: true })
-      .eq('id', userId);
+    // Store the voice enrollment status in the user's metadata
+    // Using auth.updateUser method instead of accessing profiles table
+    const { error: userUpdateError } = await supabase.auth
+      .updateUser({
+        data: { voice_enrolled: true }
+      });
     
-    if (profileError) {
-      console.error('Error updating user profile:', profileError);
+    if (userUpdateError) {
+      console.error('Error updating user metadata:', userUpdateError);
       return false;
     }
     
@@ -162,19 +162,16 @@ export const getVoiceAuthStatus = async (userId: string): Promise<{
   attemptsRemaining?: number;
 }> => {
   try {
-    // Check user profile for voice enrollment status
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('voice_enrolled')
-      .eq('id', userId)
-      .single();
+    // Get the user data which includes voice_enrolled in the metadata
+    const { data: userData, error: userError } = await supabase.auth.getUser();
     
-    if (profileError) {
-      console.error('Error fetching user profile:', profileError);
+    if (userError || !userData.user) {
+      console.error('Error fetching user data:', userError);
       return { isEnrolled: false };
     }
     
-    const isEnrolled = !!profileData.voice_enrolled;
+    // Check if voice is enrolled from user metadata
+    const isEnrolled = !!userData.user.user_metadata?.voice_enrolled;
     
     if (!isEnrolled) {
       return { isEnrolled: false };

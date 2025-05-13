@@ -1,5 +1,5 @@
 
-// src/contexts/AuthContext.tsx - COMPLETE FILE
+// src/contexts/AuthContext.tsx - Updating User interface
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import supabase from "../supabase";
@@ -8,14 +8,13 @@ import voiceAuthService from "../services/voiceAuthService";
 // Define user role type
 export type UserRole = 'CEO' | 'CCO' | 'Commercial Director' | 'Marketing Manager' | 'Social Media Manager' | 'Regional Manager' | 'Customer Support' | 'User';
 
-// Define user type
+// Define user type - ensuring 'name' is required and adding avatar_url property
 export interface User {
   id: string;
   email: string;
   role: UserRole;
-  name?: string;
+  name: string; // Make name required instead of optional
   avatar_url?: string;
-  voice_enrolled?: boolean;
 }
 
 // Define auth context value type
@@ -104,21 +103,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         throw new Error('User not found');
       }
       
-      // Get user profile from profiles table
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
-      
-      if (profileError) {
-        console.error("Error fetching user profile:", profileError);
-      }
-      
-      // Check if user has voice enrollment
-      if (profileData) {
-        setIsVoiceEnrolled(!!profileData.voice_enrolled);
-      }
+      // Check if user has voice enrollment from metadata
+      setIsVoiceEnrolled(!!data.user.user_metadata?.voice_enrolled);
       
       // Reset voice authentication status
       setIsVoiceAuthenticated(false);
@@ -180,17 +166,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const success = await voiceAuthService.enrollVoice(currentUser.id, voiceSamples);
       
       if (success) {
-        // Update user profile in Supabase
-        const { error } = await supabase
-          .from('profiles')
-          .update({ voice_enrolled: true })
-          .eq('id', currentUser.id);
-        
-        if (error) {
-          console.error("Error updating user profile:", error);
-          return false;
-        }
-        
         setIsVoiceEnrolled(true);
         return true;
       }
@@ -220,20 +195,37 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     setIsLoading(true);
     
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        handleUserSession(session.user.id);
-      } else {
-        setIsLoading(false);
-      }
-    });
-    
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-          await handleUserSession(session.user.id);
+        if (session?.user) {
+          try {
+            // Create user object from session
+            const user: User = {
+              id: session.user.id,
+              email: session.user.email || '',
+              role: (session.user.user_metadata?.role as UserRole) || 'User',
+              name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+              avatar_url: session.user.user_metadata?.avatar_url
+            };
+            
+            setCurrentUser(user);
+            setUserRole(user.role);
+            setIsAuthenticated(true);
+            setIsVoiceEnrolled(!!session.user.user_metadata?.voice_enrolled);
+            
+            // Check if voice is already authenticated in this session
+            const voiceAuth = localStorage.getItem('voiceAuthenticated');
+            setIsVoiceAuthenticated(voiceAuth === 'true');
+          } catch (error) {
+            console.error("Error handling user session:", error);
+            await supabase.auth.signOut();
+            setCurrentUser(null);
+            setUserRole(null);
+            setIsAuthenticated(false);
+          } finally {
+            setIsLoading(false);
+          }
         } else if (event === 'SIGNED_OUT') {
           setCurrentUser(null);
           setUserRole(null);
@@ -244,68 +236,35 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     );
     
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        // Create user object from session
+        const user: User = {
+          id: session.user.id,
+          email: session.user.email || '',
+          role: (session.user.user_metadata?.role as UserRole) || 'User',
+          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+          avatar_url: session.user.user_metadata?.avatar_url
+        };
+        
+        setCurrentUser(user);
+        setUserRole(user.role);
+        setIsAuthenticated(true);
+        setIsVoiceEnrolled(!!session.user.user_metadata?.voice_enrolled);
+        
+        // Check if voice is already authenticated in this session
+        const voiceAuth = localStorage.getItem('voiceAuthenticated');
+        setIsVoiceAuthenticated(voiceAuth === 'true');
+      }
+      setIsLoading(false);
+    });
+    
     // Clean up subscription on unmount
     return () => {
       subscription.unsubscribe();
     };
   }, []);
-  
-  // Helper to handle user session
-  const handleUserSession = async (userId: string) => {
-    try {
-      // Get user profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      
-      if (profileError) {
-        throw profileError;
-      }
-      
-      if (!profileData) {
-        throw new Error('Profile not found');
-      }
-      
-      // Get user data from auth
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      
-      if (userError) {
-        throw userError;
-      }
-      
-      // Create user object
-      const user: User = {
-        id: userId,
-        email: userData.user.email || '',
-        role: (profileData.role as UserRole) || 'User',
-        name: profileData.name || userData.user.email?.split('@')[0] || '',
-        avatar_url: profileData.avatar_url,
-        voice_enrolled: profileData.voice_enrolled
-      };
-      
-      setCurrentUser(user);
-      setUserRole(user.role);
-      setIsAuthenticated(true);
-      setIsVoiceEnrolled(!!profileData.voice_enrolled);
-      
-      // Check if voice is already authenticated in this session
-      const voiceAuth = localStorage.getItem('voiceAuthenticated');
-      setIsVoiceAuthenticated(voiceAuth === 'true');
-    } catch (error) {
-      console.error("Error handling user session:", error);
-      setCurrentUser(null);
-      setUserRole(null);
-      setIsAuthenticated(false);
-      setIsVoiceAuthenticated(false);
-      
-      // Sign out if there was an error
-      await supabase.auth.signOut();
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Context value
   const value: AuthContextValue = {

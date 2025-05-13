@@ -75,7 +75,7 @@ const ProfilePage = () => {
           <Card>
             <CardContent className="pt-6 flex flex-col items-center">
               <Avatar className="h-24 w-24 mb-4">
-                <AvatarImage src={user?.avatar || ""} />
+                <AvatarImage src={user?.avatar_url || ""} />
                 <AvatarFallback className="text-2xl bg-primary text-white">{getInitials()}</AvatarFallback>
               </Avatar>
               <h2 className="text-xl font-semibold">{userInfo.name}</h2>
