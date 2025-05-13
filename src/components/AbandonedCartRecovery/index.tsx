@@ -1,233 +1,164 @@
-// AbandonedCartList.tsx
-import React from 'react';
-import * as LucideIcons from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
-// Define proper TypeScript interfaces for table components
-interface TableProps extends React.HTMLProps<HTMLTableElement> {
-  children: React.ReactNode;
+import React, { useState, useEffect } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AbandonedCartList, { AbandonedCart } from './AbandonedCartList';
+import RecoveryStats from './RecoveryStats';
+import RecoveryAutomations from './RecoveryAutomations';
+import { useToast } from '@/components/ui/use-toast';
+import { WooOrder, WooProduct, WooCustomer } from '@/utils/woocommerce/types';
+
+// Sample data generator function to convert WooCommerce abandoned orders to our format
+const convertWooOrdersToAbandonedCarts = (
+  orders: WooOrder[] = [], 
+  products: WooProduct[] = [], 
+  customers: WooCustomer[] = []
+): AbandonedCart[] => {
+  return orders
+    .filter(order => order.status === 'pending' || order.status === 'on-hold')
+    .map(order => {
+      // Find customer data
+      const customer = customers.find(c => c.id === order.customer_id) || {
+        first_name: 'Unknown',
+        last_name: 'Customer',
+        email: order.billing?.email || 'unknown@example.com'
+      };
+      
+      // Convert line items to product names
+      const productNames = order.line_items.map(item => item.name);
+      
+      return {
+        id: `cart-${order.id}`,
+        orderId: order.id,
+        customerId: order.customer_id,
+        customer: `${customer.first_name} ${customer.last_name}`,
+        email: order.billing?.email || customer.email || 'unknown@example.com',
+        products: productNames,
+        value: parseFloat(order.total),
+        time: new Date(order.date_created).toLocaleString(),
+        status: Math.random() > 0.5 ? 'pending' : 'in_progress' // Randomize status for demo
+      };
+    });
+};
+
+interface AbandonedCartRecoveryProps {
+  wooOrders?: WooOrder[];
+  wooProducts?: WooProduct[];
+  wooCustomers?: WooCustomer[];
 }
 
-interface TableHeaderProps extends React.HTMLProps<HTMLTableSectionElement> {
-  children: React.ReactNode;
-}
-
-interface TableBodyProps extends React.HTMLProps<HTMLTableSectionElement> {
-  children: React.ReactNode;
-}
-
-interface TableRowProps extends React.HTMLProps<HTMLTableRowElement> {
-  children: React.ReactNode;
-}
-
-interface TableHeadProps extends React.HTMLProps<HTMLTableCellElement> {
-  children: React.ReactNode;
-  className?: string;
-}
-
-interface TableCellProps extends React.HTMLProps<HTMLTableCellElement> {
-  children: React.ReactNode;
-  className?: string;
-}
-
-// Define table components with proper TypeScript types
-const Table: React.FC<TableProps> = ({ children, ...props }) => (
-  <table className="w-full" {...props}>{children}</table>
-);
-
-const TableHeader: React.FC<TableHeaderProps> = ({ children, ...props }) => (
-  <thead {...props}>{children}</thead>
-);
-
-const TableBody: React.FC<TableBodyProps> = ({ children, ...props }) => (
-  <tbody {...props}>{children}</tbody>
-);
-
-const TableRow: React.FC<TableRowProps> = ({ children, ...props }) => (
-  <tr {...props}>{children}</tr>
-);
-
-const TableHead: React.FC<TableHeadProps> = ({ children, className = "", ...props }) => (
-  <th className={`px-4 py-3 text-left text-sm font-medium text-gray-500 ${className}`} {...props}>
-    {children}
-  </th>
-);
-
-const TableCell: React.FC<TableCellProps> = ({ children, className = "", ...props }) => (
-  <td className={`px-4 py-4 text-sm ${className}`} {...props}>{children}</td>
-);
-
-// Define the AbandonedCart type if utils import doesn't work
-export interface AbandonedCart {
-  id: string;
-  customer: string;
-  email: string;
-  products: string[];
-  value: number;
-  time: string;
-  status: 'pending' | 'in_progress' | 'recovered' | 'cancelled';
-  orderId?: number;
-  customerId?: number;
-}
-
-interface AbandonedCartListProps {
-  carts: AbandonedCart[];
-  onSendEmail?: (cartId: string) => void;
-  onSendSMS?: (cartId: string) => void;
-  onViewDetails?: (cartId: string) => void;
-  onSendCustomEmail?: (cartId: string) => void;
-  onMarkRecovered?: (cartId: string) => void;
-  onCancelRecovery?: (cartId: string) => void;
-}
-
-const AbandonedCartList: React.FC<AbandonedCartListProps> = ({ 
-  carts,
-  onSendEmail,
-  onSendSMS,
-  onViewDetails,
-  onSendCustomEmail,
-  onMarkRecovered,
-  onCancelRecovery
+const AbandonedCartRecovery: React.FC<AbandonedCartRecoveryProps> = ({ 
+  wooOrders = [], 
+  wooProducts = [], 
+  wooCustomers = [] 
 }) => {
-  // Helper function to format currency
-  const formatCurrency = (value: number | string): string => {
-    if (typeof value === 'number') {
-      return value.toFixed(2);
-    }
-    return String(value);
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("carts");
+  const [abandonedCarts, setAbandonedCarts] = useState<AbandonedCart[]>([]);
+  
+  useEffect(() => {
+    // Convert WooCommerce orders to abandoned carts format
+    const carts = convertWooOrdersToAbandonedCarts(wooOrders, wooProducts, wooCustomers);
+    setAbandonedCarts(carts);
+    
+    console.log('AbandonedCartRecovery: Converted', wooOrders.length, 'orders to', carts.length, 'abandoned carts');
+  }, [wooOrders, wooProducts, wooCustomers]);
+
+  // Action handlers
+  const handleSendEmail = (cartId: string) => {
+    toast({
+      title: "Email Reminder Sent",
+      description: `Recovery email sent for cart ${cartId}`,
+    });
   };
 
-  // Helper function to render status badge
-  const renderStatusBadge = (status: AbandonedCart['status']): JSX.Element => {
-    const statusConfig = {
-      pending: { bgColor: 'bg-gray-400', label: 'Pending' },
-      in_progress: { bgColor: 'bg-yellow-400', label: 'Recovery in progress' },
-      recovered: { bgColor: 'bg-green-400', label: 'Recovered' },
-      cancelled: { bgColor: 'bg-red-400', label: 'Cancelled' }
-    };
-
-    const config = statusConfig[status] || statusConfig.pending;
-
-    return (
-      <div className="flex items-center">
-        <div className={`h-2 w-2 rounded-full ${config.bgColor} mr-2`}></div>
-        <span>{config.label}</span>
-      </div>
-    );
+  const handleSendSMS = (cartId: string) => {
+    toast({
+      title: "SMS Reminder Sent",
+      description: `Recovery SMS sent for cart ${cartId}`,
+    });
   };
 
-  // Render empty state if no carts
-  if (!carts || carts.length === 0) {
-    return (
-      <div className="text-center py-8 border rounded-md">
-        <LucideIcons.ShoppingCart className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-        <p className="text-gray-500">No abandoned carts found</p>
-      </div>
+  const handleViewDetails = (cartId: string) => {
+    toast({
+      title: "View Cart Details",
+      description: `Viewing details for cart ${cartId}`,
+    });
+  };
+
+  const handleSendCustomEmail = (cartId: string) => {
+    toast({
+      title: "Custom Email",
+      description: `Custom email editor opened for cart ${cartId}`,
+    });
+  };
+
+  const handleMarkRecovered = (cartId: string) => {
+    setAbandonedCarts(prev => 
+      prev.map(cart => 
+        cart.id === cartId ? { ...cart, status: 'recovered' } : cart
+      )
     );
-  }
+    
+    toast({
+      title: "Cart Recovered",
+      description: `Cart ${cartId} marked as recovered`,
+    });
+  };
+
+  const handleCancelRecovery = (cartId: string) => {
+    setAbandonedCarts(prev => 
+      prev.map(cart => 
+        cart.id === cartId ? { ...cart, status: 'cancelled' } : cart
+      )
+    );
+    
+    toast({
+      title: "Recovery Cancelled",
+      description: `Recovery for cart ${cartId} has been cancelled`,
+    });
+  };
 
   return (
-    <div className="rounded-md border overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Customer</TableHead>
-            <TableHead>Products</TableHead>
-            <TableHead>Cart Value</TableHead>
-            <TableHead>Abandoned</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {carts.map((cart) => (
-            <TableRow key={cart.id}>
-              <TableCell>
-                <div>
-                  <p className="font-medium">{cart.customer}</p>
-                  <p className="text-xs text-gray-500">{cart.email}</p>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="line-clamp-2">
-                  {cart.products.map((product, index) => (
-                    <span key={index} className="text-sm">
-                      {product}
-                      {index < cart.products.length - 1 ? ', ' : ''}
-                    </span>
-                  ))}
-                </div>
-              </TableCell>
-              <TableCell>
-                <span className="font-medium">${formatCurrency(cart.value)}</span>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center text-gray-500">
-                  <LucideIcons.Clock size={14} className="mr-1 flex-shrink-0" />
-                  <span className="text-sm">{cart.time}</span>
-                </div>
-              </TableCell>
-              <TableCell>
-                {renderStatusBadge(cart.status || 'in_progress')}
-              </TableCell>
-              <TableCell>
-                <div className="flex justify-end space-x-1">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8" 
-                    title="Send Email Reminder"
-                    onClick={() => onSendEmail?.(cart.id)}
-                  >
-                    <LucideIcons.Mail size={16} />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8" 
-                    title="Send SMS Reminder"
-                    onClick={() => onSendSMS?.(cart.id)}
-                  >
-                    <LucideIcons.Smartphone size={16} />
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <LucideIcons.MoreHorizontal size={16} />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onViewDetails?.(cart.id)}>
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onSendCustomEmail?.(cart.id)}>
-                        Send Custom Email
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onMarkRecovered?.(cart.id)}>
-                        Mark as Recovered
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="text-red-600"
-                        onClick={() => onCancelRecovery?.(cart.id)}
-                      >
-                        Cancel Recovery
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-3xl font-bold mb-2">Abandoned Cart Recovery</h2>
+        <p className="text-gray-500">
+          Track and recover abandoned shopping carts to boost sales conversion
+        </p>
+      </div>
+      
+      <Tabs defaultValue="carts" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid grid-cols-3 mb-6">
+          <TabsTrigger value="carts">Abandoned Carts</TabsTrigger>
+          <TabsTrigger value="stats">Recovery Stats</TabsTrigger>
+          <TabsTrigger value="automations">Recovery Automations</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="carts" className="space-y-4">
+          <AbandonedCartList 
+            carts={abandonedCarts}
+            onSendEmail={handleSendEmail}
+            onSendSMS={handleSendSMS}
+            onViewDetails={handleViewDetails}
+            onSendCustomEmail={handleSendCustomEmail}
+            onMarkRecovered={handleMarkRecovered}
+            onCancelRecovery={handleCancelRecovery}
+            wooOrders={wooOrders}
+            wooProducts={wooProducts}
+            wooCustomers={wooCustomers}
+          />
+        </TabsContent>
+        
+        <TabsContent value="stats">
+          <RecoveryStats />
+        </TabsContent>
+        
+        <TabsContent value="automations">
+          <RecoveryAutomations />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
 
-export default AbandonedCartList;
+export default AbandonedCartRecovery;
