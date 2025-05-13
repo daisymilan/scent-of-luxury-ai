@@ -1,35 +1,45 @@
-// src/components/ProtectedRoute.tsx - NEW FILE
+// src/components/ProtectedRoute.tsx - UPDATED VERSION
 
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { ReactElement } from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children: ReactElement;
+  requiredRole?: string | string[];
   requireVoiceAuth?: boolean;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
+const ProtectedRoute = ({ 
   children, 
+  requiredRole, 
   requireVoiceAuth = false 
-}) => {
-  // Check if user is authenticated via token
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-  
-  // Check if voice authentication is required and completed
-  const isVoiceAuthenticated = localStorage.getItem('voiceAuthenticated') === 'true';
-  
+}: ProtectedRouteProps) => {
+  const location = useLocation();
+  const { currentUser, isAuthenticated, userRole, isVoiceAuthenticated } = useAuth();
+
   // If not authenticated at all, redirect to login
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  if (!isAuthenticated || !currentUser) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
-  
-  // If voice authentication is required but not completed, redirect to voice login
+
+  // Check role-based access if required
+  if (requiredRole) {
+    const hasRequiredRole = Array.isArray(requiredRole)
+      ? requiredRole.some(role => userRole === role)
+      : userRole === requiredRole;
+
+    if (!hasRequiredRole) {
+      return <Navigate to="/unauthorized" replace />;
+    }
+  }
+
+  // Check voice authentication if required
   if (requireVoiceAuth && !isVoiceAuthenticated) {
-    return <Navigate to="/voice-login" replace />;
+    return <Navigate to="/voice-login" state={{ from: location }} replace />;
   }
-  
-  // User is authenticated and meets voice auth requirements if needed
-  return <>{children}</>;
+
+  return children;
 };
 
 export default ProtectedRoute;

@@ -1,3 +1,4 @@
+// src/App.tsx - UPDATED VERSION
 
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -21,16 +22,22 @@ import SocialMediaAdsPage from "./pages/SocialMediaAdsPage";
 import ReorderReminderPage from "./pages/ReorderReminderPage";
 import AiAssistant from "./components/ai-assistant/AiAssistant";
 
+// Import the voice authentication styles
+import "./styles/VoiceAuth.css";
+
 const App = () => (
   <AuthProvider>
     <TooltipProvider>
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
+        
+        {/* Voice Login - should be accessible after basic authentication */}
         <Route path="/voice-login" element={<VoiceLoginPage />} />
+        
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
         
-        {/* Protected Routes */}
+        {/* Protected Routes - now requiring voice authentication for high-security areas */}
         <Route path="/" element={
           <ProtectedRoute>
             <Index />
@@ -38,13 +45,13 @@ const App = () => (
         } />
         
         <Route path="/b2b" element={
-          <ProtectedRoute requiredRole={['CEO', 'CCO', 'Commercial Director']}>
+          <ProtectedRoute requiredRole={['CEO', 'CCO', 'Commercial Director']} requireVoiceAuth={true}>
             <B2BPage />
           </ProtectedRoute>
         } />
         
         <Route path="/marketing" element={
-          <ProtectedRoute requiredRole={['CEO', 'CCO', 'Marketing Manager']}>
+          <ProtectedRoute requiredRole={['CEO', 'CCO', 'Marketing Manager']} requireVoiceAuth={true}>
             <MarketingPage />
           </ProtectedRoute>
         } />
@@ -62,13 +69,13 @@ const App = () => (
         } />
         
         <Route path="/inventory" element={
-          <ProtectedRoute requiredRole={['CEO', 'CCO', 'Commercial Director', 'Regional Manager']}>
+          <ProtectedRoute requiredRole={['CEO', 'CCO', 'Commercial Director', 'Regional Manager']} requireVoiceAuth={true}>
             <InventoryPage />
           </ProtectedRoute>
         } />
         
         <Route path="/reports" element={
-          <ProtectedRoute requiredRole={['CEO', 'CCO']}>
+          <ProtectedRoute requiredRole={['CEO', 'CCO']} requireVoiceAuth={true}>
             <ReportsPage />
           </ProtectedRoute>
         } />
@@ -86,7 +93,7 @@ const App = () => (
         } />
         
         <Route path="/settings/system" element={
-          <ProtectedRoute requiredRole="CEO">
+          <ProtectedRoute requiredRole="CEO" requireVoiceAuth={true}>
             <SystemSettingsPage />
           </ProtectedRoute>
         } />

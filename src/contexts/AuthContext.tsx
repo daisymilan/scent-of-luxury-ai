@@ -1,138 +1,126 @@
 // src/contexts/AuthContext.tsx
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import voiceAuthService from '../services/voiceAuthService';
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import supabase from "../supabase";
+import voiceAuthService from "../services/voiceAuthService";
 
-// Types
+// Define user role type
+type UserRole = 'CEO' | 'CCO' | 'Commercial Director' | 'Marketing Manager' | 'Social Media Manager' | 'Regional Manager' | 'Customer Support' | 'User';
+
+// Define user type
 interface User {
   id: string;
   email: string;
-  name: string;
-  voiceEnrollmentComplete?: boolean;
+  role: UserRole;
+  name?: string;
+  avatar_url?: string;
+  voice_enrolled?: boolean;
 }
 
-type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated';
-
-interface AuthContextType {
-  user: User | null;
-  status: AuthStatus;
+// Define auth context value type
+interface AuthContextValue {
+  currentUser: User | null;
+  userRole: UserRole | null;
   isAuthenticated: boolean;
-  isVoiceEnrolled: boolean;
   isVoiceAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  loginWithVoice: (voiceInput: string) => Promise<boolean>;
-  logout: () => void;
+  isVoiceEnrolled: boolean;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  authenticateWithVoice: (voiceInput: string) => Promise<boolean>;
   enrollVoice: (voiceSamples: string[]) => Promise<boolean>;
-  checkVoiceAuth: () => Promise<boolean>;
+  resetVoiceAuth: () => void;
 }
 
-// Default context value
-const defaultContextValue: AuthContextType = {
-  user: null,
-  status: 'idle',
-  isAuthenticated: false,
-  isVoiceEnrolled: false,
-  isVoiceAuthenticated: false,
-  login: async () => false,
-  loginWithVoice: async () => false,
-  logout: () => {},
-  enrollVoice: async () => false,
-  checkVoiceAuth: async () => false
-};
+// Create the auth context
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-// Create context
-const AuthContext = createContext<AuthContextType>(defaultContextValue);
+// Auth provider props
+interface AuthProviderProps {
+  children: ReactNode;
+}
 
-// Provider component
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [status, setStatus] = useState<AuthStatus>('idle');
-  const [isVoiceEnrolled, setIsVoiceEnrolled] = useState<boolean>(false);
+// Auth provider component
+export const AuthProvider = ({ children }: AuthProviderProps) => {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isVoiceAuthenticated, setIsVoiceAuthenticated] = useState<boolean>(false);
+  const [isVoiceEnrolled, setIsVoiceEnrolled] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Check if user is already logged in on mount
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      setStatus('loading');
-      
-      try {
-        // Check if token exists in localStorage
-        const token = localStorage.getItem('authToken');
-        
-        if (!token) {
-          setStatus('unauthenticated');
-          return;
-        }
-        
-        // Validate token with backend
-        // For demo purposes, we'll just check if it exists
-        const userData = JSON.parse(localStorage.getItem('user') || '{}');
-        
-        if (userData && userData.id) {
-          setUser(userData);
-          setStatus('authenticated');
-          
-          // Check voice enrollment status
-          if (userData.id) {
-            try {
-              const voiceStatus = await voiceAuthService.getVoiceAuthStatus(userData.id);
-              setIsVoiceEnrolled(voiceStatus.isEnrolled);
-              
-              // Check if voice is recently authenticated
-              const voiceAuth = localStorage.getItem('voiceAuthenticated');
-              setIsVoiceAuthenticated(voiceAuth === 'true');
-            } catch (error) {
-              console.error('Error checking voice status:', error);
-            }
-          }
-        } else {
-          setStatus('unauthenticated');
-        }
-      } catch (error) {
-        console.error('Auth check error:', error);
-        setStatus('unauthenticated');
-      }
-    };
-    
-    checkAuthStatus();
-  }, []);
-
-  // Login with email/password
-  const login = async (email: string, password: string): Promise<boolean> => {
-    setStatus('loading');
-    
+  // Handle user login
+  const login = async (email: string, password: string) => {
     try {
-      // This would be your actual API call
-      // For demo, we'll simulate a successful login
-      const mockUser = {
-        id: '12345',
+      // Sign in with Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        name: email.split('@')[0],
-        voiceEnrollmentComplete: Math.random() > 0.5 // Random for demo
-      };
+        password
+      });
       
-      // Store auth data
-      localStorage.setItem('authToken', 'mock-jwt-token');
-      localStorage.setItem('user', JSON.stringify(mockUser));
+      if (error) {
+        throw error;
+      }
       
-      setUser(mockUser);
-      setStatus('authenticated');
-      setIsVoiceEnrolled(!!mockUser.voiceEnrollmentComplete);
+      if (!data.user) {
+        throw new Error('User not found');
+      }
       
-      return true;
+      // Get user profile from profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+      
+      if (profileError) {
+        console.error("Error fetching user profile:", profileError);
+      }
+      
+      // Create user object
+      if (profileData) {
+        // Check if user has voice enrollment
+        setIsVoiceEnrolled(!!profileData.voice_enrolled);
+      }
+      
+      // Reset voice authentication status
+      setIsVoiceAuthenticated(false);
+      localStorage.removeItem('voiceAuthenticated');
     } catch (error) {
-      console.error('Login error:', error);
-      setStatus('unauthenticated');
-      return false;
+      console.error("Login error:", error);
+      throw error;
     }
   };
 
-  // Login with voice
-  const loginWithVoice = async (voiceInput: string): Promise<boolean> => {
-    if (!user) return false;
+  // Handle user logout
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        throw error;
+      }
+      
+      setCurrentUser(null);
+      setUserRole(null);
+      setIsAuthenticated(false);
+      setIsVoiceAuthenticated(false);
+      localStorage.removeItem('voiceAuthenticated');
+    } catch (error) {
+      console.error("Logout error:", error);
+      throw error;
+    }
+  };
+
+  // Authenticate with voice
+  const authenticateWithVoice = async (voiceInput: string): Promise<boolean> => {
+    if (!currentUser) return false;
     
     try {
-      const response = await voiceAuthService.verifyVoice(user.id, voiceInput);
+      // Use either mock or real API based on environment
+      const response = process.env.NODE_ENV === 'development'
+        ? await voiceAuthService.mockVerifyVoice(voiceInput)
+        : await voiceAuthService.verifyVoice(currentUser.id, voiceInput);
       
       if (response.success) {
         setIsVoiceAuthenticated(true);
@@ -142,85 +130,167 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       return false;
     } catch (error) {
-      console.error('Voice login error:', error);
+      console.error("Voice authentication error:", error);
       return false;
     }
   };
 
-  // Logout
-  const logout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-    localStorage.removeItem('voiceAuthenticated');
-    
-    setUser(null);
-    setStatus('unauthenticated');
-    setIsVoiceAuthenticated(false);
-  };
-
   // Enroll voice
   const enrollVoice = async (voiceSamples: string[]): Promise<boolean> => {
-    if (!user) return false;
+    if (!currentUser) return false;
     
     try {
-      const success = await voiceAuthService.enrollVoice(user.id, voiceSamples);
+      const success = await voiceAuthService.enrollVoice(currentUser.id, voiceSamples);
       
       if (success) {
+        // Update user profile in Supabase
+        const { error } = await supabase
+          .from('profiles')
+          .update({ voice_enrolled: true })
+          .eq('id', currentUser.id);
+        
+        if (error) {
+          console.error("Error updating user profile:", error);
+          return false;
+        }
+        
         setIsVoiceEnrolled(true);
-        
-        // Update user data
-        const updatedUser = { ...user, voiceEnrollmentComplete: true };
-        setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        
         return true;
       }
       
       return false;
     } catch (error) {
-      console.error('Voice enrollment error:', error);
+      console.error("Voice enrollment error:", error);
       return false;
     }
   };
 
-  // Check voice authentication status
-  const checkVoiceAuth = async (): Promise<boolean> => {
-    const voiceAuth = localStorage.getItem('voiceAuthenticated');
-    const isAuth = voiceAuth === 'true';
-    
-    setIsVoiceAuthenticated(isAuth);
-    return isAuth;
+  // Reset voice authentication
+  const resetVoiceAuth = () => {
+    setIsVoiceAuthenticated(false);
+    localStorage.removeItem('voiceAuthenticated');
   };
 
-  // Calculate derived state
-  const isAuthenticated = status === 'authenticated';
+  // Handle auth state changes
+  useEffect(() => {
+    setIsLoading(true);
+    
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        handleUserSession(session.user.id);
+      } else {
+        setIsLoading(false);
+      }
+    });
+    
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          await handleUserSession(session.user.id);
+        } else if (event === 'SIGNED_OUT') {
+          setCurrentUser(null);
+          setUserRole(null);
+          setIsAuthenticated(false);
+          setIsVoiceAuthenticated(false);
+          setIsLoading(false);
+        }
+      }
+    );
+    
+    // Clean up subscription on unmount
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+  
+  // Helper to handle user session
+  const handleUserSession = async (userId: string) => {
+    try {
+      // Get user profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (profileError) {
+        throw profileError;
+      }
+      
+      if (!profileData) {
+        throw new Error('Profile not found');
+      }
+      
+      // Get user data from auth
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        throw userError;
+      }
+      
+      // Create user object
+      const user: User = {
+        id: userId,
+        email: userData.user.email || '',
+        role: (profileData.role as UserRole) || 'User',
+        name: profileData.name || userData.user.email?.split('@')[0] || '',
+        avatar_url: profileData.avatar_url,
+        voice_enrolled: profileData.voice_enrolled
+      };
+      
+      setCurrentUser(user);
+      setUserRole(user.role);
+      setIsAuthenticated(true);
+      setIsVoiceEnrolled(!!profileData.voice_enrolled);
+      
+      // Check if voice is already authenticated in this session
+      const voiceAuth = localStorage.getItem('voiceAuthenticated');
+      setIsVoiceAuthenticated(voiceAuth === 'true');
+    } catch (error) {
+      console.error("Error handling user session:", error);
+      setCurrentUser(null);
+      setUserRole(null);
+      setIsAuthenticated(false);
+      setIsVoiceAuthenticated(false);
+      
+      // Sign out if there was an error
+      await supabase.auth.signOut();
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Context value
-  const value: AuthContextType = {
-    user,
-    status,
+  const value: AuthContextValue = {
+    currentUser,
+    userRole,
     isAuthenticated,
-    isVoiceEnrolled,
     isVoiceAuthenticated,
+    isVoiceEnrolled,
+    isLoading,
     login,
-    loginWithVoice,
     logout,
+    authenticateWithVoice,
     enrollVoice,
-    checkVoiceAuth
+    resetVoiceAuth
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {!isLoading ? children : <div>Loading...</div>}
+    </AuthContext.Provider>
+  );
 };
 
 // Custom hook to use auth context
-export const useAuth = () => {
+export const useAuth = (): AuthContextValue => {
   const context = useContext(AuthContext);
   
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   
   return context;
 };
-
-export default AuthContext;
