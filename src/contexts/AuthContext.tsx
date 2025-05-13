@@ -1,4 +1,4 @@
-// src/contexts/AuthContext.tsx
+// src/contexts/AuthContext.tsx - COMPLETE FILE
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import supabase from "../supabase";
@@ -25,8 +25,13 @@ interface AuthContextValue {
   isVoiceAuthenticated: boolean;
   isVoiceEnrolled: boolean;
   isLoading: boolean;
+  
+  // Authentication methods
+  register: (email: string, password: string, name: string) => Promise<string>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  
+  // Voice methods
   authenticateWithVoice: (voiceInput: string) => Promise<boolean>;
   enrollVoice: (voiceSamples: string[]) => Promise<boolean>;
   resetVoiceAuth: () => void;
@@ -48,6 +53,36 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isVoiceAuthenticated, setIsVoiceAuthenticated] = useState<boolean>(false);
   const [isVoiceEnrolled, setIsVoiceEnrolled] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Register a new user
+  const register = async (email: string, password: string, name: string): Promise<string> => {
+    try {
+      // Sign up with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name
+          }
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (!data.user) {
+        throw new Error('User not created');
+      }
+      
+      // Return the user ID for voice enrollment
+      return data.user.id;
+    } catch (error) {
+      console.error("Registration error:", error);
+      throw error;
+    }
+  };
 
   // Handle user login
   const login = async (email: string, password: string) => {
@@ -270,6 +305,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     isVoiceAuthenticated,
     isVoiceEnrolled,
     isLoading,
+    register,
     login,
     logout,
     authenticateWithVoice,

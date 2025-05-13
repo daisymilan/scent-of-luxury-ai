@@ -1,4 +1,4 @@
-// src/App.tsx - UPDATED VERSION
+// src/App.tsx - ADDING SIGNUP ROUTE
 
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -14,6 +14,7 @@ import PreferencesPage from "./pages/PreferencesPage";
 import SystemSettingsPage from "./pages/SystemSettingsPage";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage"; // Import the new SignupPage
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import VoiceLoginPage from "./pages/VoiceLoginPage";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -31,13 +32,11 @@ const App = () => (
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
-        
-        {/* Voice Login - should be accessible after basic authentication */}
+        <Route path="/signup" element={<SignupPage />} /> {/* Add the signup route */}
         <Route path="/voice-login" element={<VoiceLoginPage />} />
-        
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
         
-        {/* Protected Routes - now requiring voice authentication for high-security areas */}
+        {/* Protected Routes */}
         <Route path="/" element={
           <ProtectedRoute>
             <Index />
