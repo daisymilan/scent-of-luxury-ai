@@ -1,185 +1,233 @@
-
-import { ShoppingCart, Zap } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+// AbandonedCartList.tsx
+import React from 'react';
+import * as LucideIcons from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { WooOrder, WooCustomer, WooProduct } from '@/utils/woocommerce/types';
-import { useState, useMemo } from 'react';
-import RecoveryStats from './RecoveryStats';
-import AbandonedCartList from './AbandonedCartList';
-import RecoveryAutomations from './RecoveryAutomations';
-import { processAbandonedCartData, AbandonedCart, calculateRecoveryStats } from './utils';
-import { useQuery } from '@tanstack/react-query';
-import { WOO_API_BASE_URL } from '@/utils/woocommerce';
-import { getWooAuthParams } from '@/utils/woocommerce/hooks';
-import { useToast } from '@/hooks/use-toast';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-interface AbandonedCartRecoveryProps {
-  wooOrders?: WooOrder[] | null;
-  wooCustomers?: WooCustomer[] | null;
-  wooProducts?: WooProduct[] | null;
+// Define proper TypeScript interfaces for table components
+interface TableProps extends React.HTMLProps<HTMLTableElement> {
+  children: React.ReactNode;
 }
 
-const AbandonedCartRecovery = ({ 
-  wooOrders, 
-  wooCustomers, 
-  wooProducts 
-}: AbandonedCartRecoveryProps) => {
-  const [activeTab, setActiveTab] = useState('active');
-  const { toast } = useToast();
-  
-  // Get authentication parameters
-  const authParams = getWooAuthParams();
+interface TableHeaderProps extends React.HTMLProps<HTMLTableSectionElement> {
+  children: React.ReactNode;
+}
 
-  // If props aren't provided, fetch the data directly
-  const { data: fetchedOrders } = useQuery({
-    queryKey: ['abandonedCartOrders'],
-    queryFn: async () => {
-      // Only fetch if props weren't provided
-      if (wooOrders) return wooOrders;
-      
-      try {
-        const response = await fetch(
-          `${WOO_API_BASE_URL}/orders?status=pending,on-hold&per_page=100&${authParams}`,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            }
-          }
-        );
-        
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
-        }
-        
-        return await response.json();
-      } catch (error) {
-        console.error('Error fetching abandoned cart orders:', error);
-        toast({
-          title: "Data Fetch Error",
-          description: "Could not load abandoned cart data from WooCommerce.",
-          variant: "destructive",
-        });
-        return null;
-      }
-    },
-    enabled: !wooOrders,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+interface TableBodyProps extends React.HTMLProps<HTMLTableSectionElement> {
+  children: React.ReactNode;
+}
 
-  const { data: fetchedCustomers } = useQuery({
-    queryKey: ['abandonedCartCustomers'],
-    queryFn: async () => {
-      // Only fetch if props weren't provided
-      if (wooCustomers) return wooCustomers;
-      
-      try {
-        const response = await fetch(
-          `${WOO_API_BASE_URL}/customers?per_page=100&${authParams}`,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            }
-          }
-        );
-        
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
-        }
-        
-        return await response.json();
-      } catch (error) {
-        console.error('Error fetching customers for abandoned carts:', error);
-        return null;
-      }
-    },
-    enabled: !wooCustomers,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-  });
+interface TableRowProps extends React.HTMLProps<HTMLTableRowElement> {
+  children: React.ReactNode;
+}
 
-  const { data: fetchedProducts } = useQuery({
-    queryKey: ['abandonedCartProducts'],
-    queryFn: async () => {
-      // Only fetch if props weren't provided
-      if (wooProducts) return wooProducts;
-      
-      try {
-        const response = await fetch(
-          `${WOO_API_BASE_URL}/products?per_page=100&${authParams}`,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            }
-          }
-        );
-        
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
-        }
-        
-        return await response.json();
-      } catch (error) {
-        console.error('Error fetching products for abandoned carts:', error);
-        return null;
-      }
-    },
-    enabled: !wooProducts,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-  });
+interface TableHeadProps extends React.HTMLProps<HTMLTableCellElement> {
+  children: React.ReactNode;
+  className?: string;
+}
 
-  // Use either the props or the fetched data
-  const orders = wooOrders || fetchedOrders;
-  const customers = wooCustomers || fetchedCustomers;
-  const products = wooProducts || fetchedProducts;
+interface TableCellProps extends React.HTMLProps<HTMLTableCellElement> {
+  children: React.ReactNode;
+  className?: string;
+}
 
-  // Process WooCommerce data to identify abandoned carts
-  const processedCarts = useMemo(() => {
-    return processAbandonedCartData(orders, customers, products, []);
-  }, [orders, customers, products]);
-  
-  // Calculate recovery stats
-  const recoveryStats = useMemo(() => {
-    return calculateRecoveryStats(processedCarts);
-  }, [processedCarts]);
+// Define table components with proper TypeScript types
+const Table: React.FC<TableProps> = ({ children, ...props }) => (
+  <table className="w-full" {...props}>{children}</table>
+);
+
+const TableHeader: React.FC<TableHeaderProps> = ({ children, ...props }) => (
+  <thead {...props}>{children}</thead>
+);
+
+const TableBody: React.FC<TableBodyProps> = ({ children, ...props }) => (
+  <tbody {...props}>{children}</tbody>
+);
+
+const TableRow: React.FC<TableRowProps> = ({ children, ...props }) => (
+  <tr {...props}>{children}</tr>
+);
+
+const TableHead: React.FC<TableHeadProps> = ({ children, className = "", ...props }) => (
+  <th className={`px-4 py-3 text-left text-sm font-medium text-gray-500 ${className}`} {...props}>
+    {children}
+  </th>
+);
+
+const TableCell: React.FC<TableCellProps> = ({ children, className = "", ...props }) => (
+  <td className={`px-4 py-4 text-sm ${className}`} {...props}>{children}</td>
+);
+
+// Define the AbandonedCart type if utils import doesn't work
+export interface AbandonedCart {
+  id: string;
+  customer: string;
+  email: string;
+  products: string[];
+  value: number;
+  time: string;
+  status: 'pending' | 'in_progress' | 'recovered' | 'cancelled';
+  orderId?: number;
+  customerId?: number;
+}
+
+interface AbandonedCartListProps {
+  carts: AbandonedCart[];
+  onSendEmail?: (cartId: string) => void;
+  onSendSMS?: (cartId: string) => void;
+  onViewDetails?: (cartId: string) => void;
+  onSendCustomEmail?: (cartId: string) => void;
+  onMarkRecovered?: (cartId: string) => void;
+  onCancelRecovery?: (cartId: string) => void;
+}
+
+const AbandonedCartList: React.FC<AbandonedCartListProps> = ({ 
+  carts,
+  onSendEmail,
+  onSendSMS,
+  onViewDetails,
+  onSendCustomEmail,
+  onMarkRecovered,
+  onCancelRecovery
+}) => {
+  // Helper function to format currency
+  const formatCurrency = (value: number | string): string => {
+    if (typeof value === 'number') {
+      return value.toFixed(2);
+    }
+    return String(value);
+  };
+
+  // Helper function to render status badge
+  const renderStatusBadge = (status: AbandonedCart['status']): JSX.Element => {
+    const statusConfig = {
+      pending: { bgColor: 'bg-gray-400', label: 'Pending' },
+      in_progress: { bgColor: 'bg-yellow-400', label: 'Recovery in progress' },
+      recovered: { bgColor: 'bg-green-400', label: 'Recovered' },
+      cancelled: { bgColor: 'bg-red-400', label: 'Cancelled' }
+    };
+
+    const config = statusConfig[status] || statusConfig.pending;
+
+    return (
+      <div className="flex items-center">
+        <div className={`h-2 w-2 rounded-full ${config.bgColor} mr-2`}></div>
+        <span>{config.label}</span>
+      </div>
+    );
+  };
+
+  // Render empty state if no carts
+  if (!carts || carts.length === 0) {
+    return (
+      <div className="text-center py-8 border rounded-md">
+        <LucideIcons.ShoppingCart className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+        <p className="text-gray-500">No abandoned carts found</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="grid gap-6">
-      <Card className="col-span-full">
-        <CardHeader className="pb-2 flex flex-row items-center justify-between">
-          <div className="flex items-center">
-            <ShoppingCart className="mr-2 h-5 w-5 text-primary" />
-            <CardTitle className="text-lg font-medium">Abandoned Cart Recovery</CardTitle>
-          </div>
-          <Button className="h-8 text-xs" size="sm">
-            <Zap size={14} className="mr-1" /> Configure Automation
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-6">
-            <RecoveryStats stats={recoveryStats} />
-            
-            <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="mb-4">
-                <TabsTrigger value="active">Active Recovery ({processedCarts.length})</TabsTrigger>
-                <TabsTrigger value="completed">Completed ({recoveryStats.recovered})</TabsTrigger>
-              </TabsList>
-              <TabsContent value="active">
-                <AbandonedCartList carts={processedCarts} />
-              </TabsContent>
-              <TabsContent value="completed">
-                <div className="text-center py-8 border rounded-md">
-                  <ShoppingCart className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-                  <p className="text-gray-500">Switch to the "Completed" tab to see recovered and lost carts</p>
+    <div className="rounded-md border overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Customer</TableHead>
+            <TableHead>Products</TableHead>
+            <TableHead>Cart Value</TableHead>
+            <TableHead>Abandoned</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {carts.map((cart) => (
+            <TableRow key={cart.id}>
+              <TableCell>
+                <div>
+                  <p className="font-medium">{cart.customer}</p>
+                  <p className="text-xs text-gray-500">{cart.email}</p>
                 </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-          
-          <RecoveryAutomations />
-        </CardContent>
-      </Card>
+              </TableCell>
+              <TableCell>
+                <div className="line-clamp-2">
+                  {cart.products.map((product, index) => (
+                    <span key={index} className="text-sm">
+                      {product}
+                      {index < cart.products.length - 1 ? ', ' : ''}
+                    </span>
+                  ))}
+                </div>
+              </TableCell>
+              <TableCell>
+                <span className="font-medium">${formatCurrency(cart.value)}</span>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center text-gray-500">
+                  <LucideIcons.Clock size={14} className="mr-1 flex-shrink-0" />
+                  <span className="text-sm">{cart.time}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                {renderStatusBadge(cart.status || 'in_progress')}
+              </TableCell>
+              <TableCell>
+                <div className="flex justify-end space-x-1">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8" 
+                    title="Send Email Reminder"
+                    onClick={() => onSendEmail?.(cart.id)}
+                  >
+                    <LucideIcons.Mail size={16} />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8" 
+                    title="Send SMS Reminder"
+                    onClick={() => onSendSMS?.(cart.id)}
+                  >
+                    <LucideIcons.Smartphone size={16} />
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <LucideIcons.MoreHorizontal size={16} />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onViewDetails?.(cart.id)}>
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onSendCustomEmail?.(cart.id)}>
+                        Send Custom Email
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onMarkRecovered?.(cart.id)}>
+                        Mark as Recovered
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        className="text-red-600"
+                        onClick={() => onCancelRecovery?.(cart.id)}
+                      >
+                        Cancel Recovery
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 };
 
-export default AbandonedCartRecovery;
+export default AbandonedCartList;
