@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { processVoiceAuth } from '@/utils/voiceAuthApi';
-import VoiceAuthComponent from '@/components/VoiceAuthComponent';
 import VoiceRecording from '@/components/voice-login/VoiceRecording';
 import { getN8nConfig } from '@/components/N8nConfig';
 
@@ -109,9 +108,6 @@ const VoiceLoginComponent: React.FC = () => {
           <p className="text-sm">{speechText}</p>
         </div>
       )}
-      
-      {/* Voice Authentication Component */}
-      <VoiceAuthComponent />
     </div>
   );
 };

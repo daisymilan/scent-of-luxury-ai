@@ -110,7 +110,7 @@ export const processAbandonedCartData = (
         }
         
         return {
-          id: order.id,
+          id: String(order.id), // Ensure id is always a string to match AbandonedCart type
           customer: customerName,
           email: customerEmail || "email@example.com", // Fallback email
           products: cartProducts,
