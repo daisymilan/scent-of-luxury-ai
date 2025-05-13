@@ -1,59 +1,51 @@
+// src/pages/VoiceLoginPage.tsx - NEW FILE (EXAMPLE)
 
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import VoiceAuthComponent from '@/components/VoiceAuthComponent';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import VoiceLogin from '../components/VoiceLogin';
 
 const VoiceLoginPage: React.FC = () => {
+  const navigate = useNavigate();
+  
+  // Handle successful voice authentication
+  const handleVoiceSuccess = () => {
+    console.log('Voice authentication successful');
+    
+    // Wait a moment before redirecting (for better UX)
+    setTimeout(() => {
+      // Redirect to dashboard or protected page
+      navigate('/dashboard');
+    }, 1500);
+  };
+  
+  // Handle voice authentication error
+  const handleVoiceError = (error: string) => {
+    console.error('Voice authentication error:', error);
+    // You can add additional error handling here
+  };
+  
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="flex flex-col items-center justify-center">
-            <div className="w-16 h-16 mb-3 bg-black rounded-full flex items-center justify-center">
-              <span className="font-serif text-white text-lg">MiN</span>
-            </div>
-            <h1 className="text-3xl font-serif mb-1">MiN NEW YORK</h1>
-            <p className="text-sm text-gray-600">Luxury Fragrances</p>
-          </div>
-        </div>
-        
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="text-center">Voice Login</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center mb-6">
-              <p className="mb-2">Use your voice to authenticate with the AI Assistant.</p>
-              <div className="p-2 bg-amber-50 rounded-md text-xs text-amber-800 mb-4">
-                Say <strong>"Login as CEO"</strong> or other role to authenticate
-              </div>
-            </div>
-            
-            <VoiceAuthComponent />
-            
-            <div className="text-center mt-6">
-              <Link to="/login">
-                <Button variant="ghost" size="sm">
-                  Back to traditional login
-                </Button>
-              </Link>
-            </div>
-            
-            <div className="text-xs text-center text-gray-500 mt-6 border-t pt-4">
-              <p className="mb-2">Available test accounts:</p>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                <div>CEO: ceo@minyork.com</div>
-                <div>CCO: cco@minyork.com</div>
-                <div>Director: director@minyork.com</div>
-                <div>Regional: regional@minyork.com</div>
-                <div>Marketing: marketing@minyork.com</div>
-                <div className="col-span-2 mt-1">Password: password</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="page-container">
+      <div className="auth-header">
+        <h1>Welcome to Scent of Luxury</h1>
+        <p>Please authenticate with your voice to continue</p>
+      </div>
+      
+      {/* Voice Login Component */}
+      <VoiceLogin 
+        onSuccess={handleVoiceSuccess}
+        onError={handleVoiceError}
+        passphrase="scent of luxury"
+      />
+      
+      <div className="auth-alternatives">
+        <p>Having trouble with voice authentication?</p>
+        <button 
+          className="text-button"
+          onClick={() => navigate('/login')}
+        >
+          Use password instead
+        </button>
       </div>
     </div>
   );

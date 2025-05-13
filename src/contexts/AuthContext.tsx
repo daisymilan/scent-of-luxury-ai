@@ -1,185 +1,226 @@
+// src/contexts/AuthContext.tsx
 
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import voiceAuthService from '../services/voiceAuthService';
 
-export type UserRole = 'CEO' | 'CCO' | 'Commercial Director' | 'Regional Manager' | 'Marketing Manager' | 'Production Manager' | 'Customer Support' | 'Social Media Manager' | 'Guest';
-
-interface AuthUser {
+// Types
+interface User {
   id: string;
-  name: string;
   email: string;
-  role: UserRole;
-  avatar?: string;
+  name: string;
+  voiceEnrollmentComplete?: boolean;
 }
+
+type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated';
 
 interface AuthContextType {
-  user: AuthUser | null;
+  user: User | null;
+  status: AuthStatus;
   isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  isVoiceEnrolled: boolean;
+  isVoiceAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<boolean>;
+  loginWithVoice: (voiceInput: string) => Promise<boolean>;
   logout: () => void;
-  hasPermission: (requiredRole: UserRole | UserRole[]) => boolean;
+  enrollVoice: (voiceSamples: string[]) => Promise<boolean>;
+  checkVoiceAuth: () => Promise<boolean>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Mock user data with different roles
-const MOCK_USERS: Record<string, AuthUser> = {
-  'ceo@minyork.com': {
-    id: '1',
-    name: 'Alex Morgan',
-    email: 'ceo@minyork.com',
-    role: 'CEO',
-    avatar: '/avatar-1.png'
-  },
-  'cco@minyork.com': {
-    id: '2',
-    name: 'Jamie Rivera',
-    email: 'cco@minyork.com',
-    role: 'CCO',
-    avatar: '/avatar-2.png'
-  },
-  'director@minyork.com': {
-    id: '3',
-    name: 'Taylor Chen',
-    email: 'director@minyork.com',
-    role: 'Commercial Director',
-    avatar: '/avatar-3.png'
-  },
-  'regional@minyork.com': {
-    id: '4',
-    name: 'Jordan Smith',
-    email: 'regional@minyork.com',
-    role: 'Regional Manager',
-    avatar: '/avatar-4.png'
-  },
-  'marketing@minyork.com': {
-    id: '5',
-    name: 'Casey Wong',
-    email: 'marketing@minyork.com',
-    role: 'Marketing Manager',
-    avatar: '/avatar-5.png'
-  },
-  'production@minyork.com': {
-    id: '6',
-    name: 'Morgan Lee',
-    email: 'production@minyork.com',
-    role: 'Production Manager',
-    avatar: '/avatar-6.png'
-  },
-  'support@minyork.com': {
-    id: '7',
-    name: 'Riley Johnson',
-    email: 'support@minyork.com',
-    role: 'Customer Support',
-    avatar: '/avatar-7.png'
-  },
-  'social@minyork.com': {
-    id: '8',
-    name: 'Avery Garcia',
-    email: 'social@minyork.com',
-    role: 'Social Media Manager',
-    avatar: '/avatar-8.png'
-  }
+// Default context value
+const defaultContextValue: AuthContextType = {
+  user: null,
+  status: 'idle',
+  isAuthenticated: false,
+  isVoiceEnrolled: false,
+  isVoiceAuthenticated: false,
+  login: async () => false,
+  loginWithVoice: async () => false,
+  logout: () => {},
+  enrollVoice: async () => false,
+  checkVoiceAuth: async () => false
 };
 
-// Role hierarchy for permission checking
-const ROLE_HIERARCHY: Record<UserRole, number> = {
-  'CEO': 100,
-  'CCO': 90,
-  'Commercial Director': 80,
-  'Regional Manager': 70,
-  'Marketing Manager': 65,
-  'Production Manager': 60,
-  'Social Media Manager': 55,
-  'Customer Support': 50,
-  'Guest': 10
-};
+// Create context
+const AuthContext = createContext<AuthContextType>(defaultContextValue);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
+// Provider component
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [status, setStatus] = useState<AuthStatus>('idle');
+  const [isVoiceEnrolled, setIsVoiceEnrolled] = useState<boolean>(false);
+  const [isVoiceAuthenticated, setIsVoiceAuthenticated] = useState<boolean>(false);
 
+  // Check if user is already logged in on mount
   useEffect(() => {
-    // Check for stored user in localStorage
-    const storedUser = localStorage.getItem('auth_user');
-    if (storedUser) {
+    const checkAuthStatus = async () => {
+      setStatus('loading');
+      
       try {
-        setUser(JSON.parse(storedUser));
+        // Check if token exists in localStorage
+        const token = localStorage.getItem('authToken');
+        
+        if (!token) {
+          setStatus('unauthenticated');
+          return;
+        }
+        
+        // Validate token with backend
+        // For demo purposes, we'll just check if it exists
+        const userData = JSON.parse(localStorage.getItem('user') || '{}');
+        
+        if (userData && userData.id) {
+          setUser(userData);
+          setStatus('authenticated');
+          
+          // Check voice enrollment status
+          if (userData.id) {
+            try {
+              const voiceStatus = await voiceAuthService.getVoiceAuthStatus(userData.id);
+              setIsVoiceEnrolled(voiceStatus.isEnrolled);
+              
+              // Check if voice is recently authenticated
+              const voiceAuth = localStorage.getItem('voiceAuthenticated');
+              setIsVoiceAuthenticated(voiceAuth === 'true');
+            } catch (error) {
+              console.error('Error checking voice status:', error);
+            }
+          }
+        } else {
+          setStatus('unauthenticated');
+        }
       } catch (error) {
-        console.error("Failed to parse stored user:", error);
-        localStorage.removeItem('auth_user');
+        console.error('Auth check error:', error);
+        setStatus('unauthenticated');
       }
-    }
-    // Important: Set loading to false after checking localStorage
-    setIsLoading(false);
+    };
+    
+    checkAuthStatus();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    setIsLoading(true);
+  // Login with email/password
+  const login = async (email: string, password: string): Promise<boolean> => {
+    setStatus('loading');
     
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // This would be your actual API call
+      // For demo, we'll simulate a successful login
+      const mockUser = {
+        id: '12345',
+        email,
+        name: email.split('@')[0],
+        voiceEnrollmentComplete: Math.random() > 0.5 // Random for demo
+      };
       
-      const lowercasedEmail = email.toLowerCase();
-      const user = MOCK_USERS[lowercasedEmail];
+      // Store auth data
+      localStorage.setItem('authToken', 'mock-jwt-token');
+      localStorage.setItem('user', JSON.stringify(mockUser));
       
-      if (user && password === 'password') {
-        setUser(user);
-        localStorage.setItem('auth_user', JSON.stringify(user));
-        navigate('/');
-        return Promise.resolve();
-      } else {
-        throw new Error('Invalid credentials');
-      }
+      setUser(mockUser);
+      setStatus('authenticated');
+      setIsVoiceEnrolled(!!mockUser.voiceEnrollmentComplete);
+      
+      return true;
     } catch (error) {
-      setIsLoading(false);
-      return Promise.reject(error);
-    } finally {
-      setIsLoading(false);
+      console.error('Login error:', error);
+      setStatus('unauthenticated');
+      return false;
     }
   };
-  
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('auth_user');
-    navigate('/login');
-  };
-  
-  const hasPermission = (requiredRole: UserRole | UserRole[]) => {
+
+  // Login with voice
+  const loginWithVoice = async (voiceInput: string): Promise<boolean> => {
     if (!user) return false;
     
-    if (Array.isArray(requiredRole)) {
-      return requiredRole.some(role => 
-        ROLE_HIERARCHY[user.role] >= ROLE_HIERARCHY[role]
-      );
+    try {
+      const response = await voiceAuthService.verifyVoice(user.id, voiceInput);
+      
+      if (response.success) {
+        setIsVoiceAuthenticated(true);
+        localStorage.setItem('voiceAuthenticated', 'true');
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Voice login error:', error);
+      return false;
     }
-    
-    return ROLE_HIERARCHY[user.role] >= ROLE_HIERARCHY[requiredRole];
   };
 
-  return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        isAuthenticated: !!user, 
-        isLoading, 
-        login, 
-        logout, 
-        hasPermission 
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  // Logout
+  const logout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    localStorage.removeItem('voiceAuthenticated');
+    
+    setUser(null);
+    setStatus('unauthenticated');
+    setIsVoiceAuthenticated(false);
+  };
+
+  // Enroll voice
+  const enrollVoice = async (voiceSamples: string[]): Promise<boolean> => {
+    if (!user) return false;
+    
+    try {
+      const success = await voiceAuthService.enrollVoice(user.id, voiceSamples);
+      
+      if (success) {
+        setIsVoiceEnrolled(true);
+        
+        // Update user data
+        const updatedUser = { ...user, voiceEnrollmentComplete: true };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Voice enrollment error:', error);
+      return false;
+    }
+  };
+
+  // Check voice authentication status
+  const checkVoiceAuth = async (): Promise<boolean> => {
+    const voiceAuth = localStorage.getItem('voiceAuthenticated');
+    const isAuth = voiceAuth === 'true';
+    
+    setIsVoiceAuthenticated(isAuth);
+    return isAuth;
+  };
+
+  // Calculate derived state
+  const isAuthenticated = status === 'authenticated';
+
+  // Context value
+  const value: AuthContextType = {
+    user,
+    status,
+    isAuthenticated,
+    isVoiceEnrolled,
+    isVoiceAuthenticated,
+    login,
+    loginWithVoice,
+    logout,
+    enrollVoice,
+    checkVoiceAuth
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+// Custom hook to use auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
+  
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
+  
   return context;
 };
+
+export default AuthContext;
