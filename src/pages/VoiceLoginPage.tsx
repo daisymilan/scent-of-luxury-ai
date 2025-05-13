@@ -26,33 +26,32 @@ const VoiceLoginPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-center mb-6">
-              <p className="mb-4">Use your voice to authenticate with the AI Assistant.</p>
-              <p className="text-sm text-gray-500">Say "Login as [role]" to authenticate</p>
+              <p className="mb-2">Use your voice to authenticate with the AI Assistant.</p>
               <div className="p-2 bg-amber-50 rounded-md text-xs text-amber-800 mb-4">
-                Click the microphone button in the assistant panel below to start voice recognition
-              </div>
-            </div>
-            
-            <div className="flex justify-center mb-6">
-              <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center text-white shadow-lg relative">
-                <Mic size={40} />
-                <div className="absolute -bottom-2 bg-amber-500 text-white text-xs px-3 py-1 rounded-full animate-pulse">
-                  Click Below
-                </div>
-                <div className="absolute -top-10 w-40 text-xs text-center text-gray-500">
-                  Voice authentication panel is below
-                </div>
+                Say <strong>"Login as CEO"</strong> or other role to authenticate
               </div>
             </div>
             
             <VoiceAuthComponent />
             
-            <div className="text-center mt-4">
+            <div className="text-center mt-6">
               <Link to="/login">
                 <Button variant="ghost" size="sm">
                   Back to traditional login
                 </Button>
               </Link>
+            </div>
+            
+            <div className="text-xs text-center text-gray-500 mt-6 border-t pt-4">
+              <p className="mb-2">Available test accounts:</p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                <div>CEO: ceo@minyork.com</div>
+                <div>CCO: cco@minyork.com</div>
+                <div>Director: director@minyork.com</div>
+                <div>Regional: regional@minyork.com</div>
+                <div>Marketing: marketing@minyork.com</div>
+                <div className="col-span-2 mt-1">Password: password</div>
+              </div>
             </div>
           </CardContent>
         </Card>

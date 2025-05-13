@@ -57,6 +57,12 @@ const VoiceRecording: React.FC<VoiceRecordingProps> = ({ onProcessVoice, isProce
       onResult: (transcript) => {
         console.log('Speech recognition result:', transcript);
         setSpeechText(transcript);
+        
+        // If the transcript contains "login as" and a role, start processing automatically
+        if (transcript.toLowerCase().includes('login as')) {
+          console.log('Login command detected in:', transcript);
+          stopListening();
+        }
       },
       onError: (error) => {
         console.error('Speech recognition error:', error);
@@ -120,7 +126,7 @@ const VoiceRecording: React.FC<VoiceRecordingProps> = ({ onProcessVoice, isProce
       // Start recording and visualization
       mediaRecorder.start();
       setIsListening(true);
-      setSpeechText('Listening...');
+      setSpeechText('Listening... say "Login as CEO"');
       visualizeAudio();
       
       // Start speech recognition
@@ -154,25 +160,29 @@ const VoiceRecording: React.FC<VoiceRecordingProps> = ({ onProcessVoice, isProce
     // Stop media recorder if active
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
+      console.log('Media recorder stopped');
     }
     
     // Stop speech recognition if active
     if (speechRecognitionRef.current) {
       speechRecognitionRef.current.stop();
+      console.log('Speech recognition stopped');
     }
     
     // Stop microphone stream
     if (micStreamRef.current) {
       micStreamRef.current.getTracks().forEach((track) => track.stop());
+      console.log('Microphone stream stopped');
     }
     
     // Cancel visualization animation frame
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
     
     setIsListening(false);
-    setSpeechText('Processing voice...');
+    setSpeechText(prev => prev || 'Processing voice...');
   };
   
   const visualizeAudio = () => {
@@ -210,6 +220,27 @@ const VoiceRecording: React.FC<VoiceRecordingProps> = ({ onProcessVoice, isProce
     // Create audio blob from recorded chunks
     const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
     console.log('Processing audio blob:', audioBlob.size, 'bytes');
+    
+    // Extract role from speech text if possible
+    let detectedRole = null;
+    if (speechText) {
+      const lowerText = speechText.toLowerCase();
+      if (lowerText.includes('login as ceo')) {
+        detectedRole = 'CEO';
+      } else if (lowerText.includes('login as cco')) {
+        detectedRole = 'CCO';
+      } else if (lowerText.includes('login as director')) {
+        detectedRole = 'Commercial Director';
+      } else if (lowerText.includes('login as regional')) {
+        detectedRole = 'Regional Manager';
+      } else if (lowerText.includes('login as marketing')) {
+        detectedRole = 'Marketing Manager';
+      }
+      
+      if (detectedRole) {
+        console.log('Detected role from speech:', detectedRole);
+      }
+    }
     
     // Process the audio with voice recognition
     onProcessVoice(audioBlob);
@@ -256,6 +287,12 @@ const VoiceRecording: React.FC<VoiceRecordingProps> = ({ onProcessVoice, isProce
           </Button>
         )}
       </div>
+      
+      {!isListening && !isProcessing && (
+        <div className="text-sm text-center text-muted-foreground">
+          <p>Say <strong>"Login as CEO"</strong> to authenticate with your voice</p>
+        </div>
+      )}
     </div>
   );
 };
