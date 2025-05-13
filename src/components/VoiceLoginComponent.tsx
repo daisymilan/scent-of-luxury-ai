@@ -1,24 +1,38 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { processVoiceAuth } from '@/utils/voiceAuthApi';
 import VoiceAuthComponent from '@/components/VoiceAuthComponent';
 import VoiceRecording from '@/components/voice-login/VoiceRecording';
+import { getN8nConfig } from '@/components/N8nConfig';
 
 const VoiceLoginComponent: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [speechText, setSpeechText] = useState('');
+  const [webhookUrl, setWebhookUrl] = useState<string>('https://minnewyorkofficial.app.n8n.cloud/webhook/voice-auth');
   const { login } = useAuth();
   const { toast } = useToast();
+
+  // Check for n8n config and update the webhook URL
+  useEffect(() => {
+    const n8nConfig = getN8nConfig();
+    if (n8nConfig && n8nConfig.webhookUrl) {
+      // Use the custom webhook URL if provided
+      setWebhookUrl(n8nConfig.webhookUrl);
+      console.log('Using custom n8n webhook for voice auth:', n8nConfig.webhookUrl);
+    } else {
+      console.log('Using default voice auth webhook:', webhookUrl);
+    }
+  }, []);
 
   const handleProcessVoice = async (audioBlob: Blob) => {
     try {
       setIsProcessing(true);
       setSpeechText('Processing voice...');
       
-      // Call our voice auth API utility
-      const authResponse = await processVoiceAuth(audioBlob);
+      // Call our voice auth API utility with the configured webhook
+      const authResponse = await processVoiceAuth(audioBlob, undefined, webhookUrl);
       
       if (authResponse.success && authResponse.user) {
         setSpeechText(`Voice recognized: "${authResponse.user.role}"`);

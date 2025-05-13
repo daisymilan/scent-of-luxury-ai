@@ -20,7 +20,8 @@ export interface VoiceAuthResponse {
  */
 export const processVoiceAuth = async (
   audioBlob: Blob,
-  simulatedRole?: string
+  simulatedRole?: string,
+  customWebhookUrl?: string
 ): Promise<VoiceAuthResponse> => {
   try {
     // In a production app, you would send the audioBlob to your voice recognition service
@@ -46,9 +47,10 @@ export const processVoiceAuth = async (
       throw new Error('Role not recognized');
     }
     
-    // Use the real n8n webhook endpoint
+    // Use the real n8n webhook endpoint or the custom one if provided
     try {
-      const n8nWebhookUrl = 'https://minnewyorkofficial.app.n8n.cloud/webhook/voice-auth';
+      const n8nWebhookUrl = customWebhookUrl || 'https://minnewyorkofficial.app.n8n.cloud/webhook/voice-auth';
+      console.log('Using webhook URL for voice auth:', n8nWebhookUrl);
       
       const response = await fetch(n8nWebhookUrl, {
         method: 'POST',
