@@ -1,3 +1,4 @@
+
 // AbandonedCartList.tsx
 import React from 'react';
 import * as LucideIcons from 'lucide-react';
@@ -8,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { WooOrder, WooProduct, WooCustomer } from '@/utils/woocommerce/types';
 
 // Define a simple table structure if shadcn/ui table components aren't properly set up
 const Table = ({ children, ...props }) => <table className="w-full" {...props}>{children}</table>;
@@ -36,6 +38,10 @@ interface AbandonedCartListProps {
   onSendCustomEmail?: (cartId: string) => void;
   onMarkRecovered?: (cartId: string) => void;
   onCancelRecovery?: (cartId: string) => void;
+  // Add these new props to accept WooCommerce data
+  wooOrders?: WooOrder[];
+  wooProducts?: WooProduct[];
+  wooCustomers?: WooCustomer[];
 }
 
 const AbandonedCartList = ({ 
@@ -45,7 +51,11 @@ const AbandonedCartList = ({
   onViewDetails,
   onSendCustomEmail,
   onMarkRecovered,
-  onCancelRecovery
+  onCancelRecovery,
+  // Include new props in destructuring, but we don't need to use them directly in this component
+  wooOrders,
+  wooProducts,
+  wooCustomers
 }: AbandonedCartListProps) => {
   // Helper function to format currency
   const formatCurrency = (value: number | string) => {
