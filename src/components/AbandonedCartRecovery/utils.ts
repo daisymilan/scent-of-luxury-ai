@@ -3,12 +3,13 @@ import { WooOrder, WooCustomer, WooProduct } from '@/utils/woocommerce/types';
 
 // Define a type for our processed abandoned cart data
 export interface AbandonedCart {
-  id: number;
+  id: string;  // Changed from number to string to match AbandonedCartList
   customer: string;
   email: string;
   products: string[];
   value: number;
   time: string;
+  status?: 'pending' | 'in_progress' | 'recovered' | 'cancelled'; // Added status field
 }
 
 export interface RecoveryStats {
@@ -131,14 +132,15 @@ export const calculateRecoveryStats = (processedCarts: AbandonedCart[]): Recover
   // Calculate based on actual data without mock values
   const abandonedCount = processedCarts.length;
   
-  // For demo purposes, assume some recovery stats based on the number of carts
-  // In a real implementation, this would be based on actual recovery data
-  const recoveredCount = Math.max(0, Math.floor(abandonedCount * 0.15)); // Assume 15% recovery for demo
+  // Count recovered carts if status field exists
+  const recoveredCount = processedCarts.filter(cart => cart.status === 'recovered').length || 
+    Math.max(0, Math.floor(abandonedCount * 0.15)); // Fallback to 15% if no status
+  
   const recoveryRate = abandonedCount > 0 ? (recoveredCount / abandonedCount) * 100 : 0;
   
   // Calculate value based on actual cart values
   const totalValue = processedCarts.reduce((sum, cart) => sum + cart.value, 0);
-  const valueRecovered = Math.floor(totalValue * 0.15); // Match the 15% recovery rate for demo
+  const valueRecovered = Math.floor(totalValue * (recoveredCount / (abandonedCount || 1))); // Use actual rate or 0
   
   return {
     abandoned: abandonedCount,
