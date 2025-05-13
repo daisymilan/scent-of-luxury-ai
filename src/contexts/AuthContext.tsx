@@ -1,3 +1,4 @@
+
 // src/contexts/AuthContext.tsx - COMPLETE FILE
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
@@ -5,10 +6,10 @@ import supabase from "../supabase";
 import voiceAuthService from "../services/voiceAuthService";
 
 // Define user role type
-type UserRole = 'CEO' | 'CCO' | 'Commercial Director' | 'Marketing Manager' | 'Social Media Manager' | 'Regional Manager' | 'Customer Support' | 'User';
+export type UserRole = 'CEO' | 'CCO' | 'Commercial Director' | 'Marketing Manager' | 'Social Media Manager' | 'Regional Manager' | 'Customer Support' | 'User';
 
 // Define user type
-interface User {
+export interface User {
   id: string;
   email: string;
   role: UserRole;
@@ -25,6 +26,7 @@ interface AuthContextValue {
   isVoiceAuthenticated: boolean;
   isVoiceEnrolled: boolean;
   isLoading: boolean;
+  user: User | null; // Added for compatibility
   
   // Authentication methods
   register: (email: string, password: string, name: string) => Promise<string>;
@@ -35,6 +37,7 @@ interface AuthContextValue {
   authenticateWithVoice: (voiceInput: string) => Promise<boolean>;
   enrollVoice: (voiceSamples: string[]) => Promise<boolean>;
   resetVoiceAuth: () => void;
+  hasPermission?: (roles: string | string[]) => boolean; // Added for compatibility
 }
 
 // Create the auth context
@@ -112,9 +115,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         console.error("Error fetching user profile:", profileError);
       }
       
-      // Create user object
+      // Check if user has voice enrollment
       if (profileData) {
-        // Check if user has voice enrollment
         setIsVoiceEnrolled(!!profileData.voice_enrolled);
       }
       
@@ -153,7 +155,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     try {
       // Use either mock or real API based on environment
-      const response = process.env.NODE_ENV === 'development'
+      const response = import.meta.env.DEV
         ? await voiceAuthService.mockVerifyVoice(voiceInput)
         : await voiceAuthService.verifyVoice(currentUser.id, voiceInput);
       
@@ -204,6 +206,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const resetVoiceAuth = () => {
     setIsVoiceAuthenticated(false);
     localStorage.removeItem('voiceAuthenticated');
+  };
+
+  // Check if user has required permission
+  const hasPermission = (roles: string | string[]): boolean => {
+    if (!currentUser || !userRole) return false;
+    
+    const requiredRoles = Array.isArray(roles) ? roles : [roles];
+    return requiredRoles.includes(userRole);
   };
 
   // Handle auth state changes
@@ -305,12 +315,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     isVoiceAuthenticated,
     isVoiceEnrolled,
     isLoading,
+    user: currentUser, // For compatibility
     register,
     login,
     logout,
     authenticateWithVoice,
     enrollVoice,
-    resetVoiceAuth
+    resetVoiceAuth,
+    hasPermission // For compatibility
   };
 
   return (

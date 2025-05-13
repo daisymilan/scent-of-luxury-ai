@@ -1,6 +1,7 @@
+
 // src/services/voiceAuthService.ts
 
-import supabase from "../supabase";
+import { supabase } from "../integrations/supabase/client";
 
 /**
  * Voice Authentication Service
