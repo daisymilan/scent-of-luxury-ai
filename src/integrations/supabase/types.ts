@@ -15,9 +15,6 @@ export type Database = {
           created_at: string | null
           email: string
           first_name: string | null
-          fragrancepreference: string | null
-          fragrancestrength: string | null
-          fragrancestyle: string | null
           id: string
           last_name: string | null
           last_voice_auth: string | null
@@ -31,9 +28,6 @@ export type Database = {
           created_at?: string | null
           email: string
           first_name?: string | null
-          fragrancepreference?: string | null
-          fragrancestrength?: string | null
-          fragrancestyle?: string | null
           id: string
           last_name?: string | null
           last_voice_auth?: string | null
@@ -47,9 +41,6 @@ export type Database = {
           created_at?: string | null
           email?: string
           first_name?: string | null
-          fragrancepreference?: string | null
-          fragrancestrength?: string | null
-          fragrancestyle?: string | null
           id?: string
           last_name?: string | null
           last_voice_auth?: string | null
