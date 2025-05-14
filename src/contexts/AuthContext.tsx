@@ -86,7 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAuthenticated(true);
         setCurrentUser(session.user);
         
-        // Fetch user details including role from the users table (not profiles)
+        // Fetch user details including role from the users table
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('role')
@@ -124,7 +124,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthenticated(true);
       setCurrentUser(data.user);
       
-      // Get user role from metadata or set default
+      // Get user role from users table
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('role')
