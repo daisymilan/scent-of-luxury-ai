@@ -1,3 +1,4 @@
+
 // Fixing just the TypeScript error in AiAssistant.tsx where User type doesn't match required props
 // We need to make sure the User type is properly handled when passing to components
 
@@ -57,7 +58,11 @@ const AiAssistant = () => {
     setSpeechSupport,
     setShowSpeechAlert,
     setIsSpeaking,
-    handleQuerySubmit: handleSubmit
+    handleQuerySubmit: (query: string) => {
+      if (query) {
+        handleSubmit(new Event('submit') as unknown as React.FormEvent<HTMLFormElement>, { data: { query } });
+      }
+    }
   });
   
   useEffect(() => {
@@ -85,9 +90,9 @@ const AiAssistant = () => {
     }
   }, [isAuthenticated, currentUser]);
   
-  const handleQuerySubmit = (query?: string) => {
-    if (query) {
-      handleSubmit(query);
+  const handleQuerySubmit = () => {
+    if (input) {
+      handleSubmit(new Event('submit') as unknown as React.FormEvent<HTMLFormElement>);
     }
   };
   

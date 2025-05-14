@@ -2,7 +2,7 @@
 /**
  * Shared Hooks and Contexts for WooCommerce Data
  */
-import { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState } from "react";
 import { WOO_API_BASE_URL } from "./index";
 import { WooCommerceConfig, getWooCommerceConfig } from "./config";
 import { WooProduct, WooProductVariation, WooOrder, WooCustomer } from "./types";
@@ -29,7 +29,7 @@ export const WooCommerceContext = createContext<{
   setIsConfigured: () => {}
 });
 
-export const WooCommerceProvider = ({ children }: { children: React.ReactNode }) => {
+export const WooCommerceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isConfigured, setIsConfigured] = useState<boolean>(!!getWooCommerceConfig());
   
   return (
