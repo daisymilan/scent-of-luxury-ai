@@ -18,7 +18,6 @@ const VoiceLogin: React.FC<VoiceLoginProps> = ({
 }) => {
   const {
     status,
-    isListening,
     transcript,
     errorMessage,
     attempts,

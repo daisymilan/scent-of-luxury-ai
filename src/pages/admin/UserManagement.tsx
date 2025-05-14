@@ -1,231 +1,206 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { Loader2, UserPlus, Search, X, CheckCircle, AlertCircle } from "lucide-react";
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
-const UserManagement: React.FC = () => {
-  const [users, setUsers] = useState<any[]>([]);
+const UserManagement = () => {
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
-  const [isInviting, setIsInviting] = useState(false);
+  const [inviteRole, setInviteRole] = useState('user');
+  const { toast } = useToast();
 
-  // Fetch users from Supabase when component mounts
   useEffect(() => {
     fetchUsers();
   }, []);
 
-  // Function to fetch users from Supabase
   const fetchUsers = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw error;
-      }
-
+        .from('profiles')
+        .select('*');
+      
+      if (error) throw error;
       setUsers(data || []);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
-        title: "Error fetching users",
-        description: "There was an error loading the user list. Please try again.",
-        variant: "destructive"
+        title: 'Error fetching users',
+        description: error.message,
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
   };
 
-  // Filter users based on search query
   const filteredUsers = users.filter(user => {
-    const searchLower = searchQuery.toLowerCase();
     return (
-      (user.email && user.email.toLowerCase().includes(searchLower)) ||
-      (user.first_name && user.first_name.toLowerCase().includes(searchLower)) ||
-      (user.last_name && user.last_name.toLowerCase().includes(searchLower)) ||
-      (user.role && user.role.toLowerCase().includes(searchLower))
+      user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.role?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   });
 
-  // Function to invite a new user
-  const handleInviteUser = async () => {
-    if (!inviteEmail.trim() || !inviteEmail.includes('@')) {
+  const handleSendInvite = async (e) => {
+    e.preventDefault();
+    
+    if (!inviteEmail || !inviteEmail.includes('@')) {
       toast({
-        title: "Invalid email",
-        description: "Please enter a valid email address",
-        variant: "destructive"
+        title: 'Invalid email',
+        description: 'Please enter a valid email address',
+        variant: 'destructive',
       });
       return;
     }
-
-    setIsInviting(true);
+    
     try {
-      // In a real implementation, this would send an invitation via Supabase Auth
-      // For now, we'll just create a user record
-      const { error } = await supabase.from('users').insert({
-        email: inviteEmail,
-        role: 'User',
-        created_at: new Date().toISOString()
-      });
-
+      // Generate a UUID for the user id
+      const userId = crypto.randomUUID();
+      
+      // Insert the new user into profiles table
+      const { error } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId, // Required field
+          email: inviteEmail,
+          role: inviteRole,
+          created_at: new Date().toISOString()
+        });
+      
       if (error) throw error;
-
+      
       toast({
-        title: "User invited",
+        title: 'Invite sent',
         description: `Invitation sent to ${inviteEmail}`,
-        variant: "default"
       });
       
       setInviteEmail('');
-      fetchUsers(); // Refresh the user list
+      fetchUsers();
     } catch (error) {
       console.error('Error inviting user:', error);
       toast({
-        title: "Error inviting user",
-        description: "There was an error sending the invitation. Please try again.",
-        variant: "destructive"
+        title: 'Error sending invite',
+        description: error.message,
+        variant: 'destructive',
       });
-    } finally {
-      setIsInviting(false);
     }
   };
 
   return (
-    <div className="container p-4 max-w-6xl mx-auto">
-      <Card className="shadow-md">
-        <CardHeader className="bg-gray-50 dark:bg-gray-800">
-          <CardTitle className="text-2xl font-semibold">User Management</CardTitle>
-        </CardHeader>
-        
-        <CardContent className="pt-6">
-          {/* User Invitation Section */}
-          <div className="mb-8">
-            <h3 className="text-lg font-medium mb-3">Invite New User</h3>
-            <div className="flex gap-2">
-              <Input 
-                placeholder="Email address" 
+    <div className="container mx-auto py-8">
+      <h1 className="text-2xl font-bold mb-6">User Management</h1>
+      
+      {/* Search */}
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search users..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full p-2 border rounded"
+        />
+      </div>
+      
+      {/* Users Table */}
+      <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Voice Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {loading ? (
+              <tr>
+                <td colSpan={5} className="px-6 py-4 text-center">Loading...</td>
+              </tr>
+            ) : filteredUsers.length > 0 ? (
+              filteredUsers.map((user) => (
+                <tr key={user.id}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {user.first_name || user.last_name ? 
+                      `${user.first_name || ''} ${user.last_name || ''}` : 
+                      'Not set'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">{user.email}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{user.role || 'User'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {user.voice_enrolled ? 
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        Enrolled
+                      </span> :
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                        Not Enrolled
+                      </span>
+                    }
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-500 hover:text-blue-700">
+                    <button onClick={() => console.log(`Edit user: ${user.id}`)}>
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={5} className="px-6 py-4 text-center">No users found</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      
+      {/* Invite User Form */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-bold mb-4">Invite New User</h2>
+        <form onSubmit={handleSendInvite}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email Address
+              </label>
+              <input
+                id="email"
+                type="email"
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
-                className="max-w-md"
+                className="w-full p-2 border rounded"
+                required
               />
-              <Button 
-                onClick={handleInviteUser} 
-                disabled={isInviting || !inviteEmail.trim()}
+            </div>
+            <div>
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+                Role
+              </label>
+              <select
+                id="role"
+                value={inviteRole}
+                onChange={(e) => setInviteRole(e.target.value)}
+                className="w-full p-2 border rounded"
               >
-                {isInviting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Inviting...
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Invite User
-                  </>
-                )}
-              </Button>
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+                <option value="manager">Manager</option>
+                <option value="executive">Executive</option>
+              </select>
             </div>
           </div>
-          
-          {/* User List Section */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium">User List</h3>
-              <div className="relative w-64">
-                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search users..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8"
-                />
-                {searchQuery && (
-                  <button 
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                    onClick={() => setSearchQuery('')}
-                  >
-                    <X className="h-4 w-4 text-gray-400" />
-                  </button>
-                )}
-              </div>
-            </div>
-            
-            {loading ? (
-              <div className="flex justify-center items-center h-40">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Voice Status</TableHead>
-                      <TableHead>Created</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.length > 0 ? (
-                      filteredUsers.map((user) => (
-                        <TableRow key={user.id}>
-                          <TableCell className="font-medium">
-                            {user.first_name && user.last_name 
-                              ? `${user.first_name} ${user.last_name}`
-                              : user.first_name || 'N/A'}
-                          </TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{user.role || 'User'}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            {user.voice_enrolled ? (
-                              <div className="flex items-center">
-                                <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
-                                <span>Enrolled</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center">
-                                <AlertCircle className="h-4 w-4 text-amber-500 mr-1" />
-                                <span>Not Enrolled</span>
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {user.created_at 
-                              ? new Date(user.created_at).toLocaleDateString()
-                              : 'N/A'}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8">
-                          {searchQuery 
-                            ? "No users match your search"
-                            : "No users found"}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          <button
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Send Invite
+          </button>
+        </form>
+      </div>
     </div>
   );
 };

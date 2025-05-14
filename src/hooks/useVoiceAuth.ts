@@ -3,7 +3,21 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { processVoiceAuth } from '../utils/voiceAuthApi';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from "@/integrations/supabase/client"; // Fixed import path
+import { supabase } from "@/integrations/supabase/client"; 
+
+// Define interface for hook options
+interface VoiceAuthOptions {
+  onStart?: () => void;
+  onResult?: (transcript: string) => void;
+  onEnd?: () => void;
+  onError?: (error: string) => void;
+  onAuthSuccess?: (result: any) => void;
+  onAuthFailed?: (error: string) => void;
+  passphrase?: string;
+  maxAttempts?: number;
+  mockMode?: boolean;
+  webhookUrl?: string;
+}
 
 // Check if browser supports the Web Speech API
 const browserSupportsSpeechRecognition = 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
@@ -15,14 +29,27 @@ const SpeechRecognition = browserSupportsSpeechRecognition ? window.SpeechRecogn
  * Custom hook for handling executive voice authentication
  * Integrated with AuthContext and Supabase
  */
-const useVoiceAuth = (options = {}) => {
-  const { onStart, onResult, onEnd, onError, onAuthSuccess, onAuthFailed, passphrase = 'scent of luxury', maxAttempts = 3 } = options;
+const useVoiceAuth = (options: VoiceAuthOptions = {}) => {
+  const { 
+    onStart, 
+    onResult, 
+    onEnd, 
+    onError, 
+    onAuthSuccess, 
+    onAuthFailed, 
+    passphrase = 'scent of luxury', 
+    maxAttempts = 3,
+    mockMode = false,
+    webhookUrl
+  } = options;
 
   // State variables
   const [isListening, setIsListening] = useState(false);
-  const [transcription, setTranscription] = useState('');
+  const [transcript, setTranscript] = useState('');
+  const [transcription, setTranscription] = useState(''); // For backwards compatibility
   const [authResult, setAuthResult] = useState(null);
   const [error, setError] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(''); // For backwards compatibility
   const [attempts, setAttempts] = useState(0);
   const [attemptsRemaining, setAttemptsRemaining] = useState(maxAttempts);
   const [isLocked, setIsLocked] = useState(false);
@@ -45,6 +72,7 @@ const useVoiceAuth = (options = {}) => {
     if (!browserSupportsSpeechRecognition) {
       console.warn('Web Speech API is not supported in this browser.');
       setError('Web Speech API is not supported in this browser.');
+      setErrorMessage('Web Speech API is not supported in this browser.');
       return;
     }
 
@@ -56,26 +84,28 @@ const useVoiceAuth = (options = {}) => {
     recognitionRef.current.onstart = () => {
       setIsListening(true);
       setStatus('listening');
-      onStart?.();
+      if (onStart) onStart();
     };
 
     recognitionRef.current.onresult = (event) => {
-      const newTranscription = event.results[0][0].transcript;
-      setTranscription(newTranscription);
-      onResult?.(newTranscription);
+      const newTranscript = event.results[0][0].transcript;
+      setTranscript(newTranscript);
+      setTranscription(newTranscript); // For backwards compatibility
+      if (onResult) onResult(newTranscript);
     };
 
     recognitionRef.current.onend = () => {
       setIsListening(false);
       setStatus('idle');
-      onEnd?.();
+      if (onEnd) onEnd();
     };
 
     recognitionRef.current.onerror = (event) => {
       setError(event.error);
+      setErrorMessage(event.error); // For backwards compatibility
       setStatus('error');
       setIsListening(false);
-      onError?.(event.error);
+      if (onError) onError(event.error);
     };
 
     return () => {
@@ -98,48 +128,74 @@ const useVoiceAuth = (options = {}) => {
 
   const startListening = useCallback(() => {
     if (recognitionRef.current) {
+      setTranscript('');
       setTranscription('');
       setError(null);
+      setErrorMessage('');
       setStatus('listening');
       try {
         recognitionRef.current.start();
       } catch (error) {
         console.error("Error starting speech recognition:", error);
         setError("Failed to start voice recognition. Please try again.");
+        setErrorMessage("Failed to start voice recognition. Please try again.");
         setStatus('error');
         setIsListening(false);
       }
     }
   }, []);
 
-  const stopListening = useCallback(async (userId?: string, webhookUrl?: string) => {
+  const stopListening = useCallback(() => {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
       setIsListening(false);
       setStatus('processing');
 
       try {
-        const result = await processVoiceAuth(new Blob(), userId, webhookUrl);
-
-        if (result.success) {
-          setAuthResult(result);
-          setStatus('success');
-          onAuthSuccess?.(result);
-        } else {
-          setError(result.error || 'Authentication failed');
-          setStatus('error');
-          setAttempts(prev => prev + 1);
-          onAuthFailed?.(result.error || 'Authentication failed');
+        // Mock successful authentication in dev mode
+        if (mockMode) {
+          setTimeout(() => {
+            setAuthResult({ success: true, user: { role: 'CEO' } });
+            setStatus('success');
+            if (onAuthSuccess) onAuthSuccess({ success: true, user: { role: 'CEO' } });
+          }, 1000);
+          return;
         }
+
+        // Here we would normally process the authentication
+        // If not mock mode, continue with normal flow
+        processVoiceAuth(new Blob())
+          .then(result => {
+            if (result.success) {
+              setAuthResult(result);
+              setStatus('success');
+              if (onAuthSuccess) onAuthSuccess(result);
+            } else {
+              setError(result.error || 'Authentication failed');
+              setErrorMessage(result.error || 'Authentication failed');
+              setStatus('error');
+              setAttempts(prev => prev + 1);
+              if (onAuthFailed) onAuthFailed(result.error || 'Authentication failed');
+            }
+          })
+          .catch(error => {
+            console.error("Voice authentication error:", error);
+            setError('Failed to process voice authentication');
+            setErrorMessage('Failed to process voice authentication');
+            setStatus('error');
+            setAttempts(prev => prev + 1);
+            if (onAuthFailed) onAuthFailed('Failed to process voice authentication');
+          });
       } catch (error) {
         console.error("Voice authentication error:", error);
         setError('Failed to process voice authentication');
+        setErrorMessage('Failed to process voice authentication');
         setStatus('error');
         setAttempts(prev => prev + 1);
-        onAuthFailed?.('Failed to process voice authentication');
+        if (onAuthFailed) onAuthFailed('Failed to process voice authentication');
       }
     }
-  }, [onAuthSuccess, onAuthFailed]);
+  }, [onAuthSuccess, onAuthFailed, mockMode]);
 
   const resetAuthResult = useCallback(() => {
     setAuthResult(null);
@@ -148,28 +204,26 @@ const useVoiceAuth = (options = {}) => {
 
   const reset = useCallback(() => {
     setStatus('idle');
+    setTranscript('');
     setTranscription('');
     setError(null);
+    setErrorMessage('');
     setAuthResult(null);
   }, []);
-
-  // For compatibility with components using different property names
-  const transcript = transcription;
-  const errorMessage = error;
   
   return {
     isListening,
-    transcription,
+    transcript,
+    transcription, // For backwards compatibility
     authResult,
     error,
+    errorMessage, // For backwards compatibility
     startListening,
     stopListening,
     resetAuthResult,
     isSupported: !!SpeechRecognition,
-    // Additional properties for compatibility with existing components
+    // Additional properties for compatibility
     status,
-    transcript,
-    errorMessage,
     attempts,
     attemptsRemaining,
     isLocked,
