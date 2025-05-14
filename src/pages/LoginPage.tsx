@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
@@ -57,25 +58,35 @@ const LoginPage: React.FC = () => {
   const onSubmit = async (data: FormValues) => {
     if (isSubmitting) return;
     
-    setIsSubmitting(true);
-    setCurrentEmail(data.email);
-    setEmailNotConfirmed(false);
-    
     try {
+      setIsSubmitting(true);
+      setCurrentEmail(data.email);
+      setEmailNotConfirmed(false);
+      
       console.log("Attempting login with:", data.email); 
       
       const success = await login(data.email, data.password);
       
       if (!success) {
         // Check specifically for email confirmation errors
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data: signInData, error } = await supabase.auth.signInWithPassword({
           email: data.email,
           password: data.password,
         });
         
         if (error && error.message.includes('Email not confirmed')) {
           setEmailNotConfirmed(true);
+        } else if (!signInData.session) {
+          toast({
+            title: "Login failed",
+            description: error ? error.message : "Invalid email or password",
+            variant: "destructive",
+            duration: 5000,
+          });
         }
+      } else {
+        // Successful login
+        navigate('/');
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -134,7 +145,7 @@ const LoginPage: React.FC = () => {
     navigate('/forgot-password');
   };
 
-  const handleTestAccountClick = async (email: string) => {
+  const handleTestAccountClick = (email: string) => {
     form.setValue('email', email);
     form.setValue('password', 'password123');
   };
@@ -234,6 +245,7 @@ const LoginPage: React.FC = () => {
                                   placeholder="••••••••" 
                                   className="pl-10 py-6 text-base bg-gray-800 border-gray-700 text-gray-100" 
                                   {...field} 
+                                  autoComplete="current-password"
                                 />
                               </FormControl>
                               <button 

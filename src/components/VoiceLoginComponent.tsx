@@ -1,202 +1,130 @@
 
-// src/components/VoiceLoginComponent.tsx
-
 import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
+import VoiceRecording from '@/components/voice-login/VoiceRecording';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { processVoiceAuth } from '@/utils/voiceAuthApi';
-import VoiceRecording from '@/components/voice-login/VoiceRecording';
-import useVoiceAuth from '@/hooks/useVoiceAuth';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Info, Mic, Shield } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
-interface VoiceLoginComponentProps {
-  webhookUrl?: string;
-  onLoginSuccess?: () => void;
-}
-
-const VoiceLoginComponent: React.FC<VoiceLoginComponentProps> = ({ 
-  webhookUrl,
-  onLoginSuccess 
-}) => {
+const VoiceLoginComponent: React.FC = () => {
+  const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('');
-  const { login } = useAuth();
+  const [status, setStatus] = useState<'idle' | 'recording' | 'processing' | 'success' | 'error'>('idle');
+  const { authenticateWithVoice } = useAuth();
   const { toast } = useToast();
-
-  // Use our voice auth hook for the passphrase recognition
-  const voiceAuth = useVoiceAuth({
-    passphrase: 'scent of luxury',
-    mockMode: true,
-    webhookUrl
-  });
-
-  // Handle login success - redirect or callback
-  useEffect(() => {
-    if (voiceAuth.status === 'success') {
-      if (onLoginSuccess) {
-        onLoginSuccess();
-      }
-    }
-  }, [voiceAuth.status, onLoginSuccess]);
-
-  // Process the voice recording
+  const navigate = useNavigate();
+  
+  const startRecording = () => {
+    setIsRecording(true);
+    setStatus('recording');
+  };
+  
   const handleProcessVoice = async (audioBlob: Blob) => {
     try {
       setIsProcessing(true);
-      setStatusMessage('Processing executive voice authentication...');
+      setStatus('processing');
       
-      console.log('Starting voice processing with audio size:', audioBlob.size);
+      // Convert blob to base64 for processing
+      const reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
       
-      // Call our voice auth API utility with the configured webhook
-      console.log('Sending voice auth request to webhook:', webhookUrl || 'default');
-      
-      const authResponse = await processVoiceAuth(audioBlob, undefined, webhookUrl);
-      console.log('Voice auth response received:', authResponse);
-      
-      if (authResponse.success && authResponse.user) {
-        setStatusMessage(`Authentication successful: ${authResponse.user.role}`);
-        toast({
-          title: 'Authentication Successful',
-          description: `Welcome, ${authResponse.user.role}`,
-        });
-        
-        // Find the email for the recognized role
-        const roles = [
-          { email: 'ceo@scentluxury.ai', role: 'CEO' },
-          { email: 'cco@scentluxury.ai', role: 'CCO' },
-          { email: 'director@scentluxury.ai', role: 'Commercial Director' },
-          { email: 'regional@scentluxury.ai', role: 'Regional Manager' },
-          { email: 'marketing@scentluxury.ai', role: 'Marketing Manager' }
-        ];
-        
-        const matchedRole = roles.find(r => 
-          r.role.toLowerCase() === authResponse.user?.role.toLowerCase()
-        );
-        
-        if (matchedRole) {
-          console.log('Executive role identified:', matchedRole.role);
-          // Login with the recognized role credentials
-          await login(matchedRole.email, 'password123');
+      reader.onloadend = async () => {
+        try {
+          // Extract base64 content
+          const base64Audio = reader.result?.toString().split(',')[1];
           
+          if (!base64Audio) {
+            throw new Error('Failed to encode audio');
+          }
+          
+          // In a real app, this would call a voice recognition API
+          // For this demo, we'll simulate a successful authentication with the test account
+          const result = await authenticateWithVoice({ audio: base64Audio });
+          
+          if (result) {
+            // Log in the test account for demo purposes
+            const email = "admin@minny.com"; // Default test account
+            const password = "password123";
+            
+            // Use the login function from authContext
+            const { data, error } = await supabase.auth.signInWithPassword({
+              email,
+              password,
+            });
+            
+            if (error) {
+              console.error("Login error:", error);
+              throw error;
+            }
+            
+            if (data.session) {
+              setStatus('success');
+              toast({
+                title: "Voice authentication successful",
+                description: "Welcome back!",
+                duration: 3000,
+              });
+              // Redirect to dashboard after short delay
+              setTimeout(() => navigate('/'), 1000);
+            } else {
+              throw new Error("Session not created after login");
+            }
+          } else {
+            throw new Error("Voice authentication failed");
+          }
+        } catch (error) {
+          console.error("Voice processing error:", error);
+          setStatus('error');
           toast({
-            title: 'Access Granted',
-            description: `Welcome to the executive dashboard, ${authResponse.user.role}`,
+            title: "Voice login failed",
+            description: error instanceof Error ? error.message : "Could not authenticate voice",
+            variant: "destructive",
+            duration: 5000,
           });
-        } else {
-          console.error('Unrecognized executive role:', authResponse.user.role);
-          setStatusMessage('Unrecognized executive role. Please try again or contact IT support.');
-          throw new Error(`Unrecognized role: ${authResponse.user.role}`);
+        } finally {
+          setIsProcessing(false);
+          setIsRecording(false);
         }
-      } else {
-        console.error('Voice authentication failed:', authResponse.message || 'Unknown error');
-        setStatusMessage('Executive voice authentication failed. Please try again.');
-        throw new Error(authResponse.message || 'Voice authentication failed');
-      }
+      };
     } catch (error) {
-      console.error('Voice processing error:', error);
-      setStatusMessage('Voice authentication failed. Please try again.');
-      toast({
-        title: 'Authentication Failed',
-        description: 'Could not verify your executive voice profile. Please try again or use your password.',
-        variant: 'destructive',
-      });
-    } finally {
+      console.error("Voice processing error:", error);
+      setStatus('error');
       setIsProcessing(false);
+      setIsRecording(false);
+      toast({
+        title: "Voice login failed",
+        description: error instanceof Error ? error.message : "Could not process voice recording",
+        variant: "destructive",
+        duration: 5000,
+      });
     }
   };
-
-  // Or use direct voice authentication with passphrase
-  const handleDirectAuthentication = () => {
-    voiceAuth.startListening();
-  };
-
+  
   return (
-    <div className="flex flex-col space-y-6">
-      {/* Information about voice login */}
-      <Alert variant="default" className="bg-slate-50 border-slate-200">
-        <Shield className="h-4 w-4 text-slate-500" />
-        <AlertDescription className="text-sm text-slate-700">
-          Use your executive voice authentication for secure dashboard access.
-        </AlertDescription>
-      </Alert>
-      
-      {/* Choose between passphrase recognition or manual recording */}
-      <div className="flex flex-col space-y-4">
-        {/* Option 1: Record & Analyze */}
-        <VoiceRecording 
-          onProcessVoice={handleProcessVoice}
-          isProcessing={isProcessing}
-          buttonText="Start Voice Authentication"
-          messageText="Record your voice for secure executive access"
-        />
-        
-        {/* OR divider */}
-        <div className="flex items-center my-2">
-          <div className="flex-grow border-t border-gray-200"></div>
-          <span className="mx-4 text-gray-500 text-sm">OR</span>
-          <div className="flex-grow border-t border-gray-200"></div>
-        </div>
-        
-        {/* Option 2: Say Passphrase */}
-        {voiceAuth.status === 'idle' && (
-          <Button 
-            onClick={handleDirectAuthentication}
-            variant="outline" 
-            className="w-full border-dashed border-slate-300 hover:border-slate-400 flex items-center justify-center py-6"
-          >
-            <Mic className="mr-2 h-4 w-4 text-slate-500" />
-            <span>Authenticate with Company Passphrase</span>
-          </Button>
-        )}
-        
-        {/* Show status when using passphrase method */}
-        {voiceAuth.status !== 'idle' && (
-          <div className={`p-4 rounded-md text-center ${
-            voiceAuth.status === 'listening' ? 'bg-blue-50 text-blue-700' :
-            voiceAuth.status === 'processing' ? 'bg-yellow-50 text-yellow-700' :
-            voiceAuth.status === 'success' ? 'bg-green-50 text-green-700' :
-            'bg-red-50 text-red-700'
-          }`}>
-            {voiceAuth.status === 'listening' && (
-              <p>Listening... Please say the company passphrase</p>
-            )}
-            {voiceAuth.status === 'processing' && (
-              <p>Processing executive authentication...</p>
-            )}
-            {voiceAuth.status === 'success' && (
-              <p>Executive authentication successful!</p>
-            )}
-            {voiceAuth.status === 'error' && (
-              <div>
-                <p>{voiceAuth.errorMessage}</p>
-                {!voiceAuth.isLocked && (
-                  <Button 
-                    onClick={voiceAuth.reset} 
-                    variant="outline"
-                    className="mt-2 text-xs"
-                  >
-                    Try Again
-                  </Button>
-                )}
-              </div>
-            )}
-            
-            {voiceAuth.transcript && voiceAuth.status === 'listening' && (
-              <div className="mt-2 p-2 bg-white rounded text-gray-700 text-sm">
-                <p>Heard: {voiceAuth.transcript}</p>
-              </div>
-            )}
+    <div className="space-y-6">
+      {!isRecording ? (
+        <div className="text-center space-y-6">
+          <div className="mb-4">
+            <p className="text-gray-300 mb-6">
+              Authenticate using your voice. Speak clearly after pressing the button below.
+            </p>
+            <Button 
+              onClick={startRecording}
+              className="w-full py-6 font-light bg-white text-black hover:bg-gray-200"
+            >
+              Start Voice Authentication
+            </Button>
           </div>
-        )}
-      </div>
-      
-      {/* Status message */}
-      {statusMessage && (
-        <div className="text-center p-2 bg-gray-50 rounded-md">
-          <p className="text-sm">{statusMessage}</p>
+          <div className="text-xs text-gray-400 mt-4">
+            <p>For demo purposes, voice login will authenticate you as the admin@minny.com test account.</p>
+          </div>
         </div>
+      ) : (
+        <VoiceRecording 
+          onComplete={handleProcessVoice}
+          isProcessing={isProcessing}
+        />
       )}
     </div>
   );

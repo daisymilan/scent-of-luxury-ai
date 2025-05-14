@@ -108,6 +108,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     
     checkAuthStatus();
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session) {
+          setIsAuthenticated(true);
+          setCurrentUser(session.user);
+          
+          // Get user role from the users table
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (userError) {
+            console.error('Error fetching user data:', userError);
+            setUserRole('User' as UserRole); // Default role
+          } else {
+            setUserRole((userData?.role as UserRole) || 'User' as UserRole);
+          }
+        } else {
+          setIsAuthenticated(false);
+          setCurrentUser(null);
+          setUserRole(null);
+        }
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   // Login function
@@ -121,31 +153,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
       
       // Set authenticated state
-      setIsAuthenticated(true);
-      setCurrentUser(data.user);
+      setIsAuthenticated(!!data.session);
+      if (data.user) {
+        setCurrentUser(data.user);
       
-      // Get user role from users table
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', data.user.id)
-        .single();
+        // Get user role from users table
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', data.user.id)
+          .single();
       
-      if (userError) {
-        console.error('Error fetching user data:', userError);
-        setUserRole('User' as UserRole); // Default role
-      } else {
-        setUserRole((userData?.role as UserRole) || 'User' as UserRole);
+        if (userError) {
+          console.error('Error fetching user data:', userError);
+          setUserRole('User' as UserRole); // Default role
+        } else {
+          setUserRole((userData?.role as UserRole) || 'User' as UserRole);
+        }
       }
       
-      return true;
+      // If we have a session, navigate to the dashboard
+      if (data.session) {
+        navigate('/');
+        return true;
+      }
+      
+      return false;
     } catch (error) {
       console.error('Login error:', error);
-      toast({
-        title: 'Login failed',
-        description: error instanceof Error ? error.message : 'Invalid email or password',
-        variant: 'destructive',
-      });
       return false;
     }
   };
@@ -165,6 +200,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAuthenticated(true);
         setCurrentUser(data.user);
         setUserRole('User' as UserRole); // Default role for new users
+        navigate('/');
       }
       
       return true;
