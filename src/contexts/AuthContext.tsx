@@ -1,275 +1,228 @@
-
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
-// Define the UserRole type and export it
-export type UserRole = 'CEO' | 'CCO' | 'Commercial Director' | 'Regional Manager' | 'Marketing Manager' | 
-                      'Social Media Manager' | 'Customer Support' | string | null;
+// Define user roles
+export enum UserRole {
+  CEO = 'CEO',
+  CCO = 'CCO',
+  CommercialDirector = 'Commercial Director',
+  RegionalManager = 'Regional Manager',
+  MarketingManager = 'Marketing Manager',
+  SocialMediaManager = 'SocialMediaManager',
+  CustomerSupport = 'CustomerSupport',
+  User = 'User'
+}
 
-interface AuthContextType {
-  user: any;
-  currentUser: any; // Added for ProtectedRoute
+// Define authentication context type
+export interface AuthContextType {
   isAuthenticated: boolean;
-  isLoading: boolean;
-  isVoiceAuthEnabled: boolean;
-  isVoiceAuthenticated: boolean; // Added for ProtectedRoute
-  isVoiceEnrolled: boolean; // Added for voice auth checks
-  role: string | null;
-  userRole: UserRole; // Added for ProtectedRoute
   login: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
   signup: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string) => Promise<boolean>; // Alias for signup
-  logout: () => Promise<void>;
-  enableVoiceAuth: () => void;
-  disableVoiceAuth: () => void;
-  fetchSession: () => Promise<void>;
-  authenticateWithVoice: (transcript: string) => Promise<boolean>; // Added for voice auth
-  hasPermission: (requiredRole: UserRole | UserRole[]) => boolean; // Added for SystemSettingsPage
+  currentUser: any | null;
+  userRole: UserRole | null;
+  isVoiceAuthenticated: boolean;
+  isVoiceEnrolled: boolean;
+  authenticateWithVoice: (voiceData: any) => Promise<boolean>;
+  hasPermission: (requiredRole: UserRole | UserRole[]) => boolean;
+  loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Create the context with default values
+const AuthContext = createContext<AuthContextType>({
+  isAuthenticated: false,
+  login: async () => false,
+  logout: async () => {},
+  signup: async () => false,
+  register: async () => false,
+  currentUser: null,
+  userRole: null,
+  isVoiceAuthenticated: false,
+  isVoiceEnrolled: false,
+  authenticateWithVoice: async () => false,
+  hasPermission: () => false,
+  loading: true
+});
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<any>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isVoiceAuthEnabled, setIsVoiceAuthEnabled] = useState<boolean>(false);
-  const [isVoiceAuthenticated, setIsVoiceAuthenticated] = useState<boolean>(false);
-  const [isVoiceEnrolled, setIsVoiceEnrolled] = useState<boolean>(false);
-  const [role, setRole] = useState<string | null>(null);
+// Auth provider component
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [isVoiceAuthenticated, setIsVoiceAuthenticated] = useState(false);
+  const [isVoiceEnrolled, setIsVoiceEnrolled] = useState(false);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Check authentication status on mount
   useEffect(() => {
-    fetchSession();
+    const checkAuthStatus = async () => {
+      setLoading(true);
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Error fetching session:', error);
+      }
+      
+      if (session) {
+        setIsAuthenticated(true);
+        setCurrentUser(session.user);
+        
+        // Fetch user details including role from the profiles table
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (profileError) {
+          console.error('Error fetching user profile:', profileError);
+          setUserRole(UserRole.User); // Default role
+        } else {
+          setUserRole(profileData?.role || UserRole.User);
+        }
+      } else {
+        setIsAuthenticated(false);
+        setCurrentUser(null);
+        setUserRole(null);
+      }
+      setLoading(false);
+    };
     
-    // Check if voice auth is enabled from localStorage
-    const voiceAuthEnabled = localStorage.getItem('voiceAuthEnabled') === 'true';
-    setIsVoiceAuthEnabled(voiceAuthEnabled);
-    
-    // For demo purposes, simulate voice enrollment if voice auth is enabled
-    if (voiceAuthEnabled) {
-      setIsVoiceEnrolled(true);
-    }
-  }, []);
+    checkAuthStatus();
+  }, [navigate]);
 
+  // Login function
   const login = async (email: string, password: string): Promise<boolean> => {
-    setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
+        email,
+        password,
       });
-
-      if (error) {
-        console.error('Login error:', error.message);
-        toast({
-          title: 'Login failed',
-          description: error.message,
-          variant: 'destructive',
-        });
-        return false;
-      } else {
-        console.log('Login successful:', data.user);
-        setUser(data.user);
-        setIsAuthenticated(true);
-        setRole(data.user?.role || null);
-        navigate('/');
-        toast({
-          title: 'Login successful',
-          description: 'You have successfully logged in.',
-        });
-        return true;
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const signup = async (email: string, password: string): Promise<boolean> => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email: email,
-        password: password,
-      });
-
-      if (error) {
-        console.error('Signup error:', error.message);
-        toast({
-          title: 'Signup failed',
-          description: error.message,
-          variant: 'destructive',
-        });
-        return false;
-      } else {
-        console.log('Signup successful:', data.user);
-        setUser(data.user);
-        setIsAuthenticated(true);
-        setRole(data.user?.role || null);
-        navigate('/');
-        toast({
-          title: 'Signup successful',
-          description: 'Please check your email to verify your account.',
-        });
-        return true;
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Alias for signup
-  const register = signup;
-
-  const logout = async () => {
-    setIsLoading(true);
-    try {
-      const { error } = await supabase.auth.signOut();
-
-      if (error) {
-        console.error('Logout error:', error.message);
-        toast({
-          title: 'Logout failed',
-          description: error.message,
-          variant: 'destructive',
-        });
-      } else {
-        console.log('Logout successful');
-        setUser(null);
-        setIsAuthenticated(false);
-        setRole(null);
-        setIsVoiceAuthenticated(false);
-        navigate('/login');
-        toast({
-          title: 'Logout successful',
-          description: 'You have successfully logged out.',
-        });
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const enableVoiceAuth = () => {
-    setIsVoiceAuthEnabled(true);
-    setIsVoiceEnrolled(true); // For demo purposes
-    localStorage.setItem('voiceAuthEnabled', 'true');
-    toast({
-      title: 'Voice Authentication Enabled',
-      description: 'You have enabled voice authentication.',
-    });
-  };
-
-  const disableVoiceAuth = () => {
-    setIsVoiceAuthEnabled(false);
-    setIsVoiceAuthenticated(false);
-    localStorage.removeItem('voiceAuthEnabled');
-    toast({
-      title: 'Voice Authentication Disabled',
-      description: 'You have disabled voice authentication.',
-    });
-  };
-
-  const fetchSession = async () => {
-    setIsLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session) {
-        console.log('Session found:', session.user);
-        setUser(session.user);
-        setIsAuthenticated(true);
-        setRole(session.user.app_metadata.role || null);
-      } else {
-        console.log('No session found');
-        setUser(null);
-        setIsAuthenticated(false);
-        setRole(null);
-      }
-    } catch (error) {
-      console.error('Error fetching session:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Add voice authentication function
-  const authenticateWithVoice = async (transcript: string): Promise<boolean> => {
-    console.log('Authenticating with voice:', transcript);
-    
-    // Mock implementation - in a real app, this would call a voice authentication service
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // For demo, consider authentication successful
-      setIsVoiceAuthenticated(true);
-      toast({
-        title: 'Voice Authentication Successful',
-        description: 'Voice identity confirmed.',
-      });
+      if (error) throw error;
+      
+      // Set authenticated state
+      setIsAuthenticated(true);
+      setCurrentUser(data.user);
+      
+      // Get user role from metadata or set default
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+      
+      if (profileError) {
+        console.error('Error fetching user profile:', profileError);
+        setUserRole(UserRole.User); // Default role
+      } else {
+        setUserRole(profileData?.role || UserRole.User);
+      }
+      
       return true;
     } catch (error) {
-      console.error('Voice authentication error:', error);
+      console.error('Login error:', error);
       toast({
-        title: 'Voice Authentication Failed',
-        description: 'Could not verify voice identity.',
+        title: 'Login failed',
+        description: error instanceof Error ? error.message : 'Invalid email or password',
         variant: 'destructive',
       });
       return false;
     }
   };
 
-  // Add hasPermission function
-  const hasPermission = (requiredRole: UserRole | UserRole[]): boolean => {
-    if (!role) return false;
-    
-    if (Array.isArray(requiredRole)) {
-      return requiredRole.includes(role as UserRole);
+  // Signup function
+  const signup = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      
+      if (error) throw error;
+      
+      // Success! Set user if auto-confirm is enabled
+      if (data.session) {
+        setIsAuthenticated(true);
+        setCurrentUser(data.user);
+        setUserRole(UserRole.User); // Default role for new users
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Signup error:', error);
+      toast({
+        title: 'Signup failed',
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        variant: 'destructive',
+      });
+      return false;
     }
-    
-    return role === requiredRole;
   };
 
-  const value: AuthContextType = {
-    user,
-    currentUser: user, // Map user to currentUser for compatibility
+  // Logout function
+  const logout = async (): Promise<void> => {
+    try {
+      await supabase.auth.signOut();
+      setIsAuthenticated(false);
+      setCurrentUser(null);
+      setUserRole(null);
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({
+        title: 'Logout failed',
+        description: error instanceof Error ? error.message : 'Failed to logout',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Voice authentication function
+  const authenticateWithVoice = async (voiceData: any): Promise<boolean> => {
+    // Placeholder implementation
+    console.log('Voice authentication triggered with data:', voiceData);
+    setIsVoiceAuthenticated(true);
+    return true; // Return true for now as placeholder
+  };
+
+  // Permission checking function
+  const hasPermission = (requiredRole: UserRole | UserRole[]): boolean => {
+    if (!isAuthenticated || !userRole) return false;
+    
+    if (Array.isArray(requiredRole)) {
+      return requiredRole.includes(userRole);
+    }
+    
+    return userRole === requiredRole;
+  };
+
+  const contextValue: AuthContextType = {
     isAuthenticated,
-    isLoading,
-    isVoiceAuthEnabled,
+    login,
+    logout,
+    signup,
+    register: signup, // Alias register to signup for compatibility
+    currentUser,
+    userRole,
     isVoiceAuthenticated,
     isVoiceEnrolled,
-    role,
-    userRole: role as UserRole, // Map role to userRole for compatibility
-    login,
-    signup,
-    register, // Alias for signup
-    logout,
-    enableVoiceAuth,
-    disableVoiceAuth,
-    fetchSession,
     authenticateWithVoice,
     hasPermission,
+    loading
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+// Custom hook to use auth context
+export const useAuth = () => useContext(AuthContext);

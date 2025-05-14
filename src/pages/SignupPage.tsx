@@ -1,5 +1,6 @@
+
 // Import statements
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserRole } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
@@ -30,12 +31,12 @@ type FormValues = z.infer<typeof formSchema>;
 const SignupPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { register } = useAuth();
+  const { signup } = useAuth(); // Using signup instead of register
   const { toast } = useToast();
   const navigate = useNavigate();
   
   // Check if already logged in
-  useState(() => {
+  useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         navigate('/');
@@ -56,8 +57,15 @@ const SignupPage: React.FC = () => {
     
     setIsSubmitting(true);
     try {
-      await register(data.email, data.password);
-      // Success handled by the register function which redirects
+      const success = await signup(data.email, data.password);
+      if (success) {
+        // Success handling
+        toast({
+          title: "Signup successful",
+          description: "Your account has been created. Please check your email for verification.",
+        });
+        navigate('/login');
+      }
     } catch (error) {
       console.error("Signup error:", error);
       toast({
