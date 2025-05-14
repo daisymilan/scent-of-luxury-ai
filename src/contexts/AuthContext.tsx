@@ -69,7 +69,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isVoiceAuthenticated, setIsVoiceAuthenticated] = useState(false);
   const [isVoiceEnrolled, setIsVoiceEnrolled] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [currentSession, setCurrentSession] = useState<any | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -77,8 +76,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        setLoading(true);
-        
         // Set up auth state listener first to avoid missing events
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, session) => {
@@ -87,7 +84,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (session) {
               setIsAuthenticated(true);
               setCurrentUser(session.user);
-              setCurrentSession(session);
               
               // Get user role from the users table
               const { data: userData, error: userError } = await supabase
@@ -108,8 +104,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setIsAuthenticated(false);
               setCurrentUser(null);
               setUserRole(null);
-              setCurrentSession(null);
             }
+            
+            // Always update loading state when auth state changes
+            setLoading(false);
           }
         );
         
@@ -121,11 +119,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsAuthenticated(false);
           setCurrentUser(null);
           setUserRole(null);
-          setCurrentSession(null);
+          setLoading(false);
         } else if (session) {
           setIsAuthenticated(true);
           setCurrentUser(session.user);
-          setCurrentSession(session);
           
           // Fetch user details including role from the users table
           const { data: userData, error: userError } = await supabase
@@ -142,6 +139,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else {
             setUserRole((userData?.role as UserRole) || 'User' as UserRole);
           }
+          setLoading(false);
+        } else {
+          setLoading(false);
         }
         
         return () => {
@@ -152,8 +152,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAuthenticated(false);
         setCurrentUser(null);
         setUserRole(null);
-        setCurrentSession(null);
-      } finally {
         setLoading(false);
       }
     };
@@ -180,37 +178,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           variant: "destructive",
           duration: 5000,
         });
+        setLoading(false);
         return false;
       }
       
-      console.log("Login response:", data.session ? "Session exists" : "No session");
+      console.log("Login successful, session:", data.session ? "exists" : "none");
       
-      // If we have a session, update state and navigate
+      // If we have a session, auth state listener will handle the state update
       if (data.session) {
         setIsAuthenticated(true);
         setCurrentUser(data.user);
-        setCurrentSession(data.session);
         
-        // Get user role from users table
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', data.user?.id)
-          .single();
-        
-        if (userError) {
-          console.error('Error fetching user data:', userError);
-          // Try to get role from user metadata as fallback
-          const role = data.user?.user_metadata?.role || 'User';
-          setUserRole(role as UserRole);
-        } else {
-          setUserRole((userData?.role as UserRole) || 'User' as UserRole);
+        // Direct role fetch to avoid race conditions
+        try {
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', data.user?.id)
+            .single();
+          
+          if (!userError && userData) {
+            setUserRole((userData.role as UserRole) || 'User');
+          } else {
+            const role = data.user?.user_metadata?.role || 'User';
+            setUserRole(role as UserRole);
+          }
+        } catch (roleError) {
+          console.error('Error setting role:', roleError);
+          setUserRole('User');
         }
         
-        navigate('/');
+        // Navigate after state is updated
+        setTimeout(() => {
+          navigate('/');
+          setLoading(false);
+        }, 100);
+        
         return true;
       }
       
+      setLoading(false);
       return false;
     } catch (error) {
       console.error('Login error:', error);
@@ -220,9 +227,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         variant: 'destructive',
         duration: 5000,
       });
-      return false;
-    } finally {
       setLoading(false);
+      return false;
     }
   };
 
@@ -230,6 +236,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signup = async (email: string, password: string, role: UserRole = 'User'): Promise<boolean> => {
     try {
       console.log("Signup function called with email:", email, "role:", role);
+      setLoading(true);
       
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -249,6 +256,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           variant: 'destructive',
           duration: 5000,
         });
+        setLoading(false);
         return false;
       }
       
@@ -258,7 +266,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.session) {
         setIsAuthenticated(true);
         setCurrentUser(data.user);
-        setCurrentSession(data.session);
         setUserRole(role);
         
         // Create or update the user record in public.users table
@@ -283,6 +290,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Navigate to the dashboard
         console.log("Auto-confirming and redirecting to dashboard");
         navigate('/');
+        setLoading(false);
         return true;
       }
       
@@ -294,9 +302,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           description: "Please check your email for verification instructions.",
           duration: 5000,
         });
+        setLoading(false);
         return true;
       }
       
+      setLoading(false);
       return !!data.user;
     } catch (error) {
       console.error('Signup error:', error);
@@ -306,6 +316,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         variant: 'destructive',
         duration: 5000,
       });
+      setLoading(false);
       return false;
     }
   };
@@ -313,11 +324,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Logout function
   const logout = async (): Promise<void> => {
     try {
+      setLoading(true);
       await supabase.auth.signOut();
       setIsAuthenticated(false);
       setCurrentUser(null);
       setUserRole(null);
-      setCurrentSession(null);
       navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);
@@ -327,6 +338,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         variant: 'destructive',
         duration: 5000,
       });
+    } finally {
+      setLoading(false);
     }
   };
 
