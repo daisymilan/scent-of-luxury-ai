@@ -11,7 +11,7 @@ export interface VoiceAuthResponse {
     role: UserRole;
   };
   confidence?: number;
-  error?: string; // Add the error property to fix TypeScript errors
+  error?: string; // Add the error property explicitly
 }
 
 interface ExecutiveRole {

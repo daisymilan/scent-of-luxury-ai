@@ -1,10 +1,9 @@
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Auth, SupabaseClient, useSupabaseClient } from '@supabase/auth-helpers-react';
-import { Database } from '@/types/supabase';
+import supabase from '../supabase'; // Use the existing supabase client
 
-export type User = Database['public']['Tables']['users']['Row'];
-export type UserRole = 'CEO' | 'CCO' | 'Commercial Director' | 'Regional Manager' | 'Marketing Manager' | 'User';
+export type UserRole = 'CEO' | 'CCO' | 'Commercial Director' | 'Regional Manager' | 'Marketing Manager' | 'User' | 'Social Media Manager' | 'Customer Support';
 
 // Define the structure of user metadata
 interface UserMetadata {
@@ -20,11 +19,32 @@ interface UserMetadata {
   fragranceStrength?: string;
 }
 
+// Define the User type since we don't have @/types/supabase
+export interface User {
+  id: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  avatar_url?: string;
+  role?: UserRole;
+  voice_enrolled?: boolean;
+  voice_authenticated?: boolean;
+  last_voice_auth?: string;
+  fragrancePreference?: string;
+  fragranceStyle?: string;
+  fragranceStrength?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 // The interface for the AuthContext
 export interface AuthContextType {
   currentUser: User | null;
+  user: User | null; // Alias for currentUser for backward compatibility
   isAuthenticated: boolean;
   isLoading: boolean;
+  userRole: UserRole | null; // Add userRole to match what components expect
+  isVoiceAuthenticated: boolean; // Add isVoiceAuthenticated
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string, userData?: Record<string, any>) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -32,6 +52,8 @@ export interface AuthContextType {
   isVoiceEnrolled: boolean;
   authenticateWithVoice: (voiceInput: string) => Promise<boolean>;
   resetVoiceAuth: () => void;
+  hasPermission: (requiredRole: string | string[]) => boolean; // Add hasPermission method
+  enrollVoice?: (data: any) => Promise<boolean>; // Add enrollVoice
 }
 
 // Create the AuthContext
@@ -47,7 +69,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isVoiceEnrolled, setIsVoiceEnrolled] = useState<boolean>(false);
-  const supabase = useSupabaseClient<Database>();
+  const [isVoiceAuthenticated, setIsVoiceAuthenticated] = useState<boolean>(false);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const navigate = useNavigate();
 
   // Load user data on mount
@@ -63,6 +86,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } else {
           setIsAuthenticated(false);
           setCurrentUser(null);
+          setUserRole(null);
         }
       } catch (error) {
         console.error('Error loading session:', error);
@@ -86,13 +110,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         setIsAuthenticated(false);
         setCurrentUser(null);
+        setUserRole(null);
       }
     });
 
     return () => {
       subscription?.unsubscribe();
     };
-  }, [supabase]);
+  }, []);
 
   // Load current user data
   const loadCurrentUser = async (userId: string) => {
@@ -109,7 +134,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       setCurrentUser(user);
+      setUserRole(user?.role as UserRole || null);
       setIsVoiceEnrolled(user?.voice_enrolled || false);
+      setIsVoiceAuthenticated(user?.voice_authenticated || false);
     } catch (error) {
       console.error('Error loading current user:', error);
     }
@@ -210,6 +237,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await supabase.auth.signOut();
       setIsAuthenticated(false);
       setCurrentUser(null);
+      setUserRole(null);
       navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);
@@ -254,6 +282,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         last_voice_auth: new Date().toISOString(),
       });
 
+      setIsVoiceAuthenticated(true);
       return true;
     } catch (error) {
       console.error('Voice authentication error:', error);
@@ -263,26 +292,62 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Enroll voice
+  const enrollVoice = async (data: any): Promise<boolean> => {
+    try {
+      // Simulate voice enrollment
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      
+      // Update user metadata
+      await updateUserMetadata({
+        voice_enrolled: true
+      });
+      
+      setIsVoiceEnrolled(true);
+      return true;
+    } catch (error) {
+      console.error('Voice enrollment error:', error);
+      return false;
+    }
+  };
+
   // Reset voice authentication status
   const resetVoiceAuth = () => {
     updateUserMetadata({
       voice_authenticated: false,
       last_voice_auth: null,
     });
+    setIsVoiceAuthenticated(false);
+  };
+
+  // Check if user has a required role
+  const hasPermission = (requiredRole: string | string[]): boolean => {
+    if (!userRole) return false;
+    
+    if (Array.isArray(requiredRole)) {
+      return requiredRole.includes(userRole);
+    }
+    
+    return userRole === requiredRole;
   };
 
   // Provide the auth context value
   const value: AuthContextType = {
     currentUser,
+    user: currentUser, // Alias for backward compatibility
+    userRole,
     isAuthenticated,
     isLoading,
+    isVoiceAuthenticated,
     login,
     register,
     logout,
     updateUserMetadata,
     isVoiceEnrolled,
     authenticateWithVoice,
-    resetVoiceAuth
+    resetVoiceAuth,
+    hasPermission,
+    enrollVoice
   };
 
   return (
