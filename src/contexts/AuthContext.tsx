@@ -188,6 +188,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Signup function
   const signup = async (email: string, password: string, role: UserRole = 'User'): Promise<boolean> => {
     try {
+      console.log("Signup function called with email:", email, "role:", role);
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -198,17 +200,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Signup error from Supabase:", error);
+        throw error;
+      }
       
-      // Success! Set user if auto-confirm is enabled
+      console.log("Signup response:", data);
+      
+      // If automatic confirmation is enabled, this will have a session
       if (data.session) {
         setIsAuthenticated(true);
         setCurrentUser(data.user);
         setUserRole(role);
+        
+        // Navigate to the dashboard
+        console.log("Auto-confirming and redirecting to dashboard");
         navigate('/');
+        return true;
       }
       
-      return true;
+      // If email confirmation is required
+      if (data.user && !data.session) {
+        console.log("Email confirmation required");
+        toast({
+          title: "Signup successful",
+          description: "Please check your email for verification instructions.",
+        });
+        return true;
+      }
+      
+      return !!data.user;
     } catch (error) {
       console.error('Signup error:', error);
       toast({
@@ -216,7 +237,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: error instanceof Error ? error.message : 'An unknown error occurred',
         variant: 'destructive',
       });
-      return false;
+      throw error; // Re-throw to allow handling in the component
     }
   };
 

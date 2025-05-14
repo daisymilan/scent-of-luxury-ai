@@ -33,6 +33,7 @@ type FormValues = z.infer<typeof formSchema>;
 const SignupPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { signup } = useAuth(); // Using signup instead of register
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -59,22 +60,34 @@ const SignupPage: React.FC = () => {
     if (isSubmitting) return;
     
     setIsSubmitting(true);
+    setError(null);
+    
     try {
+      console.log("Signing up with:", data.email, "role:", data.role);
       // Include role in the metadata when signing up
       const success = await signup(data.email, data.password, data.role as UserRole);
+      
       if (success) {
         // Success handling
         toast({
           title: "Signup successful",
-          description: "Your account has been created. Please check your email for verification.",
+          description: "Your account has been created. You'll be redirected to login.",
         });
-        navigate('/login');
+        
+        // Short timeout to show the success message before redirecting
+        setTimeout(() => {
+          navigate('/login');
+        }, 1500);
+      } else {
+        setError("Failed to create account. Please try again.");
       }
     } catch (error) {
       console.error("Signup error:", error);
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      setError(errorMessage);
       toast({
         title: "Signup failed",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -107,6 +120,13 @@ const SignupPage: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="space-y-2">
@@ -123,6 +143,7 @@ const SignupPage: React.FC = () => {
                               placeholder="email@example.com" 
                               className="pl-10 py-6 text-base bg-gray-800 border-gray-700 text-gray-100" 
                               autoComplete="email"
+                              disabled={isSubmitting}
                               {...field} 
                             />
                           </FormControl>
@@ -148,6 +169,7 @@ const SignupPage: React.FC = () => {
                               placeholder="••••••••" 
                               className="pl-10 py-6 text-base bg-gray-800 border-gray-700 text-gray-100" 
                               autoComplete="new-password"
+                              disabled={isSubmitting}
                               {...field} 
                             />
                           </FormControl>
@@ -171,6 +193,7 @@ const SignupPage: React.FC = () => {
                             <Select 
                               defaultValue={field.value} 
                               onValueChange={field.onChange}
+                              disabled={isSubmitting}
                             >
                               <SelectTrigger className="pl-10 py-6 text-base bg-gray-800 border-gray-700 text-gray-100">
                                 <SelectValue placeholder="Select your role" />
