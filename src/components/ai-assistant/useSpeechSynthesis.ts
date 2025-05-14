@@ -7,7 +7,9 @@ export function useSpeechSynthesis() {
   
   useEffect(() => {
     // Initialize speech synthesis
-    synthRef.current = window.speechSynthesis;
+    if ('speechSynthesis' in window) {
+      synthRef.current = window.speechSynthesis;
+    }
     
     // Cleanup on unmount
     return () => {
@@ -28,6 +30,8 @@ export function useSpeechSynthesis() {
     
     // Get available voices and choose a good one
     const voices = synthRef.current.getVoices();
+    console.log("Available voices:", voices.map(v => v.name));
+    
     const preferredVoice = voices.find(voice => 
       voice.name.includes('Google') && voice.name.includes('Female') ||
       voice.name.includes('Samantha') ||

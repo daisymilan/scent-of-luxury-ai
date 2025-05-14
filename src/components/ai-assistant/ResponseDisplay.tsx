@@ -77,9 +77,6 @@ export const ResponseDisplay = ({
             </>
           )}
         </Button>
-        <Button size="sm" variant="ghost" className="h-8 text-xs">
-          See Details
-        </Button>
       </div>
     </div>
   );

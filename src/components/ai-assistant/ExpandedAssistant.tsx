@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useChat } from 'ai/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,11 +8,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AssistantHeader } from './AssistantHeader';
-import { AssistantFooter } from './AssistantFooter';
 import { UserQuery } from './UserQuery';
 import { ResponseDisplay } from './ResponseDisplay';
 import { ThinkingIndicator } from './ThinkingIndicator';
 import { useSpeechSynthesis } from './useSpeechSynthesis';
+import { useToast } from '@/hooks/use-toast';
 
 interface ExpandedAssistantProps {
   setIsExpanded: (expanded: boolean) => void;
@@ -20,6 +20,13 @@ interface ExpandedAssistantProps {
 
 export const ExpandedAssistant = ({ setIsExpanded }: ExpandedAssistantProps) => {
   const [query, setQuery] = useState<string>('');
+  const [displayedQuery, setDisplayedQuery] = useState<string>('');
+  const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+  const { toast } = useToast();
+  
+  // Use the speech synthesis hook
+  const speechSynthesis = useSpeechSynthesis();
+  
   const {
     messages,
     input,
@@ -27,13 +34,12 @@ export const ExpandedAssistant = ({ setIsExpanded }: ExpandedAssistantProps) => 
     handleInputChange,
     handleSubmit,
     isLoading,
-  } = useChat();
-  
-  // Add state for speech functionality
-  const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
-  
-  // Use the speech synthesis hook
-  const speechSynthesis = useSpeechSynthesis();
+  } = useChat({
+    onResponse: () => {
+      // When we get a response, update the displayed query to show the user's message
+      setDisplayedQuery(query);
+    }
+  });
   
   // Handle read aloud functionality
   const handleReadAloud = (responseText: string) => {
@@ -54,6 +60,12 @@ export const ExpandedAssistant = ({ setIsExpanded }: ExpandedAssistantProps) => 
         } else {
           setIsSpeaking(false);
         }
+      } else {
+        toast({
+          title: "Speech Synthesis Not Available",
+          description: "Your browser doesn't support speech synthesis",
+          variant: "destructive"
+        });
       }
     }
   };
@@ -61,6 +73,7 @@ export const ExpandedAssistant = ({ setIsExpanded }: ExpandedAssistantProps) => 
   // Handle query submission
   const handleQuerySubmit = () => {
     if (query) {
+      setDisplayedQuery(query); // Update displayed query immediately
       setInput(query);
       handleSubmit(new Event('submit') as unknown as React.FormEvent<HTMLFormElement>);
       setQuery('');
