@@ -11,6 +11,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Mail, User, Lock } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { UserRole } from '@/contexts/AuthContext';
 
 // Form validation schema
 const signupSchema = z.object({
@@ -18,7 +20,8 @@ const signupSchema = z.object({
   lastName: z.string().min(2, { message: 'Last name must be at least 2 characters' }).max(50),
   email: z.string().email({ message: 'Please enter a valid email address' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
-  confirmPassword: z.string()
+  confirmPassword: z.string(),
+  role: z.string().optional()
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ['confirmPassword']
@@ -34,6 +37,15 @@ const SignupPage: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const roleOptions: UserRole[] = [
+    'CEO', 
+    'CCO', 
+    'Commercial Director', 
+    'Regional Manager', 
+    'Marketing Manager', 
+    'Social Media Manager'
+  ];
+
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -41,7 +53,8 @@ const SignupPage: React.FC = () => {
       lastName: '',
       email: '',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
+      role: 'User'
     }
   });
 
@@ -52,6 +65,7 @@ const SignupPage: React.FC = () => {
       const userData = {
         firstName: data.firstName, 
         lastName: data.lastName,
+        role: data.role || 'User'
       };
       
       const success = await register(data.email, data.password, userData);
@@ -167,6 +181,30 @@ const SignupPage: React.FC = () => {
                           />
                         </FormControl>
                       </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs uppercase tracking-wider font-light text-gray-300">Role</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="py-5 text-base bg-gray-800 border-gray-700 text-gray-100">
+                            <SelectValue placeholder="Select your role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="bg-gray-800 border-gray-700 text-gray-100">
+                          {roleOptions.map((role) => (
+                            <SelectItem key={role} value={role}>{role}</SelectItem>
+                          ))}
+                          <SelectItem value="User">User</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
