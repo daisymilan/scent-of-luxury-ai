@@ -70,7 +70,7 @@ const LoginPage: React.FC = () => {
   };
 
   const handleRegisterClick = () => {
-    navigate('/register');
+    navigate('/signup'); // Updated to navigate to /signup instead of /register
   };
 
   const handleForgotPasswordClick = () => {
