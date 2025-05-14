@@ -124,10 +124,10 @@ export const ExpandedAssistant = ({ setIsExpanded }: ExpandedAssistantProps) => 
             <div className="space-y-4 pt-2 pb-4">
               {messages.map((message, i) => (
                 message.role === 'user' ? (
-                  <UserQuery key={message.id || `user-${i}`} displayedQuery={message.content} />
+                  <UserQuery key={`user-${i}`} displayedQuery={message.content} />
                 ) : (
                   <ResponseDisplay 
-                    key={message.id || `assistant-${i}`}
+                    key={`assistant-${i}`}
                     response={message.content}
                     isSpeaking={isSpeaking}
                     handleReadAloud={() => handleReadAloud(message.content)}
