@@ -23,6 +23,7 @@ interface UserMetadata {
 export interface User {
   id: string;
   email: string;
+  name?: string; // Add name property
   first_name?: string;
   last_name?: string;
   avatar_url?: string;
@@ -131,6 +132,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (error) {
         console.error('Error fetching user:', error);
         return;
+      }
+
+      // Add name property by combining first_name and last_name if available
+      if (user) {
+        user.name = user.first_name && user.last_name 
+          ? `${user.first_name} ${user.last_name}` 
+          : user.first_name || user.email?.split('@')[0] || 'User';
       }
 
       setCurrentUser(user);

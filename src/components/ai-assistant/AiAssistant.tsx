@@ -19,8 +19,8 @@ import { Sparkles } from "lucide-react";
 
 interface User {
   id: string;
-  name: string;
-  role: string;
+  name?: string;
+  role?: string;
 }
 
 const AiAssistant = () => {
@@ -78,9 +78,9 @@ const AiAssistant = () => {
     
     // Fix the type error by ensuring the user data has all required properties
     if (currentUser) {
-      const processedUser = {
+      const processedUser: User = {
         id: currentUser.id,
-        name: currentUser.name || currentUser.email || 'User',
+        name: currentUser.name || currentUser.first_name || currentUser.email?.split('@')[0] || 'User',
         role: currentUser.role || 'User'
       };
       
@@ -107,9 +107,9 @@ const AiAssistant = () => {
                   <div className="flex items-center">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src="https://github.com/shadcn.png" alt="Your Avatar" />
-                      <AvatarFallback>{authUser?.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                      <AvatarFallback>{authUser?.name?.slice(0, 2)?.toUpperCase() || 'U'}</AvatarFallback>
                     </Avatar>
-                    <p className="ml-2 font-medium">{authUser?.name}</p>
+                    <p className="ml-2 font-medium">{authUser?.name || 'User'}</p>
                   </div>
                   <Card className="w-[350px] ml-10">
                     <CardContent className="break-words whitespace-pre-line py-2 text-sm">
@@ -149,7 +149,7 @@ const AiAssistant = () => {
           <CardFooter className="flex items-center gap-4 px-0 py-4">
             <Avatar className="h-8 w-8">
               <AvatarImage src="https://github.com/shadcn.png" alt="Your Avatar" />
-              <AvatarFallback>{authUser?.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+              <AvatarFallback>{authUser?.name?.slice(0, 2)?.toUpperCase() || 'U'}</AvatarFallback>
             </Avatar>
             <Input
               type="search"

@@ -1,3 +1,4 @@
+
 // src/pages/SignupPage.tsx - UPDATED VERSION
 
 import { useState, FormEvent } from 'react';
@@ -68,8 +69,17 @@ const SignupPage = () => {
     setIsLoading(true);
     
     try {
+      // Create userData object as Record<string, any>
+      const userData: Record<string, any> = {
+        firstName: name.split(' ')[0],
+        lastName: name.split(' ').slice(1).join(' '),
+        fragrancePreference: '',
+        fragranceStyle: '',
+        fragranceStrength: ''
+      };
+      
       // Register the user using AuthContext
-      await register(email, password, name);
+      await register(email, password, userData);
       
       // Login the user to get the session
       await login(email, password);
