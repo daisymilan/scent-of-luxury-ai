@@ -8,7 +8,7 @@ export interface Toast {
   description?: string;
   action?: React.ReactNode;
   variant?: "default" | "destructive";
-  duration?: number; // Add duration property
+  duration?: number;
 }
 
 export interface UseToastProps {
@@ -16,6 +16,9 @@ export interface UseToastProps {
   toast: (props: Omit<Toast, "id">) => void;
   dismiss: (id: string) => void;
 }
+
+// Global toast function reference
+let globalToastFn: ((props: Omit<Toast, "id">) => void) | null = null;
 
 export const useToast = (): UseToastProps => {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -35,20 +38,24 @@ export const useToast = (): UseToastProps => {
     setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
   }, []);
 
+  // Set the global toast function when a component uses this hook
+  if (globalToastFn === null) {
+    globalToastFn = toast;
+  }
+
   return { toasts, toast, dismiss };
 };
 
-// Create a standalone toast function
-let toastFn: (props: Omit<Toast, "id">) => void;
-
-export const setToastFunction = (toast: (props: Omit<Toast, "id">) => void) => {
-  toastFn = toast;
-};
-
+// Standalone toast function that uses the global toast function
 export const toast = (props: Omit<Toast, "id">) => {
-  if (toastFn) {
-    toastFn(props);
+  if (globalToastFn) {
+    globalToastFn(props);
   } else {
     console.warn("Toast function not initialized. Make sure ToastProvider is mounted.");
   }
+};
+
+// Function to set the toast function for use outside of React components
+export const setToastFunction = (toastFn: (props: Omit<Toast, "id">) => void) => {
+  globalToastFn = toastFn;
 };

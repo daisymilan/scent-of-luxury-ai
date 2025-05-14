@@ -59,16 +59,6 @@ const LoginPage: React.FC = () => {
     try {
       console.log("Attempting login with:", data.email); 
       
-      // Add a direct debug request to test the credentials
-      console.log("Testing direct login with Supabase client");
-      const rawResponse = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
-      });
-      
-      console.log("Direct Supabase login response:", rawResponse);
-      
-      // Try our regular login flow
       const success = await login(data.email, data.password);
       
       if (success) {
@@ -78,6 +68,7 @@ const LoginPage: React.FC = () => {
           duration: 3000,
         });
         navigate('/');
+        return;
       } else {
         toast({
           title: "Login failed",

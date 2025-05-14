@@ -1,6 +1,7 @@
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 export type UserRole = 'CEO' | 'CCO' | 'Commercial Director' | 'Regional Manager' | 'Marketing Manager' | 'User' | 'Social Media Manager' | 'Customer Support';
@@ -76,6 +77,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Load user data on mount
   useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event, session);
+      
+      if (event === 'INITIAL_SESSION') {
+        // Skip initial session event
+        return;
+      }
+      
+      if (session) {
+        setIsAuthenticated(true);
+        // Use setTimeout to avoid potential deadlocks with onAuthStateChange
+        setTimeout(() => {
+          loadCurrentUser(session.user.id);
+        }, 0);
+      } else {
+        setIsAuthenticated(false);
+        setCurrentUser(null);
+        setUserRole(null);
+      }
+    });
+
+    // THEN check for existing session
     const loadSession = async () => {
       setIsLoading(true);
       try {
@@ -100,25 +124,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     loadSession();
-
-    // Subscribe to auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, session);
-      
-      if (event === 'INITIAL_SESSION') {
-        // Skip initial session event
-        return;
-      }
-      
-      if (session) {
-        setIsAuthenticated(true);
-        await loadCurrentUser(session.user.id);
-      } else {
-        setIsAuthenticated(false);
-        setCurrentUser(null);
-        setUserRole(null);
-      }
-    });
 
     return () => {
       subscription?.unsubscribe();
@@ -176,12 +181,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (error) {
         console.error('Login failed:', error.message);
-        toast({
-          title: "Login failed",
-          description: error.message || "Invalid credentials",
-          variant: "destructive",
-          duration: 5000,
-        });
         return false;
       }
 
@@ -194,7 +193,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log("User:", data.user);
         console.log("Session:", data.session);
         
-        // We successfully logged in
+        // We successfully logged in, navigate user to home
+        navigate('/');
         return true;
       } else {
         console.error("Login returned no user or session");
@@ -269,6 +269,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       setCurrentUser(basicUser);
       setUserRole((userData?.role as UserRole) || 'User');
+      
+      // Navigate to home after successful registration
+      navigate('/');
       
       return true;
     } catch (error) {
