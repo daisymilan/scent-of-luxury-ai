@@ -40,20 +40,16 @@ export const useToast = (): UseToastProps => {
 // Create a standalone toast function
 let toastFn: (props: Omit<Toast, "id">) => void;
 
-export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { toast } = useToast();
-  
-  useEffect(() => {
-    toastFn = toast;
-  }, [toast]);
-  
-  return <>{children}</>;
-};
-
+// Remove the JSX from this file and create a separate ToastProvider component in a .tsx file
 export const toast = (props: Omit<Toast, "id">) => {
   if (toastFn) {
     toastFn(props);
   } else {
     console.warn("Toast function not initialized. Make sure to use the ToastProvider.");
   }
+};
+
+// Function to set the toast function from outside
+export const setToastFunction = (fn: (props: Omit<Toast, "id">) => void) => {
+  toastFn = fn;
 };
