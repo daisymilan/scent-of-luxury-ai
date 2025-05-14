@@ -27,6 +27,15 @@ export const ExpandedAssistant = ({ setIsExpanded }: ExpandedAssistantProps) => 
     handleSubmit,
     isLoading,
   } = useChat();
+  
+  // Add state for speech functionality
+  const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+  
+  // Handle read aloud functionality
+  const handleReadAloud = () => {
+    setIsSpeaking(prev => !prev);
+    // Speech functionality would be implemented here
+  };
 
   // Handle query submission
   const handleQuerySubmit = () => {
@@ -68,12 +77,17 @@ export const ExpandedAssistant = ({ setIsExpanded }: ExpandedAssistantProps) => 
             <div className="space-y-4 pt-2 pb-4">
               {messages.map((message) => (
                 message.role === 'user' ? (
-                  <UserQuery key={message.id} content={message.content} />
+                  <UserQuery key={message.id} displayedQuery={message.content} />
                 ) : (
-                  <ResponseDisplay key={message.id} content={message.content} />
+                  <ResponseDisplay 
+                    key={message.id} 
+                    response={message.content}
+                    isSpeaking={isSpeaking}
+                    handleReadAloud={handleReadAloud}
+                  />
                 )
               ))}
-              {isLoading && <ThinkingIndicator />}
+              {isLoading && <ThinkingIndicator isThinking={true} />}
             </div>
           )}
         </ScrollArea>
