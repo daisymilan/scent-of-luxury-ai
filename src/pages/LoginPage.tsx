@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
@@ -52,7 +51,7 @@ const LoginPage: React.FC = () => {
         title: "Login successful",
         description: "Welcome to MiN New York dashboard",
       });
-      navigate('/dashboard'); // Explicitly navigate to dashboard
+      navigate('/'); // Navigate to the root route instead of /dashboard
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Invalid email or password';
       toast({

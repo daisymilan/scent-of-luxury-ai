@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 
 // Define the Toast type
 export interface Toast {
@@ -18,23 +18,15 @@ export interface UseToastProps {
   dismiss: (id: string) => void;
 }
 
-// Store for toast function
-let toastFn: ((props: Omit<Toast, "id">) => void) | undefined;
-
-// Export setter for ToastProvider
-export const setToastFunction = (fn: (props: Omit<Toast, "id">) => void) => {
-  toastFn = fn;
-};
-
 export const useToast = (): UseToastProps => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const toast = useCallback((props: Omit<Toast, "id">) => {
     const id = Math.random().toString(36).substring(2, 9);
-    const duration = props.duration || 5000;
     setToasts((prevToasts) => [...prevToasts, { id, ...props }]);
     
-    // Auto dismiss using the provided duration or default to 5 seconds
+    // Auto dismiss after the specified duration or default to 5 seconds
+    const duration = props.duration || 5000;
     setTimeout(() => {
       setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
     }, duration);
@@ -47,7 +39,13 @@ export const useToast = (): UseToastProps => {
   return { toasts, toast, dismiss };
 };
 
-// Standalone toast function for use outside of React components
+// Create a standalone toast function
+let toastFn: (props: Omit<Toast, "id">) => void;
+
+export const setToastFunction = (toast: (props: Omit<Toast, "id">) => void) => {
+  toastFn = toast;
+};
+
 export const toast = (props: Omit<Toast, "id">) => {
   if (toastFn) {
     toastFn(props);

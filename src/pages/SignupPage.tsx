@@ -78,7 +78,7 @@ const SignupPage: React.FC = () => {
           description: "Welcome to MiN New York!",
           variant: "default"
         });
-        navigate('/');
+        navigate('/'); // Navigate to the root route instead of /dashboard
       } else {
         toast({
           title: "Registration failed",
