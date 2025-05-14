@@ -65,11 +65,11 @@ const LoginPage: React.FC = () => {
       
       console.log("Attempting login with:", data.email); 
       
-      const success = await login(data.email, data.password);
+      const result = await login(data.email, data.password);
       
-      console.log("Login result:", success);
+      console.log("Login result:", result);
       
-      if (!success) {
+      if (!result) {
         // Check specifically for email confirmation errors
         const { data: signInData, error } = await supabase.auth.signInWithPassword({
           email: data.email,
@@ -89,13 +89,15 @@ const LoginPage: React.FC = () => {
         } else if (!signInData.session) {
           setLoginError("Login failed. Please check your credentials and try again.");
         }
+        
+        setIsSubmitting(false);
       }
       // Navigate is handled by the AuthContext on successful login
+      // Don't need to call setIsSubmitting(false) on success because the page will navigate away
     } catch (error) {
       console.error("Login error:", error);
       const errorMessage = error instanceof Error ? error.message : 'Invalid email or password';
       setLoginError(errorMessage);
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -149,7 +151,7 @@ const LoginPage: React.FC = () => {
   };
 
   // Global loading state from Auth context
-  const isPageLoading = loading || isSubmitting;
+  const isPageLoading = loading && !isSubmitting;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-r from-gray-900 to-black">
@@ -218,7 +220,7 @@ const LoginPage: React.FC = () => {
                                 <Input 
                                   placeholder="email@example.com" 
                                   className="pl-10 py-6 text-base bg-gray-800 border-gray-700 text-gray-100" 
-                                  disabled={isPageLoading}
+                                  disabled={isSubmitting}
                                   {...field} 
                                 />
                               </FormControl>
@@ -237,7 +239,7 @@ const LoginPage: React.FC = () => {
                           variant="link" 
                           className="h-auto p-0 text-xs uppercase tracking-wider font-light text-gray-400"
                           onClick={handleForgotPasswordClick}
-                          disabled={isPageLoading}
+                          disabled={isSubmitting}
                         >
                           Forgot Password?
                         </Button>
@@ -254,7 +256,7 @@ const LoginPage: React.FC = () => {
                                   type={showPassword ? "text" : "password"} 
                                   placeholder="••••••••" 
                                   className="pl-10 py-6 text-base bg-gray-800 border-gray-700 text-gray-100" 
-                                  disabled={isPageLoading}
+                                  disabled={isSubmitting}
                                   {...field} 
                                   autoComplete="current-password"
                                 />
@@ -263,7 +265,7 @@ const LoginPage: React.FC = () => {
                                 type="button"
                                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
                                 onClick={togglePasswordVisibility}
-                                disabled={isPageLoading}
+                                disabled={isSubmitting}
                               >
                                 {showPassword ? (
                                   <EyeOff size={16} />
@@ -281,9 +283,9 @@ const LoginPage: React.FC = () => {
                     <Button 
                       type="submit" 
                       className="w-full py-6 font-light bg-white text-black hover:bg-gray-200" 
-                      disabled={isPageLoading}
+                      disabled={isSubmitting}
                     >
-                      {isPageLoading ? (
+                      {isSubmitting ? (
                         <div className="flex items-center justify-center">
                           <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                           <span>Logging in...</span>
@@ -305,7 +307,7 @@ const LoginPage: React.FC = () => {
                       variant="link" 
                       className="h-auto p-0 text-gray-300 hover:text-white"
                       onClick={handleRegisterClick}
-                      disabled={isPageLoading}
+                      disabled={isSubmitting}
                     >
                       Sign up
                     </Button>
@@ -327,28 +329,28 @@ const LoginPage: React.FC = () => {
               <button 
                 onClick={() => handleTestAccountClick('admin@minny.com')}
                 className="text-gray-400 hover:text-white text-left hover:underline"
-                disabled={isPageLoading}
+                disabled={isSubmitting}
               >
                 Admin: admin@minny.com
               </button>
               <button
                 onClick={() => handleTestAccountClick('customer@minny.com')}
                 className="text-gray-400 hover:text-white text-left hover:underline"
-                disabled={isPageLoading}
+                disabled={isSubmitting}
               >
                 Customer: customer@minny.com
               </button>
               <button
                 onClick={() => handleTestAccountClick('perfumer@minny.com')}
                 className="text-gray-400 hover:text-white text-left hover:underline"
-                disabled={isPageLoading}
+                disabled={isSubmitting}
               >
                 Perfumer: perfumer@minny.com
               </button>
               <button
                 onClick={() => handleTestAccountClick('tester@minny.com')}
                 className="text-gray-400 hover:text-white text-left hover:underline"
-                disabled={isPageLoading}
+                disabled={isSubmitting}
               >
                 Tester: tester@minny.com
               </button>
