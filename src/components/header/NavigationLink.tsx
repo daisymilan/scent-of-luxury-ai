@@ -17,7 +17,7 @@ const NavigationLink = ({ to, label, requiredRoles, userRole }: NavigationLinkPr
                   (to !== '/' && location.pathname.startsWith(to));
   
   // If no required roles are specified or the user's role is in the required roles, render the link
-  if (!requiredRoles || !userRole || requiredRoles.includes(userRole as UserRole)) {
+  if (!requiredRoles || !userRole || requiredRoles.includes(userRole)) {
     return (
       <Link 
         to={to} 

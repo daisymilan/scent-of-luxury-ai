@@ -1,17 +1,29 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
-// Define user roles
-export enum UserRole {
+// Define user roles as string literals to match the ones used in the codebase
+export type UserRole = 
+  | 'CEO' 
+  | 'CCO' 
+  | 'Commercial Director' 
+  | 'Regional Manager' 
+  | 'Marketing Manager' 
+  | 'Social Media Manager' 
+  | 'Customer Support' 
+  | 'User';
+
+// Create an enum for backwards compatibility
+export enum UserRoleEnum {
   CEO = 'CEO',
   CCO = 'CCO',
   CommercialDirector = 'Commercial Director',
   RegionalManager = 'Regional Manager',
   MarketingManager = 'Marketing Manager',
-  SocialMediaManager = 'SocialMediaManager',
-  CustomerSupport = 'CustomerSupport',
+  SocialMediaManager = 'Social Media Manager',
+  CustomerSupport = 'Customer Support',
   User = 'User'
 }
 
@@ -23,6 +35,7 @@ export interface AuthContextType {
   signup: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string) => Promise<boolean>; // Alias for signup
   currentUser: any | null;
+  user: any | null; // Alias for currentUser for backward compatibility
   userRole: UserRole | null;
   isVoiceAuthenticated: boolean;
   isVoiceEnrolled: boolean;
@@ -39,6 +52,7 @@ const AuthContext = createContext<AuthContextType>({
   signup: async () => false,
   register: async () => false,
   currentUser: null,
+  user: null,
   userRole: null,
   isVoiceAuthenticated: false,
   isVoiceEnrolled: false,
@@ -72,18 +86,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAuthenticated(true);
         setCurrentUser(session.user);
         
-        // Fetch user details including role from the profiles table
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
+        // Fetch user details including role from the users table (not profiles)
+        const { data: userData, error: userError } = await supabase
+          .from('users')
           .select('role')
           .eq('id', session.user.id)
           .single();
         
-        if (profileError) {
-          console.error('Error fetching user profile:', profileError);
-          setUserRole(UserRole.User); // Default role
+        if (userError) {
+          console.error('Error fetching user data:', userError);
+          setUserRole('User' as UserRole); // Default role
         } else {
-          setUserRole(profileData?.role || UserRole.User);
+          setUserRole((userData?.role as UserRole) || 'User' as UserRole);
         }
       } else {
         setIsAuthenticated(false);
@@ -111,17 +125,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentUser(data.user);
       
       // Get user role from metadata or set default
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
+      const { data: userData, error: userError } = await supabase
+        .from('users')
         .select('role')
         .eq('id', data.user.id)
         .single();
       
-      if (profileError) {
-        console.error('Error fetching user profile:', profileError);
-        setUserRole(UserRole.User); // Default role
+      if (userError) {
+        console.error('Error fetching user data:', userError);
+        setUserRole('User' as UserRole); // Default role
       } else {
-        setUserRole(profileData?.role || UserRole.User);
+        setUserRole((userData?.role as UserRole) || 'User' as UserRole);
       }
       
       return true;
@@ -150,7 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.session) {
         setIsAuthenticated(true);
         setCurrentUser(data.user);
-        setUserRole(UserRole.User); // Default role for new users
+        setUserRole('User' as UserRole); // Default role for new users
       }
       
       return true;
@@ -209,6 +223,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signup,
     register: signup, // Alias register to signup for compatibility
     currentUser,
+    user: currentUser, // Add user as alias to currentUser for compatibility
     userRole,
     isVoiceAuthenticated,
     isVoiceEnrolled,
