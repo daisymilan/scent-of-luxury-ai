@@ -16,7 +16,7 @@ const MobileNavigationLink = ({ to, label, requiredRoles, userRole }: MobileNavi
                   (to !== '/' && location.pathname.startsWith(to));
                   
   // If no required roles are specified or the user's role is in the required roles, render the link
-  if (!requiredRoles || !userRole || requiredRoles.some(role => userRole === role)) {
+  if (!requiredRoles || !userRole || requiredRoles.includes(userRole as UserRole)) {
     return (
       <Link 
         to={to} 
@@ -30,7 +30,7 @@ const MobileNavigationLink = ({ to, label, requiredRoles, userRole }: MobileNavi
     );
   }
   
-  // Otherwise, return null (don't render anything)
+  // Don't render anything if the user doesn't have permission
   return null;
 };
 

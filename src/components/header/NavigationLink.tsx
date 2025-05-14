@@ -17,13 +17,13 @@ const NavigationLink = ({ to, label, requiredRoles, userRole }: NavigationLinkPr
                   (to !== '/' && location.pathname.startsWith(to));
   
   // If no required roles are specified or the user's role is in the required roles, render the link
-  if (!requiredRoles || !userRole || requiredRoles.some(role => userRole === role)) {
+  if (!requiredRoles || !userRole || requiredRoles.includes(userRole as UserRole)) {
     return (
       <Link 
         to={to} 
         className={cn(
           navigationMenuTriggerStyle(),
-          isActive && "font-medium bg-gray-100"
+          isActive && "font-medium bg-gray-50"
         )}
       >
         {label}
@@ -31,7 +31,7 @@ const NavigationLink = ({ to, label, requiredRoles, userRole }: NavigationLinkPr
     );
   }
   
-  // Otherwise, return null (don't render anything)
+  // Don't render anything if the user doesn't have permission
   return null;
 };
 
