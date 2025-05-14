@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { processVoiceAuth } from '../utils/voiceAuthApi';
 import { useAuth } from '../contexts/AuthContext';
-import supabase from '../supabase';
+import { supabase } from "@/integrations/supabase/client";
 
 // Check if browser supports the Web Speech API
 const browserSupportsSpeechRecognition = 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
