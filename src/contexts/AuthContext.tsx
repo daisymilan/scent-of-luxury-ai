@@ -72,6 +72,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Fetch user role from users table
+  const fetchUserRole = async (userId: string) => {
+    try {
+      console.log("Fetching role for user:", userId);
+      const { data, error } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error("Error fetching user role:", error);
+        return null;
+      }
+      
+      console.log("User role data:", data);
+      return data?.role as UserRole || null;
+    } catch (err) {
+      console.error("Exception in fetchUserRole:", err);
+      return null;
+    }
+  };
+
   // Check authentication status on mount
   useEffect(() => {
     const checkAuthStatus = async () => {
@@ -86,19 +109,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setCurrentUser(session.user);
               
               // Get user role from the users table
-              const { data: userData, error: userError } = await supabase
-                .from('users')
-                .select('role')
-                .eq('id', session.user.id)
-                .single();
+              const role = await fetchUserRole(session.user.id);
               
-              if (userError) {
-                console.error('Error fetching user data:', userError);
-                // Try to get role from user metadata as fallback
-                const role = session.user.user_metadata?.role || 'User';
-                setUserRole(role as UserRole);
+              if (role) {
+                console.log("Setting user role from database:", role);
+                setUserRole(role);
               } else {
-                setUserRole((userData?.role as UserRole) || 'User' as UserRole);
+                // Fallback to metadata if database query fails
+                const metadataRole = session.user.user_metadata?.role;
+                console.log("Setting user role from metadata:", metadataRole);
+                setUserRole((metadataRole as UserRole) || 'User');
               }
             } else {
               setIsAuthenticated(false);
@@ -124,21 +144,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsAuthenticated(true);
           setCurrentUser(session.user);
           
-          // Fetch user details including role from the users table
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', session.user.id)
-            .single();
+          // Get user role from database
+          const role = await fetchUserRole(session.user.id);
           
-          if (userError) {
-            console.error('Error fetching user data:', userError);
-            // Try to get role from user metadata as fallback
-            const role = session.user.user_metadata?.role || 'User';
-            setUserRole(role as UserRole);
+          if (role) {
+            console.log("Setting initial user role from database:", role);
+            setUserRole(role);
           } else {
-            setUserRole((userData?.role as UserRole) || 'User' as UserRole);
+            // Fallback to metadata if database query fails
+            const metadataRole = session.user.user_metadata?.role;
+            console.log("Setting initial user role from metadata:", metadataRole);
+            setUserRole((metadataRole as UserRole) || 'User');
           }
+          
           setLoading(false);
         } else {
           setLoading(false);
@@ -184,28 +202,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log("Login successful, session:", data.session ? "exists" : "none");
       
-      // If we have a session, auth state listener will handle the state update
+      // If we have a session, set authentication state
       if (data.session) {
         setIsAuthenticated(true);
         setCurrentUser(data.user);
         
-        // Direct role fetch to avoid race conditions
-        try {
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', data.user?.id)
-            .single();
-          
-          if (!userError && userData) {
-            setUserRole((userData.role as UserRole) || 'User');
-          } else {
-            const role = data.user?.user_metadata?.role || 'User';
-            setUserRole(role as UserRole);
-          }
-        } catch (roleError) {
-          console.error('Error setting role:', roleError);
-          setUserRole('User');
+        // Directly fetch user role to ensure we have the latest data
+        const userRole = await fetchUserRole(data.user?.id);
+        
+        if (userRole) {
+          console.log("Setting user role after login:", userRole);
+          setUserRole(userRole);
+        } else {
+          // Fallback to metadata if database query fails
+          const metadataRole = data.user?.user_metadata?.role || 'User';
+          console.log("Setting user role from metadata after login:", metadataRole);
+          setUserRole(metadataRole as UserRole);
         }
         
         // Navigate after state is updated
