@@ -81,7 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log("Fetching role for user:", userId);
       const { data, error } = await supabase
         .from('users')
-        .select('role, email')
+        .select('role, email, first_name, last_name')
         .eq('id', userId)
         .single();
       
@@ -94,7 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Check if the user is you (CEO) by email - customize this check to match your email
       // This is a fallback mechanism if the database role is incorrect
-      const yourCEOEmail = "your-ceo-email@example.com"; // Replace with your actual email
+      const yourCEOEmail = "ceo_test@min.com"; // Replace with your actual email
       if (data?.email === yourCEOEmail && data?.role !== 'CEO') {
         console.log("Detected CEO by email but role is incorrect, updating...");
         await updateUserRole(userId, 'CEO' as UserRole);
@@ -115,7 +115,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const { error } = await supabase
         .from('users')
-        .update({ role: role })
+        .update({ 
+          role: role,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', userId);
       
       if (error) {
@@ -276,7 +279,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         
         // Check if this is the CEO's email and force role update if needed
-        const yourCEOEmail = "your-ceo-email@example.com"; // Replace with your actual email
+        const yourCEOEmail = "ceo_test@min.com"; // Replace with your actual email
         if (email === yourCEOEmail && userRole !== 'CEO' && data.user) {
           console.log("CEO email detected, forcing role update");
           await updateUserRole(data.user.id, 'CEO' as UserRole);
@@ -314,7 +317,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       
       // Check if this is the CEO's email and force the role to CEO
-      const yourCEOEmail = "your-ceo-email@example.com"; // Replace with your actual email
+      const yourCEOEmail = "ceo_test@min.com"; // Replace with your actual email
       if (email === yourCEOEmail) {
         console.log("CEO email detected in signup, forcing role to CEO");
         role = 'CEO' as UserRole;
@@ -358,7 +361,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               {
                 id: data.user?.id,
                 email: email,
-                role: role
+                role: role,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                first_name: role === 'CEO' ? 'CEO' : '', // Set first name if CEO
+                last_name: role === 'CEO' ? 'User' : '',  // Set last name if CEO
+                voice_enrolled: false,
+                voice_authenticated: false
               }
             ]);
           
@@ -403,15 +412,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Logout function
+  // IMPROVED Logout function with enhanced error handling and forced redirect
   const logout = async (): Promise<void> => {
     try {
       setLoading(true);
-      await supabase.auth.signOut();
+      console.log("Logout function called");
+      
+      // First clear local state before API call to ensure UI updates even if API call fails
+      const preLogoutState = {
+        wasAuthenticated: isAuthenticated,
+        wasUser: currentUser,
+        wasRole: userRole
+      };
+      
+      // Clear local state immediately
       setIsAuthenticated(false);
       setCurrentUser(null);
       setUserRole(null);
-      navigate('/login');
+      
+      // Now call the logout API
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Supabase signOut error:", error);
+        toast({
+          title: 'Logout issue',
+          description: "You've been logged out locally, but there was an issue with the server: " + error.message,
+          variant: 'destructive',
+          duration: 5000,
+        });
+      } else {
+        console.log("Supabase signOut successful");
+        toast({
+          title: 'Logged out',
+          description: "You've been successfully logged out",
+          duration: 3000,
+        });
+      }
+      
+      // Force clear any session data from supabase
+      supabase.auth.clearSession();
+      
+      // Force browser to clear localStorage related to auth
+      try {
+        localStorage.removeItem('supabase.auth.token');
+        localStorage.removeItem('supabase.auth.expires_at');
+        // Add any other relevant items here
+      } catch (e) {
+        console.warn("Could not clear localStorage", e);
+      }
+      
+      // Force navigation regardless of API response
+      console.log("Forcing navigation to login page");
+      navigate('/login', { replace: true });
     } catch (error) {
       console.error('Logout error:', error);
       toast({
@@ -420,6 +473,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         variant: 'destructive',
         duration: 5000,
       });
+      
+      // Force navigation even after error
+      navigate('/login', { replace: true });
     } finally {
       setLoading(false);
     }
