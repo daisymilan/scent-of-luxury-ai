@@ -1,5 +1,6 @@
+
 // Import statements
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,10 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { supabase } from '@/integrations/supabase/client';
+import { UserRole } from '@/contexts/AuthContext';
 
 // Define form schema
 const formSchema = z.object({
@@ -22,14 +26,29 @@ const formSchema = z.object({
     .max(100, { message: "Password is too long" }),
 });
 
+type FormValues = z.infer<typeof formSchema>;
+
 const RegisterPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { register } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const form = useForm({
+  // Check if already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate('/');
+      }
+    };
+    
+    checkSession();
+  }, [navigate]);
+
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
@@ -37,23 +56,52 @@ const RegisterPage: React.FC = () => {
     },
   });
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: FormValues) => {
     if (isSubmitting) return;
     
     setIsSubmitting(true);
+    setError(null);
+    
     try {
-      const success = await register(data.email, data.password);
+      console.log("Starting registration with email:", data.email);
+      
+      // Default role is "User"
+      const role: UserRole = "User";
+      
+      const success = await register(data.email, data.password, role);
+      
+      console.log("Registration result:", success);
+      
       if (success) {
         toast({
           title: "Registration successful",
-          description: "Please check your email to verify your account.",
+          description: "Your account has been created. Please check your email for verification instructions.",
         });
+        
+        // Navigate to login page after a short delay
+        setTimeout(() => {
+          navigate('/login');
+        }, 1500);
+      } else {
+        setError("Failed to create account. Please try again.");
       }
     } catch (error) {
       console.error("Registration error:", error);
+      let errorMessage = "An unknown error occurred";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // Handle specific error cases
+        if (errorMessage.includes("User already registered")) {
+          errorMessage = "This email is already registered. Please log in instead.";
+        }
+      }
+      
+      setError(errorMessage);
       toast({
         title: "Registration failed",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -76,6 +124,14 @@ const RegisterPage: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
@@ -90,6 +146,7 @@ const RegisterPage: React.FC = () => {
                           <Input
                             placeholder="email@example.com"
                             className="pl-10 py-6 text-base bg-gray-800 border-gray-700 text-gray-100"
+                            disabled={isSubmitting}
                             {...field}
                           />
                         </div>
@@ -111,12 +168,14 @@ const RegisterPage: React.FC = () => {
                             type={showPassword ? "text" : "password"}
                             placeholder="••••••••"
                             className="pl-10 py-6 text-base bg-gray-800 border-gray-700 text-gray-100"
+                            disabled={isSubmitting}
                             {...field}
                           />
                           <button
                             type="button"
                             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
                             onClick={togglePasswordVisibility}
+                            tabIndex={-1}
                           >
                             {showPassword ? (
                               <EyeOff size={16} />
@@ -135,7 +194,7 @@ const RegisterPage: React.FC = () => {
                   className="w-full py-6 font-light bg-white text-black hover:bg-gray-200"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Registering..." : "Register"}
+                  {isSubmitting ? "Creating account..." : "Register"}
                 </Button>
               </form>
             </Form>
