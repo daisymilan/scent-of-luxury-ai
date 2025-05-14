@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
@@ -11,7 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import VoiceLoginComponent from '@/components/VoiceLoginComponent';
-import { Eye, EyeOff, Lock, LogIn, User, Mail } from 'lucide-react';
+import { Eye, EyeOff, Lock, LogIn, Mail } from 'lucide-react';
 
 // Enhanced form schema with better validation
 const formSchema = z.object({
@@ -49,7 +50,7 @@ const LoginPage: React.FC = () => {
       await login(data.email, data.password);
       toast({
         title: "Login successful",
-        description: "Welcome to Scent of Luxury dashboard",
+        description: "Welcome to MiN New York dashboard",
       });
       navigate('/dashboard'); // Explicitly navigate to dashboard
     } catch (error) {
@@ -77,25 +78,25 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-r from-purple-50 to-pink-50">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-r from-gray-900 to-black">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex flex-col items-center justify-center">
-            <div className="w-16 h-16 mb-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-              <span className="font-serif text-white text-lg">SL</span>
+            <div className="w-16 h-16 mb-3 bg-white rounded-full flex items-center justify-center">
+              <span className="font-medium text-black text-lg">MiN</span>
             </div>
-            <h1 className="text-3xl font-serif mb-1">Scent of Luxury</h1>
-            <p className="text-sm text-gray-600">AI-Powered Fragrance Experience</p>
+            <h1 className="text-3xl font-medium text-white mb-1">MiN New York</h1>
+            <p className="text-sm text-gray-400">Modern Intelligence</p>
           </div>
         </div>
         
-        <Card className="w-full shadow-sm border-gray-100">          
+        <Card className="w-full shadow-sm border-gray-800 bg-gray-900 text-gray-100">          
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-2 w-full bg-gray-50">
-              <TabsTrigger value="password" className="text-xs uppercase tracking-wider font-light py-3">
+            <TabsList className="grid grid-cols-2 w-full bg-gray-800">
+              <TabsTrigger value="password" className="text-xs uppercase tracking-wider font-light py-3 data-[state=active]:bg-gray-700">
                 Password
               </TabsTrigger>
-              <TabsTrigger value="voice" className="text-xs uppercase tracking-wider font-light py-3">
+              <TabsTrigger value="voice" className="text-xs uppercase tracking-wider font-light py-3 data-[state=active]:bg-gray-700">
                 Voice
               </TabsTrigger>
             </TabsList>
@@ -105,18 +106,18 @@ const LoginPage: React.FC = () => {
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                     <div className="space-y-2">
-                      <FormLabel className="text-xs uppercase tracking-wider font-light">Email</FormLabel>
+                      <FormLabel className="text-xs uppercase tracking-wider font-light text-gray-300">Email</FormLabel>
                       <FormField
                         control={form.control}
                         name="email"
                         render={({ field }) => (
                           <FormItem>
                             <div className="relative">
-                              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={16} />
                               <FormControl>
                                 <Input 
                                   placeholder="email@example.com" 
-                                  className="pl-10 py-6 text-base" 
+                                  className="pl-10 py-6 text-base bg-gray-800 border-gray-700 text-gray-100" 
                                   {...field} 
                                 />
                               </FormControl>
@@ -129,11 +130,11 @@ const LoginPage: React.FC = () => {
                     
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
-                        <FormLabel className="text-xs uppercase tracking-wider font-light">Password</FormLabel>
+                        <FormLabel className="text-xs uppercase tracking-wider font-light text-gray-300">Password</FormLabel>
                         <Button 
                           type="button" 
                           variant="link" 
-                          className="h-auto p-0 text-xs uppercase tracking-wider font-light text-purple-600"
+                          className="h-auto p-0 text-xs uppercase tracking-wider font-light text-gray-400"
                           onClick={handleForgotPasswordClick}
                         >
                           Forgot Password?
@@ -145,18 +146,18 @@ const LoginPage: React.FC = () => {
                         render={({ field }) => (
                           <FormItem>
                             <div className="relative">
-                              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={16} />
                               <FormControl>
                                 <Input 
                                   type={showPassword ? "text" : "password"} 
                                   placeholder="••••••••" 
-                                  className="pl-10 py-6 text-base" 
+                                  className="pl-10 py-6 text-base bg-gray-800 border-gray-700 text-gray-100" 
                                   {...field} 
                                 />
                               </FormControl>
                               <button 
                                 type="button"
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
                                 onClick={togglePasswordVisibility}
                               >
                                 {showPassword ? (
@@ -174,7 +175,7 @@ const LoginPage: React.FC = () => {
                     
                     <Button 
                       type="submit" 
-                      className="w-full py-6 font-light bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white" 
+                      className="w-full py-6 font-light bg-white text-black hover:bg-gray-200" 
                       disabled={isSubmitting}
                     >
                       <LogIn className="mr-2" size={18} />
@@ -183,12 +184,12 @@ const LoginPage: React.FC = () => {
                   </form>
                 </Form>
                 <div className="mt-6 text-center">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-400">
                     Don't have an account?{' '}
                     <Button 
                       type="button" 
                       variant="link" 
-                      className="h-auto p-0 text-purple-600 hover:text-purple-700"
+                      className="h-auto p-0 text-gray-300 hover:text-white"
                       onClick={handleRegisterClick}
                     >
                       Sign up
@@ -205,13 +206,13 @@ const LoginPage: React.FC = () => {
             </TabsContent>
           </Tabs>
           
-          <CardFooter className="flex flex-col text-center text-xs text-gray-500 pt-2 pb-6 px-6">
+          <CardFooter className="flex flex-col text-center text-xs text-gray-400 pt-2 pb-6 px-6">
             <p className="mb-2 text-xs uppercase tracking-wide font-light">Available test accounts:</p>
             <div className="grid grid-cols-2 gap-x-6 gap-y-1 w-full">
-              <div className="text-gray-600">Admin: admin@scentluxury.ai</div>
-              <div className="text-gray-600">Customer: customer@scentluxury.ai</div>
-              <div className="text-gray-600">Perfumer: perfumer@scentluxury.ai</div>
-              <div className="text-gray-600">Tester: tester@scentluxury.ai</div>
+              <div className="text-gray-400">Admin: admin@minny.com</div>
+              <div className="text-gray-400">Customer: customer@minny.com</div>
+              <div className="text-gray-400">Perfumer: perfumer@minny.com</div>
+              <div className="text-gray-400">Tester: tester@minny.com</div>
               <div className="col-span-2 mt-1 font-medium">Password: password123</div>
             </div>
           </CardFooter>

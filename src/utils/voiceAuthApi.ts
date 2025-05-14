@@ -1,5 +1,6 @@
-// Adding this file with the updated VoiceAuthResponse interface
-// This is a stub implementation as we don't have the full file
+
+// src/utils/voiceAuthApi.ts
+// Update the VoiceAuthResponse interface to include the error property
 
 // Update the VoiceAuthResponse interface to include the error property
 export interface VoiceAuthResponse {
@@ -7,6 +8,10 @@ export interface VoiceAuthResponse {
   message?: string;
   error?: string;  // Add the error property
   data?: any;
+  user?: {
+    role: string;
+    id?: string;
+  };
 }
 
 // Voice authentication API functions
@@ -89,6 +94,62 @@ export const deleteVoiceProfile = async (userId: string): Promise<VoiceAuthRespo
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error during voice profile deletion",
+    };
+  }
+};
+
+// Add the missing processVoiceAuth function
+export const processVoiceAuth = async (audioBlob: Blob, userId?: string, webhookUrl?: string): Promise<VoiceAuthResponse> => {
+  try {
+    console.log(`Processing voice authentication for ${userId || 'unknown user'}`);
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    
+    // Mock successful authentication
+    const roles = ['CEO', 'CCO', 'Commercial Director', 'Regional Manager', 'Marketing Manager'];
+    const randomRole = roles[Math.floor(Math.random() * roles.length)];
+    
+    return {
+      success: true,
+      message: "Voice authentication successful",
+      user: {
+        role: randomRole,
+        id: userId || 'user-' + Math.random().toString(36).substring(2, 9)
+      }
+    };
+  } catch (error) {
+    console.error("Voice processing error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error during voice processing",
+    };
+  }
+};
+
+// Add the missing getExecutiveRoles function
+export const getExecutiveRoles = async (): Promise<string[]> => {
+  // Return a list of executive roles
+  return ['CEO', 'CCO', 'Commercial Director', 'Regional Manager', 'Marketing Manager'];
+};
+
+// Add the missing resetVoiceEnrollment function
+export const resetVoiceEnrollment = async (userId: string): Promise<VoiceAuthResponse> => {
+  try {
+    console.log(`Resetting voice enrollment for user ${userId}`);
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    return {
+      success: true,
+      message: "Voice enrollment reset successfully"
+    };
+  } catch (error) {
+    console.error("Voice enrollment reset error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error during voice enrollment reset",
     };
   }
 };

@@ -1,248 +1,255 @@
 
-// src/pages/SignupPage.tsx - UPDATED VERSION
-
-import { useState, FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import VoiceEnrollment from '../components/VoiceEnrollment';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/components/ui/use-toast';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { Eye, EyeOff, Mail, User, Lock } from 'lucide-react';
 
-// Step component to display current registration step
-const StepIndicator = ({ currentStep, totalSteps }: { currentStep: number, totalSteps: number }) => {
-  return (
-    <div className="flex items-center justify-center mb-6">
-      {Array.from({ length: totalSteps }).map((_, i) => (
-        <div key={i} className="flex items-center">
-          <div 
-            className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              i + 1 === currentStep ? 'bg-primary text-white' : 
-              i + 1 < currentStep ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
-            }`}
-          >
-            {i + 1 < currentStep ? '✓' : i + 1}
-          </div>
-          {i < totalSteps - 1 && (
-            <div 
-              className={`h-1 w-10 ${
-                i + 1 < currentStep ? 'bg-primary' : 'bg-muted'
-              }`}
-            ></div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-};
+// Form validation schema
+const signupSchema = z.object({
+  firstName: z.string().min(2, { message: 'First name must be at least 2 characters' }).max(50),
+  lastName: z.string().min(2, { message: 'Last name must be at least 2 characters' }).max(50),
+  email: z.string().email({ message: 'Please enter a valid email address' }),
+  password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
+  confirmPassword: z.string()
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ['confirmPassword']
+});
 
-const SignupPage = () => {
-  // Form fields
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  
-  // Registration steps
-  const [step, setStep] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Hooks
+type SignupFormValues = z.infer<typeof signupSchema>;
+
+const SignupPage: React.FC = () => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { register } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { register, login, enrollVoice } = useAuth();
-  
-  // Handle form submission for step 1
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    
-    if (!email || !password || !name) {
-      toast({
-        title: "Error",
-        description: "Please fill in all fields",
-        variant: "destructive"
-      });
-      return;
+
+  const form = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      password: '',
+      confirmPassword: ''
     }
-    
-    setIsLoading(true);
-    
+  });
+
+  const onSubmit = async (data: SignupFormValues) => {
+    setIsSubmitting(true);
     try {
-      // Create userData object as Record<string, any>
-      const userData: Record<string, any> = {
-        firstName: name.split(' ')[0],
-        lastName: name.split(' ').slice(1).join(' '),
-        fragrancePreference: '',
-        fragranceStyle: '',
-        fragranceStrength: ''
+      // Create userData object that matches the Record<string, any> type
+      const userData = {
+        firstName: data.firstName, 
+        lastName: data.lastName,
       };
       
-      // Register the user using AuthContext
-      await register(email, password, userData);
+      const success = await register(data.email, data.password, userData);
       
-      // Login the user to get the session
-      await login(email, password);
-      
-      // Proceed to voice enrollment step
-      setStep(2);
-      
-      toast({
-        title: "Account created",
-        description: "Your account has been created successfully. Now let's set up voice authentication.",
-      });
-    } catch (error: any) {
-      console.error('Signup error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create account. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  // Handle voice enrollment completion
-  const handleVoiceEnrollment = async (voiceSamples: string[]) => {
-    setIsLoading(true);
-    
-    try {
-      // Use the enrollVoice function from AuthContext
-      const success = await enrollVoice(voiceSamples);
-      
-      // After successful enrollment, proceed to the next step
       if (success) {
-        setStep(3);
-        return true;
+        toast({
+          title: "Registration successful",
+          description: "Welcome to MiN New York!"
+        });
+        navigate('/');
+      } else {
+        toast({
+          title: "Registration failed",
+          description: "There was an error creating your account. Please try again.",
+          variant: "destructive"
+        });
       }
-      
-      return false;
     } catch (error) {
-      console.error('Voice enrollment error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       toast({
-        title: "Error",
-        description: "Failed to enroll voice. Please try again.",
+        title: "Registration failed",
+        description: errorMessage,
         variant: "destructive"
       });
-      return false;
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
-  
-  // Handle skip voice enrollment
-  const handleSkipVoice = () => {
-    setStep(3);
-  };
-  
-  // Handle completion
-  const handleComplete = () => {
-    navigate('/dashboard');
-  };
-  
+
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
+  const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
+
   return (
-    <div className="container max-w-md mx-auto py-10">
-      <Card>
-        <CardHeader>
-          <CardTitle>Create an Account</CardTitle>
-          <CardDescription>
-            {step === 1 && "Fill in your details to create a new account"}
-            {step === 2 && "Set up voice authentication for enhanced security"}
-            {step === 3 && "Your account has been created successfully"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <StepIndicator currentStep={step} totalSteps={3} />
-          
-          {step === 1 && (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input 
-                  id="name" 
-                  type="text" 
-                  placeholder="John Doe" 
-                  value={name} 
-                  onChange={(e) => setName(e.target.value)} 
-                  required 
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="you@example.com" 
-                  value={email} 
-                  onChange={(e) => setEmail(e.target.value)} 
-                  required 
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  placeholder="••••••••" 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  required 
-                />
-              </div>
-              
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={isLoading}
-              >
-                {isLoading ? "Creating Account..." : "Create Account"}
-              </Button>
-              
-              <div className="text-center text-sm">
-                <span className="text-muted-foreground">Already have an account? </span>
-                <a href="/login" className="text-primary hover:underline">
-                  Sign in
-                </a>
-              </div>
-            </form>
-          )}
-          
-          {step === 2 && (
-            <VoiceEnrollment 
-              onComplete={handleVoiceEnrollment} 
-              onSkip={handleSkipVoice} 
-              passphrase="scent of luxury"
-              requiredSamples={3}
-            />
-          )}
-          
-          {step === 3 && (
-            <div className="text-center py-6 space-y-4">
-              <div className="h-16 w-16 rounded-full bg-green-500 flex items-center justify-center mx-auto">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-              
-              <h3 className="text-xl font-medium text-green-600">Registration Completed!</h3>
-              
-              <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                Your account has been successfully created and you're now ready to experience the Scent of Luxury.
-              </p>
-              
-              <Button 
-                className="w-full" 
-                onClick={handleComplete}
-              >
-                Go to Dashboard
-              </Button>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-r from-gray-900 to-black">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="flex flex-col items-center justify-center">
+            <div className="w-16 h-16 mb-3 bg-white rounded-full flex items-center justify-center">
+              <span className="font-medium text-black text-lg">MiN</span>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <h1 className="text-3xl font-medium text-white mb-1">MiN New York</h1>
+            <p className="text-sm text-gray-400">Modern Intelligence</p>
+          </div>
+        </div>
+
+        <Card className="w-full shadow-sm border-gray-800 bg-gray-900 text-gray-100">
+          <CardHeader>
+            <CardTitle className="text-xl font-medium text-center">Create your account</CardTitle>
+            <CardDescription className="text-center text-gray-400">
+              Enter your information to get started
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs uppercase tracking-wider font-light text-gray-300">First Name</FormLabel>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={16} />
+                          <FormControl>
+                            <Input 
+                              placeholder="John" 
+                              className="pl-10 py-5 text-base bg-gray-800 border-gray-700 text-gray-100" 
+                              {...field} 
+                            />
+                          </FormControl>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs uppercase tracking-wider font-light text-gray-300">Last Name</FormLabel>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={16} />
+                          <FormControl>
+                            <Input 
+                              placeholder="Doe" 
+                              className="pl-10 py-5 text-base bg-gray-800 border-gray-700 text-gray-100" 
+                              {...field} 
+                            />
+                          </FormControl>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs uppercase tracking-wider font-light text-gray-300">Email</FormLabel>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={16} />
+                        <FormControl>
+                          <Input 
+                            placeholder="your@email.com" 
+                            className="pl-10 py-5 text-base bg-gray-800 border-gray-700 text-gray-100" 
+                            {...field} 
+                          />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs uppercase tracking-wider font-light text-gray-300">Password</FormLabel>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={16} />
+                        <FormControl>
+                          <Input 
+                            type={showPassword ? "text" : "password"} 
+                            placeholder="••••••••" 
+                            className="pl-10 py-5 text-base bg-gray-800 border-gray-700 text-gray-100" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <button 
+                          type="button"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                          onClick={togglePasswordVisibility}
+                        >
+                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs uppercase tracking-wider font-light text-gray-300">Confirm Password</FormLabel>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={16} />
+                        <FormControl>
+                          <Input 
+                            type={showConfirmPassword ? "text" : "password"} 
+                            placeholder="••••••••" 
+                            className="pl-10 py-5 text-base bg-gray-800 border-gray-700 text-gray-100" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <button 
+                          type="button"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                          onClick={toggleConfirmPasswordVisibility}
+                        >
+                          {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <Button 
+                  type="submit" 
+                  className="w-full py-5 font-light bg-white text-black hover:bg-gray-200" 
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Creating account..." : "Create Account"}
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+          <CardFooter className="flex justify-center">
+            <p className="text-sm text-gray-400">
+              Already have an account?{' '}
+              <Link to="/login" className="text-gray-300 hover:text-white">
+                Log in
+              </Link>
+            </p>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   );
 };

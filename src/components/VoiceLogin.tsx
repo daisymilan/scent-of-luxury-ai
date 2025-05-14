@@ -1,8 +1,9 @@
-// src/components/VoiceLogin.tsx - NEW FILE
+
+// src/components/VoiceLogin.tsx
 
 import React, { useEffect } from 'react';
 import useVoiceAuth from '../hooks/useVoiceAuth';
-import '../styles/VoiceAuth.css'; // We'll create this next
+import '../styles/VoiceAuth.css';
 
 interface VoiceLoginProps {
   onSuccess: () => void;
@@ -13,7 +14,7 @@ interface VoiceLoginProps {
 const VoiceLogin: React.FC<VoiceLoginProps> = ({
   onSuccess,
   onError,
-  passphrase = 'scent of luxury'
+  passphrase = 'modern intelligence'
 }) => {
   const {
     status,
