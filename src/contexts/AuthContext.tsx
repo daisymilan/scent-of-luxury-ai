@@ -75,38 +75,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Check authentication status on mount
   useEffect(() => {
     const checkAuthStatus = async () => {
-      setLoading(true);
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('Error fetching session:', error);
-      }
-      
-      if (session) {
-        setIsAuthenticated(true);
-        setCurrentUser(session.user);
+      try {
+        setLoading(true);
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        // Fetch user details including role from the users table
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
-        
-        if (userError) {
-          console.error('Error fetching user data:', userError);
-          // Try to get role from user metadata as fallback
-          const role = session.user.user_metadata?.role || 'User';
-          setUserRole(role as UserRole);
-        } else {
-          setUserRole((userData?.role as UserRole) || 'User' as UserRole);
+        if (error) {
+          console.error('Error fetching session:', error);
         }
-      } else {
-        setIsAuthenticated(false);
-        setCurrentUser(null);
-        setUserRole(null);
+        
+        if (session) {
+          setIsAuthenticated(true);
+          setCurrentUser(session.user);
+          
+          // Fetch user details including role from the users table
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (userError) {
+            console.error('Error fetching user data:', userError);
+            // Try to get role from user metadata as fallback
+            const role = session.user.user_metadata?.role || 'User';
+            setUserRole(role as UserRole);
+          } else {
+            setUserRole((userData?.role as UserRole) || 'User' as UserRole);
+          }
+        } else {
+          setIsAuthenticated(false);
+          setCurrentUser(null);
+          setUserRole(null);
+        }
+      } catch (err) {
+        console.error("Error checking auth status:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     
     checkAuthStatus();
@@ -151,12 +156,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Login function
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      console.log("Login function called with email:", email);
+      setLoading(true);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Login error:", error.message);
+        throw error;
+      }
+      
+      console.log("Login response:", data.session ? "Session exists" : "No session");
       
       // Set authenticated state
       setIsAuthenticated(!!data.session);
@@ -190,6 +203,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Login error:', error);
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
