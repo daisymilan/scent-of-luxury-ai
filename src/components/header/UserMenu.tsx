@@ -1,5 +1,5 @@
 
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { User, LogOut } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface UserMenuProps {
   username: string;
@@ -18,6 +19,31 @@ interface UserMenuProps {
 }
 
 const UserMenu = ({ username, email, onLogout }: UserMenuProps) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const handleLogout = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      console.log("Logout button clicked in UserMenu");
+      await onLogout();
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out",
+      });
+      navigate('/login');
+    } catch (error) {
+      console.error("Error during logout:", error);
+      toast({
+        variant: "destructive",
+        title: "Logout failed",
+        description: "Could not log you out. Please try again.",
+      });
+    }
+  };
+  
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -39,7 +65,10 @@ const UserMenu = ({ username, email, onLogout }: UserMenuProps) => {
           </DropdownMenuItem>
         </Link>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer hover:text-black rounded-none" onClick={onLogout}>
+        <DropdownMenuItem 
+          className="cursor-pointer hover:text-black rounded-none" 
+          onClick={handleLogout}
+        >
           <LogOut className="mr-2" size={16} />
           <span>Logout</span>
         </DropdownMenuItem>

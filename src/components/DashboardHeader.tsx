@@ -15,7 +15,7 @@ interface DashboardHeaderProps {
 
 const DashboardHeader = ({ title, heading }: DashboardHeaderProps = {}) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const { user, logout } = useAuth();
+  const { currentUser, logout } = useAuth();
   
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -29,11 +29,11 @@ const DashboardHeader = ({ title, heading }: DashboardHeaderProps = {}) => {
           <Logo />
           
           {/* Desktop Navigation */}
-          <DesktopNavigation userRole={user?.role} />
+          <DesktopNavigation userRole={currentUser?.user_metadata?.role} />
           
           {/* Mobile Navigation */}
           <MobileNavigation 
-            userRole={user?.role} 
+            userRole={currentUser?.user_metadata?.role} 
             searchQuery={searchQuery} 
             setSearchQuery={setSearchQuery} 
           />
@@ -45,8 +45,8 @@ const DashboardHeader = ({ title, heading }: DashboardHeaderProps = {}) => {
           
           {/* User Profile Dropdown */}
           <UserMenu 
-            username={user?.name || 'Guest'} 
-            email={user?.email || ''} 
+            username={currentUser?.user_metadata?.name || 'Guest'} 
+            email={currentUser?.email || ''} 
             onLogout={logout} 
           />
         </div>
