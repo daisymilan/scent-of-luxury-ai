@@ -54,7 +54,7 @@ export const ResponseDisplay = ({
     <div className="mb-4">
       <div className="flex items-start mb-2">
         <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white mr-2">
-          M
+          AI
         </div>
         <div className="bg-white p-3 rounded-lg shadow-sm max-w-[85%] text-gray-700 overflow-x-auto">
           <div className="text-sm font-normal whitespace-pre-line break-words">{formattedResponse}</div>

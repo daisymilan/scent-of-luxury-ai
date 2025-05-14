@@ -1,14 +1,28 @@
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 
 export function useSpeechSynthesis() {
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const [supported, setSupported] = useState<boolean>(false);
   
   useEffect(() => {
     // Initialize speech synthesis
     if ('speechSynthesis' in window) {
       synthRef.current = window.speechSynthesis;
+      setSupported(true);
+      
+      // Load voices early
+      const getVoices = () => {
+        return window.speechSynthesis.getVoices();
+      };
+      
+      getVoices();
+      
+      // Some browsers need this event to get voices
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = getVoices;
+      }
     }
     
     // Cleanup on unmount
@@ -70,7 +84,7 @@ export function useSpeechSynthesis() {
       return synthRef.current ? synthRef.current.speaking : false;
     },
     isSupported: () => {
-      return 'speechSynthesis' in window;
+      return supported;
     }
   };
 }

@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CollapsedAssistant } from './CollapsedAssistant';
 import { ExpandedAssistant } from './ExpandedAssistant';
 

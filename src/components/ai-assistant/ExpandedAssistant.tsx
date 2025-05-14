@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useChat } from 'ai/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,7 @@ export const ExpandedAssistant = ({ setIsExpanded }: ExpandedAssistantProps) => 
   const [displayedQuery, setDisplayedQuery] = useState<string>('');
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
   const { toast } = useToast();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   
   // Use the speech synthesis hook
   const speechSynthesis = useSpeechSynthesis();
@@ -40,6 +41,16 @@ export const ExpandedAssistant = ({ setIsExpanded }: ExpandedAssistantProps) => 
       setDisplayedQuery(query);
     }
   });
+  
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollContainer) {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      }
+    }
+  }, [messages, isLoading]);
   
   // Handle read aloud functionality
   const handleReadAloud = (responseText: string) => {
@@ -71,11 +82,13 @@ export const ExpandedAssistant = ({ setIsExpanded }: ExpandedAssistantProps) => 
   };
 
   // Handle query submission
-  const handleQuerySubmit = () => {
-    if (query) {
-      setDisplayedQuery(query); // Update displayed query immediately
+  const handleQuerySubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
+    if (query.trim()) {
       setInput(query);
-      handleSubmit(new Event('submit') as unknown as React.FormEvent<HTMLFormElement>);
+      setDisplayedQuery(query); // Update displayed query immediately
+      handleSubmit(e || new Event('submit') as unknown as React.FormEvent);
       setQuery('');
     }
   };
@@ -97,7 +110,7 @@ export const ExpandedAssistant = ({ setIsExpanded }: ExpandedAssistantProps) => 
       </CardHeader>
       
       <CardContent className="p-0">
-        <ScrollArea className="h-[300px] p-4">
+        <ScrollArea ref={scrollAreaRef} className="h-[300px] p-4">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-4">
               <p className="text-sm text-muted-foreground mb-2">
@@ -109,12 +122,12 @@ export const ExpandedAssistant = ({ setIsExpanded }: ExpandedAssistantProps) => 
             </div>
           ) : (
             <div className="space-y-4 pt-2 pb-4">
-              {messages.map((message) => (
+              {messages.map((message, i) => (
                 message.role === 'user' ? (
-                  <UserQuery key={message.id} displayedQuery={message.content} />
+                  <UserQuery key={message.id || `user-${i}`} displayedQuery={message.content} />
                 ) : (
                   <ResponseDisplay 
-                    key={message.id} 
+                    key={message.id || `assistant-${i}`}
                     response={message.content}
                     isSpeaking={isSpeaking}
                     handleReadAloud={() => handleReadAloud(message.content)}
@@ -128,25 +141,21 @@ export const ExpandedAssistant = ({ setIsExpanded }: ExpandedAssistantProps) => 
       </CardContent>
       
       <CardFooter className="p-3 pt-2 border-t bg-background flex gap-2">
-        <Input
-          placeholder="Ask a question..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleQuerySubmit();
-            }
-          }}
-          disabled={isLoading}
-          className="flex-1"
-        />
-        <Button 
-          onClick={handleQuerySubmit}
-          disabled={isLoading || !query.trim()}
-        >
-          Send
-        </Button>
+        <form onSubmit={handleQuerySubmit} className="flex gap-2 w-full">
+          <Input
+            placeholder="Ask a question..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            disabled={isLoading}
+            className="flex-1"
+          />
+          <Button 
+            type="submit"
+            disabled={isLoading || !query.trim()}
+          >
+            Send
+          </Button>
+        </form>
       </CardFooter>
     </Card>
   );
