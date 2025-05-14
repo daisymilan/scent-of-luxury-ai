@@ -1,5 +1,4 @@
-
-// src/App.tsx - ADDING SIGNUP ROUTE
+// src/App.tsx - WITH ROLE DEBUG PANEL
 
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -25,6 +24,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import SocialMediaAdsPage from "./pages/SocialMediaAdsPage";
 import ReorderReminderPage from "./pages/ReorderReminderPage";
 import AiAssistant from "./components/ai-assistant/AiAssistant";
+import RoleDebugPanel from "./components/RoleDebugPanel"; // Import the RoleDebugPanel
 
 // Import the voice authentication styles
 import "./styles/VoiceAuth.css";
@@ -123,6 +123,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <ConditionalAiAssistant />
+          <RoleDebugPanel /> {/* Add the RoleDebugPanel here */}
         </TooltipProvider>
       </ToastProvider>
     </ThemeProvider>
