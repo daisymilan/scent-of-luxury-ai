@@ -14,7 +14,7 @@ import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 const Index = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [apiConnectionStatus, setApiConnectionStatus] = useState<'checking' | 'connected' | 'failed'>('checking');
-  const { user } = useAuth();
+  const { currentUser, userRole } = useAuth();
   const currentDate = new Date();
   const formattedDate = new Intl.DateTimeFormat('en-US', {
     month: 'long',
@@ -24,6 +24,9 @@ const Index = () => {
     minute: 'numeric',
     hour12: true
   }).format(currentDate);
+
+  console.log("Dashboard - currentUser:", currentUser);
+  console.log("Dashboard - userRole from context:", userRole);
 
   // Check if WooCommerce is configured
   const wooConfig = getWooCommerceConfig();
@@ -77,8 +80,8 @@ const Index = () => {
       <DashboardHeader />
       
       <div className="py-6">
-        <h1 className="text-3xl font-normal mb-1">MiN NEW YORK {user?.role} Dashboard</h1>
-        <p className="text-gray-600">Welcome back to your luxury fragrance dashboard, {user?.name}</p>
+        <h1 className="text-3xl font-normal mb-1">MiN NEW YORK {userRole || 'User'} Dashboard</h1>
+        <p className="text-gray-600">Welcome back to your luxury fragrance dashboard, {currentUser?.user_metadata?.name || 'Guest'}</p>
         <div className="text-sm text-gray-500 mt-4 text-right">Last updated: {formattedDate}</div>
       </div>
       

@@ -14,6 +14,8 @@ const MobileNavigationLink = ({ to, label, requiredRoles, userRole }: MobileNavi
   const location = useLocation();
   const isActive = location.pathname === to || 
                   (to !== '/' && location.pathname.startsWith(to));
+  
+  console.log(`MobileNavigationLink "${label}" - userRole: ${userRole}, requiredRoles: ${JSON.stringify(requiredRoles)}, hasAccess: ${!requiredRoles || !userRole || requiredRoles.includes(userRole)}`);
                   
   // If no required roles are specified or the user's role is in the required roles, render the link
   if (!requiredRoles || !userRole || requiredRoles.includes(userRole)) {

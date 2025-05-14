@@ -14,6 +14,9 @@ interface MobileNavigationProps {
 }
 
 const MobileNavigation = ({ userRole, searchQuery, setSearchQuery }: MobileNavigationProps) => {
+  // Debug log to help us see what role is being passed
+  console.log("MobileNavigation received userRole:", userRole);
+  
   return (
     <Sheet>
       <SheetTrigger asChild>

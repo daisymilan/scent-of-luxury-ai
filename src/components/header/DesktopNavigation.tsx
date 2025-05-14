@@ -8,6 +8,9 @@ interface DesktopNavigationProps {
 }
 
 const DesktopNavigation = ({ userRole }: DesktopNavigationProps) => {
+  // Debug log to help us see what role is being passed
+  console.log("DesktopNavigation received userRole:", userRole);
+  
   return (
     <div className="hidden md:block ml-6">
       <NavigationMenu>
