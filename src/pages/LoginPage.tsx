@@ -12,8 +12,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import VoiceLoginComponent from '@/components/VoiceLoginComponent';
-import { Eye, EyeOff, Lock, LogIn, Mail } from 'lucide-react';
+import { Eye, EyeOff, Lock, LogIn, Mail, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // Enhanced form schema with better validation
 const formSchema = z.object({
@@ -31,6 +32,8 @@ const LoginPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("password");
   const [showPassword, setShowPassword] = useState(false);
+  const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
+  const [currentEmail, setCurrentEmail] = useState('');
   const { login } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -56,10 +59,25 @@ const LoginPage: React.FC = () => {
     if (isSubmitting) return;
     
     setIsSubmitting(true);
+    setCurrentEmail(data.email);
+    setEmailNotConfirmed(false);
+    
     try {
       console.log("Attempting login with:", data.email); 
       
       const success = await login(data.email, data.password);
+      
+      if (!success) {
+        // Check specifically for email confirmation errors
+        const { error } = await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password,
+        });
+        
+        if (error && error.message.includes('Email not confirmed')) {
+          setEmailNotConfirmed(true);
+        }
+      }
       
       if (success) {
         toast({
@@ -82,6 +100,37 @@ const LoginPage: React.FC = () => {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!currentEmail) return;
+    
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: currentEmail,
+      });
+      
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Could not resend confirmation email. Please try again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Email sent",
+          description: "Confirmation email has been resent. Please check your inbox.",
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An error occurred while trying to resend the confirmation email.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -115,7 +164,26 @@ const LoginPage: React.FC = () => {
           </div>
         </div>
         
-        <Card className="w-full shadow-sm border-gray-800 bg-gray-900 text-gray-100">          
+        <Card className="w-full shadow-sm border-gray-800 bg-gray-900 text-gray-100">
+          {emailNotConfirmed && (
+            <Alert className="m-4 border-amber-500 bg-amber-900/20 text-amber-200">
+              <AlertCircle className="h-5 w-5 text-amber-500" />
+              <AlertDescription>
+                <div className="space-y-2">
+                  <p>Email not confirmed. Please check your inbox and click the confirmation link.</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-xs border-amber-500 text-amber-200 hover:bg-amber-800/20"
+                    onClick={handleResendConfirmation}
+                  >
+                    Resend confirmation email
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-2 w-full bg-gray-800">
               <TabsTrigger value="password" className="text-xs uppercase tracking-wider font-light py-3 data-[state=active]:bg-gray-700">

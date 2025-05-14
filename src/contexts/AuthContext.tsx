@@ -181,6 +181,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (error) {
         console.error('Login failed:', error.message);
+        
+        // Check if the error is about email confirmation
+        if (error.message.includes('Email not confirmed')) {
+          toast({
+            title: "Email not confirmed",
+            description: "Please check your email inbox and confirm your email address before logging in.",
+            variant: "destructive",
+          });
+          
+          // Offer to resend confirmation email
+          const { error: resendError } = await supabase.auth.resend({
+            type: 'signup',
+            email: email,
+          });
+          
+          if (!resendError) {
+            toast({
+              title: "Confirmation email resent",
+              description: "We've sent another confirmation email to your address.",
+            });
+          }
+          
+          return false;
+        }
+        
         toast({
           title: "Login failed",
           description: error.message || "Invalid credentials. Please try again.",
@@ -242,7 +267,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             first_name: userData?.firstName,
             last_name: userData?.lastName,
             role: userData?.role || 'User'
-          }
+          },
+          emailRedirectTo: window.location.origin
         }
       });
 
@@ -295,31 +321,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         console.log("User profile created successfully for:", email);
       }
-
-      setIsAuthenticated(true);
-      
-      // Create a basic user object until the full profile loads
-      const basicUser: User = {
-        id: authResponse.user.id,
-        email: email,
-        first_name: userData?.firstName || '',
-        last_name: userData?.lastName || '',
-        role: (userData?.role as UserRole) || 'User',
-        name: userData?.firstName && userData?.lastName
-          ? `${userData.firstName} ${userData.lastName}`
-          : userData?.firstName || email.split('@')[0] || 'User'
-      };
-      
-      setCurrentUser(basicUser);
-      setUserRole((userData?.role as UserRole) || 'User');
       
       toast({
         title: "Registration successful",
-        description: "Your account has been created!",
+        description: "Your account has been created! Please check your email to confirm your registration.",
       });
       
-      // Navigate to home after successful registration
-      navigate('/');
+      // Navigate to login after successful registration
+      navigate('/login');
       
       return true;
     } catch (error) {
