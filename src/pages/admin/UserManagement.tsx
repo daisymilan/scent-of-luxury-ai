@@ -19,7 +19,7 @@ const UserManagement = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*');
       
       if (error) throw error;
@@ -61,9 +61,9 @@ const UserManagement = () => {
       // Generate a UUID for the user id
       const userId = crypto.randomUUID();
       
-      // Insert the new user into profiles table
+      // Insert the new user into users table
       const { error } = await supabase
-        .from('profiles')
+        .from('users')
         .insert({
           id: userId, // Required field
           email: inviteEmail,
