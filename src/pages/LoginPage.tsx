@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
@@ -12,11 +11,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import VoiceLoginComponent from '@/components/VoiceLoginComponent';
-import { Eye, EyeOff, Lock, LogIn, User } from 'lucide-react';
+import { Eye, EyeOff, Lock, LogIn, User, Mail } from 'lucide-react';
 
+// Enhanced form schema with better validation
 const formSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  email: z.string()
+    .email({ message: "Please enter a valid email address" })
+    .min(1, { message: "Email is required" }),
+  password: z.string()
+    .min(6, { message: "Password must be at least 6 characters" })
+    .max(100, { message: "Password is too long" }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -45,8 +49,9 @@ const LoginPage: React.FC = () => {
       await login(data.email, data.password);
       toast({
         title: "Login successful",
-        description: "Welcome to MiN NEW YORK dashboard",
+        description: "Welcome to Scent of Luxury dashboard",
       });
+      navigate('/dashboard'); // Explicitly navigate to dashboard
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Invalid email or password';
       toast({
@@ -63,16 +68,24 @@ const LoginPage: React.FC = () => {
     setShowPassword(!showPassword);
   };
 
+  const handleRegisterClick = () => {
+    navigate('/register');
+  };
+
+  const handleForgotPasswordClick = () => {
+    navigate('/forgot-password');
+  };
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-white">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-r from-purple-50 to-pink-50">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex flex-col items-center justify-center">
-            <div className="w-16 h-16 mb-3 bg-black rounded-full flex items-center justify-center">
-              <span className="font-serif text-white text-lg">MiN</span>
+            <div className="w-16 h-16 mb-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+              <span className="font-serif text-white text-lg">SL</span>
             </div>
-            <h1 className="text-3xl font-serif mb-1">MiN NEW YORK</h1>
-            <p className="text-sm text-gray-600">Luxury Fragrances</p>
+            <h1 className="text-3xl font-serif mb-1">Scent of Luxury</h1>
+            <p className="text-sm text-gray-600">AI-Powered Fragrance Experience</p>
           </div>
         </div>
         
@@ -99,7 +112,7 @@ const LoginPage: React.FC = () => {
                         render={({ field }) => (
                           <FormItem>
                             <div className="relative">
-                              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                               <FormControl>
                                 <Input 
                                   placeholder="email@example.com" 
@@ -115,7 +128,17 @@ const LoginPage: React.FC = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <FormLabel className="text-xs uppercase tracking-wider font-light">Password</FormLabel>
+                      <div className="flex justify-between items-center">
+                        <FormLabel className="text-xs uppercase tracking-wider font-light">Password</FormLabel>
+                        <Button 
+                          type="button" 
+                          variant="link" 
+                          className="h-auto p-0 text-xs uppercase tracking-wider font-light text-purple-600"
+                          onClick={handleForgotPasswordClick}
+                        >
+                          Forgot Password?
+                        </Button>
+                      </div>
                       <FormField
                         control={form.control}
                         name="password"
@@ -149,12 +172,29 @@ const LoginPage: React.FC = () => {
                       />
                     </div>
                     
-                    <Button type="submit" className="w-full py-6 font-light bg-black hover:bg-gray-900 text-white rounded-none" disabled={isSubmitting}>
+                    <Button 
+                      type="submit" 
+                      className="w-full py-6 font-light bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white" 
+                      disabled={isSubmitting}
+                    >
                       <LogIn className="mr-2" size={18} />
                       {isSubmitting ? "Logging in..." : "Login"}
                     </Button>
                   </form>
                 </Form>
+                <div className="mt-6 text-center">
+                  <p className="text-sm text-gray-600">
+                    Don't have an account?{' '}
+                    <Button 
+                      type="button" 
+                      variant="link" 
+                      className="h-auto p-0 text-purple-600 hover:text-purple-700"
+                      onClick={handleRegisterClick}
+                    >
+                      Sign up
+                    </Button>
+                  </p>
+                </div>
               </CardContent>
             </TabsContent>
             
@@ -168,12 +208,11 @@ const LoginPage: React.FC = () => {
           <CardFooter className="flex flex-col text-center text-xs text-gray-500 pt-2 pb-6 px-6">
             <p className="mb-2 text-xs uppercase tracking-wide font-light">Available test accounts:</p>
             <div className="grid grid-cols-2 gap-x-6 gap-y-1 w-full">
-              <div className="text-gray-600">CEO: ceo@minyork.com</div>
-              <div className="text-gray-600">CCO: cco@minyork.com</div>
-              <div className="text-gray-600">Director: director@minyork.com</div>
-              <div className="text-gray-600">Regional: regional@minyork.com</div>
-              <div className="text-gray-600">Marketing: marketing@minyork.com</div>
-              <div className="col-span-2 mt-1 font-medium">Password: password</div>
+              <div className="text-gray-600">Admin: admin@scentluxury.ai</div>
+              <div className="text-gray-600">Customer: customer@scentluxury.ai</div>
+              <div className="text-gray-600">Perfumer: perfumer@scentluxury.ai</div>
+              <div className="text-gray-600">Tester: tester@scentluxury.ai</div>
+              <div className="col-span-2 mt-1 font-medium">Password: password123</div>
             </div>
           </CardFooter>
         </Card>

@@ -1,96 +1,107 @@
-/* src/styles/VoiceAuth.css - COMPLETE FILE */
+/* src/styles/VoiceAuth.css */
 
+/* Voice Authentication Container */
 .voice-auth-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     width: 100%;
-    padding: 20px;
-    font-family: 'Montserrat', sans-serif;
+    padding: 1.25rem;
+    font-family: 'Inter', system-ui, sans-serif;
 }
 
+/* Voice Authentication Card */
 .voice-auth-card {
     width: 100%;
-    max-width: 450px;
-    padding: 30px;
+    max-width: 28rem;
+    padding: 1.875rem;
     background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    border-radius: 0.625rem;
+    box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.1);
     text-align: center;
 }
 
 .voice-auth-card h2 {
-    margin-bottom: 30px;
-    color: #333;
-    font-size: 24px;
-    font-weight: 500;
+    margin-bottom: 1.875rem;
+    color: #1e293b;
+    font-size: 1.5rem;
+    font-weight: 600;
 }
 
+/* Voice Authentication Content */
 .voice-auth-content {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
+    gap: 1.25rem;
 }
 
+/* Voice Authentication Instructions */
 .voice-auth-instruction {
     margin: 0;
-    color: #555;
-    font-size: 16px;
+    color: #475569;
+    font-size: 1rem;
     line-height: 1.5;
 }
 
+/* Voice Authentication Passphrase */
 .voice-auth-passphrase {
-    font-size: 20px;
+    font-size: 1.25rem;
     font-weight: 500;
-    color: #d1af72;
-    margin: 5px 0 20px;
+    color: #2563eb;
+    margin: 0.3125rem 0 1.25rem;
 }
 
+/* Voice Authentication Actions */
 .voice-auth-actions {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 0.75rem;
     width: 100%;
-    margin-top: 10px;
+    margin-top: 0.625rem;
 }
 
+/* Voice Authentication Button */
 .voice-auth-button {
-    padding: 12px 24px;
+    padding: 0.75rem 1.5rem;
     border: none;
-    border-radius: 8px;
-    font-size: 16px;
+    border-radius: 0.5rem;
+    font-size: 1rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
 }
 
 .voice-auth-button.primary {
-    background-color: #d1af72;
+    background-color: #2563eb;
     color: white;
 }
 
 .voice-auth-button.primary:hover {
-    background-color: #c6a058;
+    background-color: #1d4ed8;
 }
 
 .voice-auth-button.stop {
-    background-color: #e74c3c;
+    background-color: #ef4444;
     color: white;
 }
 
 .voice-auth-button.stop:hover {
-    background-color: #d62c1a;
+    background-color: #dc2626;
 }
 
 .voice-auth-button.retry {
-    background-color: #3498db;
+    background-color: #3b82f6;
     color: white;
 }
 
 .voice-auth-button.retry:hover {
-    background-color: #2980b9;
+    background-color: #2563eb;
 }
 
 .voice-auth-button:disabled {
@@ -99,107 +110,115 @@
     opacity: 0.7;
 }
 
+/* Voice Authentication Transcript */
 .voice-auth-transcript {
-    margin: 15px 0;
-    padding: 12px 18px;
-    background-color: #f5f5f5;
-    border-radius: 8px;
-    border-left: 4px solid #d1af72;
+    margin: 0.9375rem 0;
+    padding: 0.75rem 1.125rem;
+    background-color: #f8fafc;
+    border-radius: 0.5rem;
+    border-left: 0.25rem solid #2563eb;
     text-align: left;
     width: 100%;
 }
 
 .voice-auth-transcript p {
     margin: 0;
-    color: #555;
-    font-size: 14px;
+    color: #475569;
+    font-size: 0.875rem;
 }
 
+/* Voice Authentication Microphone Icon */
 .voice-auth-mic-icon {
-    width: 60px;
-    height: 60px;
-    margin-bottom: 15px;
+    width: 3.75rem;
+    height: 3.75rem;
+    margin-bottom: 0.9375rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .voice-auth-mic-icon svg {
     width: 100%;
     height: 100%;
-    fill: #d1af72;
+    color: #2563eb;
 }
 
 .voice-auth-mic-icon.active svg {
-    fill: #e74c3c;
+    color: #3b82f6;
     animation: pulse 1.5s infinite;
 }
 
+/* Voice Authentication Attempts */
 .voice-auth-attempts {
-    font-size: 14px;
-    color: #e74c3c;
-    margin: 0 0 10px;
+    font-size: 0.875rem;
+    color: #ef4444;
+    margin: 0 0 0.625rem;
 }
 
+/* Voice Authentication Locked */
 .voice-auth-locked {
-    padding: 15px;
-    margin: 15px 0;
-    background-color: #f8d7da;
-    border-radius: 8px;
-    color: #721c24;
+    padding: 0.9375rem;
+    margin: 0.9375rem 0;
+    background-color: #fee2e2;
+    border-radius: 0.5rem;
+    color: #b91c1c;
 }
 
 .voice-auth-locked p {
-    margin: 5px 0;
+    margin: 0.3125rem 0;
 }
 
+/* Voice Authentication Loading */
 .voice-auth-loading {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 15px;
+    gap: 0.9375rem;
 }
 
 .voice-auth-spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #d1af72;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 0.25rem solid #e2e8f0;
+    border-top: 0.25rem solid #2563eb;
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
 
 .voice-auth-success-icon {
-    width: 60px;
-    height: 60px;
+    width: 3.75rem;
+    height: 3.75rem;
     border-radius: 50%;
-    background-color: #27ae60;
+    background-color: #10b981;
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 0.9375rem;
 }
 
 .voice-auth-success-icon svg {
-    width: 40px;
-    height: 40px;
-    fill: white;
+    width: 2.5rem;
+    height: 2.5rem;
+    color: white;
 }
 
 /* Status-specific text colors */
 .voice-auth-instruction.listening {
-    color: #3498db;
+    color: #3b82f6;
     animation: pulse 1.5s infinite;
 }
 
 .voice-auth-instruction.processing {
-    color: #f39c12;
+    color: #f59e0b;
 }
 
 .voice-auth-instruction.success {
-    color: #27ae60;
+    color: #10b981;
     font-weight: 500;
 }
 
 .voice-auth-instruction.error {
-    color: #e74c3c;
+    color: #ef4444;
 }
 
 /* Animations */
@@ -227,76 +246,239 @@
     }
 }
 
-/* Luxury theme enhancements */
-.page-container {
-    background-color: #f9f6f2;
+/* Audio visualization */
+.voice-level-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    pointer-events: none;
+}
+
+/* Executive Dashboard Theme */
+.executive-container {
+    background-color: #f8fafc;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 40px 20px;
+    padding: 2.5rem 1.25rem;
 }
 
-.auth-header {
-    max-width: 600px;
+.executive-header {
+    max-width: 37.5rem;
     text-align: center;
-    margin-bottom: 40px;
+    margin-bottom: 2.5rem;
 }
 
-.auth-header h1 {
-    color: #333;
-    font-size: 32px;
-    margin-bottom: 10px;
+.executive-header h1 {
+    color: #1e293b;
+    font-size: 2rem;
+    margin-bottom: 0.625rem;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 600;
 }
 
-.auth-header p {
-    color: #666;
-    font-size: 18px;
+.executive-header p {
+    color: #475569;
+    font-size: 1.125rem;
 }
 
-.auth-alternatives {
-    margin-top: 40px;
-    text-align: center;
+.executive-logo {
+    width: 4rem;
+    height: 4rem;
+    background-color: #2563eb;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem;
+    color: white;
+    font-size: 1.25rem;
+    font-weight: 600;
 }
 
-.auth-alternatives p {
-    color: #666;
-    margin-bottom: 10px;
+/* Audio level visualization rings */
+.audio-ring {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(1);
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.text-button {
-    background: none;
-    border: none;
-    color: #d1af72;
-    font-size: 16px;
-    text-decoration: underline;
-    cursor: pointer;
+.audio-ring-1 {
+    animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+    animation-delay: 0.2s;
 }
 
-.text-button:hover {
-    color: #c6a058;
+.audio-ring-2 {
+    animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+    animation-delay: 0.4s;
 }
 
-/* Responsive adjustments */
+.audio-ring-3 {
+    animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+    animation-delay: 0.6s;
+}
+
+@keyframes pulse-ring {
+    0% {
+        transform: scale(1);
+        opacity: 0;
+    }
+
+    20% {
+        opacity: 0.5;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 0;
+    }
+}
+
+/* Executive Dashboard Specific Styles */
+.executive-dashboard-card {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+    padding: 1.5rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.executive-dashboard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+.executive-card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.75rem;
+}
+
+.executive-card-subtitle {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-bottom: 1.25rem;
+}
+
+.executive-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.executive-metric {
+    flex: 1;
+    min-width: 7.5rem;
+    background-color: #f8fafc;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+}
+
+.executive-metric-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.executive-metric-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+/* Admin User Management Styles */
+.user-management-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.user-management-table th,
+.user-management-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.user-management-table th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.user-management-table td {
+    font-size: 0.875rem;
+    color: #1e293b;
+}
+
+.user-management-table tr:hover {
+    background-color: #f8fafc;
+}
+
+.user-badge {
+    display: inline-flex;
+    align-items: center;
+    background-color: #e2e8f0;
+    border-radius: 9999px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.user-badge.admin {
+    background-color: #bfdbfe;
+    color: #1e40af;
+}
+
+.user-badge.executive {
+    background-color: #c7d2fe;
+    color: #3730a3;
+}
+
+.user-badge.manager {
+    background-color: #ddd6fe;
+    color: #5b21b6;
+}
+
+/* Responsive styles */
 @media (max-width: 768px) {
-    .voice-auth-card {
-        padding: 20px;
+    .executive-card-title {
+        font-size: 1rem;
     }
 
-    .voice-auth-button {
-        padding: 10px 20px;
-        font-size: 14px;
+    .executive-metric {
+        min-width: 100%;
     }
 
-    .voice-auth-passphrase {
-        font-size: 18px;
+    .user-management-table {
+        font-size: 0.75rem;
     }
 
-    .auth-header h1 {
-        font-size: 28px;
-    }
-
-    .auth-header p {
-        font-size: 16px;
+    .user-management-table th,
+    .user-management-table td {
+        padding: 0.5rem;
     }
 }

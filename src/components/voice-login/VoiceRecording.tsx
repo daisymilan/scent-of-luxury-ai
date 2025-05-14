@@ -1,298 +1,362 @@
+// src/components/voice-login/VoiceRecording.tsx
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { useToast } from '@/hooks/use-toast';
-import { createSpeechRecognition, checkSpeechRecognitionSupport } from '@/components/ai-assistant/SpeechRecognition';
+import { Mic, MicOff, Volume2, RefreshCw, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import '../../styles/VoiceAuth.css';
 
 interface VoiceRecordingProps {
   onProcessVoice: (audioBlob: Blob) => Promise<void>;
   isProcessing: boolean;
+  maxDuration?: number; // in seconds
+  className?: string;
+  messageText?: string;
+  buttonText?: string;
 }
 
-const VoiceRecording: React.FC<VoiceRecordingProps> = ({ onProcessVoice, isProcessing }) => {
-  const [isListening, setIsListening] = useState(false);
-  const [audioLevel, setAudioLevel] = useState(0);
-  const [speechText, setSpeechText] = useState('');
+/**
+ * A reusable component for recording voice audio
+ */
+const VoiceRecording: React.FC<VoiceRecordingProps> = ({ 
+  onProcessVoice, 
+  isProcessing,
+  maxDuration = 5,
+  className = '',
+  messageText = 'Speak clearly for voice authentication',
+  buttonText = 'Start Recording'
+}) => {
+  // State
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [recordingAvailable, setRecordingAvailable] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [audioLevel, setAudioLevel] = useState(0); // 0-100 for visualization
+  
+  // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const { toast } = useToast();
-  const animationFrameRef = useRef<number | null>(null);
+  const audioChunksRef = useRef<BlobPart[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const micStreamRef = useRef<MediaStream | null>(null);
-  const speechRecognitionRef = useRef<any>(null);
-
-  // Clean up resources on unmount
+  const dataArrayRef = useRef<Uint8Array | null>(null);
+  const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  
+  // Clean up on unmount
   useEffect(() => {
     return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+      
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+      
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
+      
       if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
-      if (micStreamRef.current) {
-        micStreamRef.current.getTracks().forEach((track) => track.stop());
-      }
-      if (speechRecognitionRef.current) {
-        speechRecognitionRef.current.stop();
+        audioContextRef.current.close().catch(console.error);
       }
     };
   }, []);
   
-  // Initialize speech recognition
-  useEffect(() => {
-    const supportResult = checkSpeechRecognitionSupport();
-    if (!supportResult.isSupported) {
-      toast({
-        title: "Speech Recognition Not Available",
-        description: supportResult.errorMessage || "Your browser doesn't support speech recognition",
-        variant: "destructive"
-      });
-    }
-    
-    speechRecognitionRef.current = createSpeechRecognition({
-      onResult: (transcript) => {
-        console.log('Speech recognition result:', transcript);
-        setSpeechText(transcript);
-        
-        // If the transcript contains "login as" and a role, start processing automatically
-        if (transcript.toLowerCase().includes('login as')) {
-          console.log('Login command detected in:', transcript);
-          stopListening();
-        }
-      },
-      onError: (error) => {
-        console.error('Speech recognition error:', error);
-        toast({
-          title: "Voice Recognition Error",
-          description: error.message || `Recognition error: ${error.error}`,
-          variant: "destructive"
-        });
-        stopListening();
-      },
-      onEnd: () => {
-        // Only process audio if we have a valid transcript and audio data
-        if (audioChunksRef.current.length > 0) {
-          processAudio();
-        }
-        setIsListening(false);
-      }
-    });
-  }, [toast]);
-
-  const startListening = async () => {
+  // Audio level visualization
+  const setupAudioVisualization = (stream: MediaStream) => {
     try {
-      // Reset state
-      setAudioLevel(0);
-      setSpeechText('');
-      audioChunksRef.current = [];
+      // Create audio context
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      audioContextRef.current = new AudioContext();
       
-      // Request microphone access
-      console.log('Requesting microphone access...');
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: { 
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        } 
-      });
-      micStreamRef.current = stream;
+      // Create analyser node
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 256;
       
-      // Setup audio context and analyser for visualizations
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      const audioContext = new AudioContext();
-      audioContextRef.current = audioContext;
+      // Connect source to analyser
+      sourceNodeRef.current = audioContextRef.current.createMediaStreamSource(stream);
+      sourceNodeRef.current.connect(analyserRef.current);
       
-      const analyser = audioContext.createAnalyser();
-      analyserRef.current = analyser;
+      // Create data array for frequency data
+      const bufferLength = analyserRef.current.frequencyBinCount;
+      dataArrayRef.current = new Uint8Array(bufferLength);
       
-      const microphone = audioContext.createMediaStreamSource(stream);
-      microphone.connect(analyser);
-      analyser.fftSize = 256;
-      
-      // Create media recorder
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      
-      mediaRecorder.addEventListener('dataavailable', (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
+      // Start visualization loop
+      const updateVisualization = () => {
+        if (!analyserRef.current || !dataArrayRef.current) return;
+        
+        analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+        
+        // Calculate audio level - average of frequency data
+        const sum = dataArrayRef.current.reduce((acc, val) => acc + val, 0);
+        const avg = sum / dataArrayRef.current.length;
+        
+        // Scale to 0-100
+        setAudioLevel(Math.min(Math.round((avg / 255) * 100), 100));
+        
+        // Continue loop if recording
+        if (isRecording) {
+          animationFrameRef.current = requestAnimationFrame(updateVisualization);
         }
-      });
+      };
       
-      // Start recording and visualization
-      mediaRecorder.start();
-      setIsListening(true);
-      setSpeechText('Listening... say "Login as CEO"');
-      visualizeAudio();
-      
-      // Start speech recognition
-      if (speechRecognitionRef.current) {
-        speechRecognitionRef.current.start();
-      } else {
-        toast({
-          title: "Speech Recognition Not Available",
-          description: "Could not initialize speech recognition",
-          variant: "destructive"
-        });
-      }
-      
-      // Auto-stop recording after 8 seconds
-      setTimeout(() => {
-        if (isListening && mediaRecorderRef.current?.state === 'recording') {
-          stopListening();
-        }
-      }, 8000);
+      animationFrameRef.current = requestAnimationFrame(updateVisualization);
     } catch (error) {
-      console.error('Error accessing microphone:', error);
-      toast({
-        title: 'Microphone Error',
-        description: 'Could not access your microphone. Please check permissions.',
-        variant: 'destructive',
-      });
+      console.error('Error setting up audio visualization:', error);
     }
   };
   
-  const stopListening = () => {
-    // Stop media recorder if active
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
-      console.log('Media recorder stopped');
-    }
-    
-    // Stop speech recognition if active
-    if (speechRecognitionRef.current) {
-      speechRecognitionRef.current.stop();
-      console.log('Speech recognition stopped');
-    }
-    
-    // Stop microphone stream
-    if (micStreamRef.current) {
-      micStreamRef.current.getTracks().forEach((track) => track.stop());
-      console.log('Microphone stream stopped');
-    }
-    
-    // Cancel visualization animation frame
+  // Stop audio visualization
+  const stopAudioVisualization = () => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
     
-    setIsListening(false);
-    setSpeechText(prev => prev || 'Processing voice...');
-  };
-  
-  const visualizeAudio = () => {
-    if (!analyserRef.current) return;
-    
-    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-    
-    const updateAudioLevel = () => {
-      analyserRef.current?.getByteFrequencyData(dataArray);
-      
-      // Calculate audio level (average of frequency data)
-      const average = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
-      const normalizedLevel = Math.min(100, Math.max(0, average * 1.5));
-      
-      setAudioLevel(normalizedLevel);
-      
-      // Log audio activity for debugging
-      if (average > 20) {
-        console.log('Audio activity detected:', average.toFixed(1));
-      }
-      
-      animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
-    };
-    
-    updateAudioLevel();
-  };
-  
-  const processAudio = () => {
-    // Only process if we have audio data
-    if (audioChunksRef.current.length === 0) {
-      console.warn('No audio data to process');
-      return;
+    if (sourceNodeRef.current) {
+      sourceNodeRef.current.disconnect();
+      sourceNodeRef.current = null;
     }
     
-    // Create audio blob from recorded chunks
-    const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-    console.log('Processing audio blob:', audioBlob.size, 'bytes');
-    
-    // Extract role from speech text if possible
-    let detectedRole = null;
-    if (speechText) {
-      const lowerText = speechText.toLowerCase();
-      if (lowerText.includes('login as ceo')) {
-        detectedRole = 'CEO';
-      } else if (lowerText.includes('login as cco')) {
-        detectedRole = 'CCO';
-      } else if (lowerText.includes('login as director')) {
-        detectedRole = 'Commercial Director';
-      } else if (lowerText.includes('login as regional')) {
-        detectedRole = 'Regional Manager';
-      } else if (lowerText.includes('login as marketing')) {
-        detectedRole = 'Marketing Manager';
-      }
-      
-      if (detectedRole) {
-        console.log('Detected role from speech:', detectedRole);
-        setSpeechText(`Recognized: "${detectedRole}"`);
-      }
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close().catch(console.error);
+      audioContextRef.current = null;
     }
     
-    // Process the audio with voice recognition
-    onProcessVoice(audioBlob);
+    setAudioLevel(0);
   };
-
+  
+  const startRecording = async () => {
+    try {
+      setErrorMessage(null);
+      setRecordingTime(0);
+      setRecordingAvailable(false);
+      setAudioLevel(0);
+      
+      // Reset audio chunks
+      audioChunksRef.current = [];
+      
+      // Get microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // Set up audio visualization
+      setupAudioVisualization(stream);
+      
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      
+      // Set up data handling
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+      
+      // Set up stop handler
+      mediaRecorderRef.current.onstop = () => {
+        // Stop visualization
+        stopAudioVisualization();
+        
+        // Create blob from collected chunks
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        setAudioBlob(audioBlob);
+        setRecordingAvailable(true);
+        
+        // Stop all tracks to release microphone
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      // Start recording
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+      
+      // Start timer for recording duration
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => {
+          const newTime = prev + 1;
+          
+          // Auto stop recording after maxDuration seconds
+          if (newTime >= maxDuration && mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            stopRecording();
+            return maxDuration;
+          }
+          
+          return newTime;
+        });
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      setErrorMessage('Could not access microphone. Please check permissions.');
+    }
+  };
+  
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+  };
+  
+  const playRecording = () => {
+    if (audioBlob) {
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audio.play();
+    }
+  };
+  
+  const processVoice = async () => {
+    if (audioBlob) {
+      await onProcessVoice(audioBlob);
+    }
+  };
+  
   return (
-    <div className="flex flex-col items-center space-y-6 p-4">
-      <div className="flex items-center justify-center w-24 h-24 rounded-full bg-gray-100 relative">
-        {isListening ? (
-          <div className="absolute inset-0 rounded-full animate-pulse bg-gray-200 flex items-center justify-center">
-            <Mic size={36} className="text-black animate-pulse" />
-          </div>
-        ) : (
-          <Mic size={36} className="text-black" />
+    <div className={`flex flex-col items-center space-y-4 w-full ${className}`}>
+      {/* Recording status indicator with animated visualization */}
+      <div className="relative">
+        <div 
+          className={`w-24 h-24 rounded-full flex items-center justify-center transition-all ${
+            isRecording 
+              ? 'bg-red-100 shadow-md' 
+              : isProcessing
+                ? 'bg-blue-100 shadow-md'
+                : 'bg-gray-100'
+          }`}
+        >
+          {isRecording ? (
+            <Mic className="h-12 w-12 text-red-500 animate-pulse" />
+          ) : isProcessing ? (
+            <RefreshCw className="h-12 w-12 text-blue-500 animate-spin" />
+          ) : (
+            <Mic className="h-12 w-12 text-gray-400" />
+          )}
+        </div>
+        
+        {/* Audio level visualization rings */}
+        {isRecording && (
+          <>
+            <div 
+              className="absolute top-0 left-0 w-full h-full rounded-full border-2 border-red-300 animate-ping"
+              style={{ 
+                opacity: audioLevel > 30 ? 0.3 : 0,
+                animationDuration: '1.5s'
+              }}
+            />
+            <div 
+              className="absolute top-0 left-0 w-full h-full rounded-full border-2 border-red-400 animate-ping"
+              style={{ 
+                opacity: audioLevel > 60 ? 0.4 : 0,
+                animationDuration: '1.2s',
+                animationDelay: '0.1s'
+              }}
+            />
+          </>
         )}
       </div>
       
-      {(isListening || isProcessing) && (
-        <div className="w-full space-y-2">
-          <Progress value={audioLevel} className="h-2" />
-          <p className="text-center text-sm">{speechText || 'Listening...'}</p>
+      {/* Status text */}
+      <p className="text-sm font-medium">
+        {isRecording 
+          ? 'Recording your voice...' 
+          : isProcessing
+            ? 'Processing voice authentication...'
+            : recordingAvailable
+              ? 'Recording complete'
+              : messageText
+        }
+      </p>
+      
+      {/* Error message */}
+      {errorMessage && (
+        <Alert variant="destructive" className="py-2">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
+      )}
+      
+      {/* Progress bar during recording */}
+      {isRecording && (
+        <div className="w-full">
+          <div className="flex justify-between text-xs text-gray-500 mb-1">
+            <span>Recording</span>
+            <span>{recordingTime}/{maxDuration}s</span>
+          </div>
+          <Progress value={(recordingTime / maxDuration) * 100} className="h-2" />
         </div>
       )}
       
-      <div className="space-x-4">
-        {!isListening && !isProcessing ? (
+      {/* Action buttons */}
+      <div className="flex flex-col gap-2 w-full">
+        {/* Start recording button */}
+        {!isRecording && !recordingAvailable && !isProcessing && (
           <Button 
-            onClick={startListening} 
-            className="bg-black hover:bg-gray-800 text-white font-light rounded-none"
-            disabled={isProcessing}
+            onClick={startRecording}
+            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
           >
             <Mic className="mr-2 h-4 w-4" />
-            Speak to Login
+            {buttonText}
           </Button>
-        ) : (
+        )}
+        
+        {/* Stop recording button */}
+        {isRecording && (
           <Button 
-            onClick={stopListening} 
+            onClick={stopRecording}
             variant="destructive"
-            className="rounded-none"
-            disabled={isProcessing}
           >
             <MicOff className="mr-2 h-4 w-4" />
-            Stop Listening
+            Stop Recording
+          </Button>
+        )}
+        
+        {/* Recording available buttons */}
+        {recordingAvailable && !isProcessing && (
+          <div className="flex gap-2">
+            <Button 
+              onClick={playRecording}
+              variant="outline"
+              className="flex-1"
+            >
+              <Volume2 className="mr-2 h-4 w-4" />
+              Play
+            </Button>
+            
+            <Button 
+              onClick={processVoice}
+              className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+            >
+              Authenticate
+            </Button>
+          </div>
+        )}
+        
+        {/* Retry button */}
+        {recordingAvailable && !isProcessing && (
+          <Button 
+            onClick={startRecording}
+            variant="ghost"
+            className="text-gray-500"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Record Again
           </Button>
         )}
       </div>
       
-      {!isListening && !isProcessing && (
-        <div className="text-sm text-center text-muted-foreground">
-          <p>Say <strong>"Login as CEO"</strong> to authenticate with your voice</p>
-        </div>
+      {/* Hint text */}
+      {!isRecording && !recordingAvailable && !isProcessing && (
+        <p className="text-xs text-gray-500 text-center mt-2">
+          Speak clearly and naturally for authentication.
+          Please ensure you're in a quiet environment.
+        </p>
       )}
     </div>
   );

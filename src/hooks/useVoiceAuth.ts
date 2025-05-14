@@ -1,7 +1,9 @@
-// src/hooks/useVoiceAuth.ts - NEW FILE
+// src/hooks/useVoiceAuth.ts
 
-import { useState, useCallback, useEffect } from 'react';
-import voiceAuthService from '../services/voiceAuthService';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { processVoiceAuth } from '../utils/voiceAuthApi';
+import { useAuth } from '../contexts/AuthContext';
+import supabase from '../supabase';
 
 // Check if browser supports the Web Speech API
 const browserSupportsSpeechRecognition = 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
@@ -16,6 +18,7 @@ interface UseVoiceAuthOptions {
   maxAttempts?: number;
   timeoutDuration?: number;
   mockMode?: boolean;
+  webhookUrl?: string;
 }
 
 interface VoiceAuthState {
@@ -28,18 +31,31 @@ interface VoiceAuthState {
   isSupported: boolean;
   isMicrophoneAvailable: boolean | null;
   isLocked: boolean;
+  audioBlob: Blob | null;
+  recordingProgress: number; // 0-100
+  audioLevel: number; // 0-100
 }
 
 /**
- * Custom hook for handling voice authentication
+ * Custom hook for handling executive voice authentication
+ * Integrated with AuthContext and Supabase
  */
-export const useVoiceAuth = (options?: UseVoiceAuthOptions) => {
+const useVoiceAuth = (options?: UseVoiceAuthOptions) => {
   const {
     passphrase = 'scent of luxury',
     maxAttempts = 3,
     timeoutDuration = 5000,
-    mockMode = true
+    mockMode = import.meta.env.DEV, // Use development mode as default for mockMode
+    webhookUrl
   } = options || {};
+
+  // Get auth context
+  const { 
+    currentUser, 
+    isVoiceEnrolled, 
+    authenticateWithVoice: contextAuthenticateWithVoice,
+    resetVoiceAuth
+  } = useAuth();
 
   const [state, setState] = useState<VoiceAuthState>({
     status: 'idle',
@@ -50,10 +66,22 @@ export const useVoiceAuth = (options?: UseVoiceAuthOptions) => {
     attemptsRemaining: maxAttempts,
     isSupported: !!browserSupportsSpeechRecognition,
     isMicrophoneAvailable: null,
-    isLocked: false
+    isLocked: false,
+    audioBlob: null,
+    recordingProgress: 0,
+    audioLevel: 0
   });
 
-  const recognitionRef = { current: null } as { current: any };
+  // Refs
+  const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<BlobPart[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const dataArrayRef = useRef<Uint8Array | null>(null);
+  const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -62,7 +90,7 @@ export const useVoiceAuth = (options?: UseVoiceAuthOptions) => {
         ...prev,
         isSupported: false,
         status: 'error',
-        errorMessage: 'Your browser does not support voice recognition.'
+        errorMessage: 'Your browser does not support voice recognition. Please use a compatible browser for executive voice authentication.'
       }));
       return;
     }
@@ -103,7 +131,7 @@ export const useVoiceAuth = (options?: UseVoiceAuthOptions) => {
         isListening: false,
         status: 'error',
         errorMessage: event.error === 'not-allowed' 
-          ? 'Microphone access denied. Please allow microphone access in your browser settings.'
+          ? 'Microphone access denied. Please allow microphone access in your browser settings for executive authentication.'
           : `Error: ${event.error}`,
         isMicrophoneAvailable: event.error === 'not-allowed' ? false : prev.isMicrophoneAvailable
       }));
@@ -137,7 +165,7 @@ export const useVoiceAuth = (options?: UseVoiceAuthOptions) => {
           ...prev, 
           isMicrophoneAvailable: false,
           status: 'error',
-          errorMessage: 'Microphone access denied. Please allow microphone access in your browser settings.'
+          errorMessage: 'Microphone access denied. Please allow microphone access for secure executive authentication.'
         }));
       });
 
@@ -150,26 +178,119 @@ export const useVoiceAuth = (options?: UseVoiceAuthOptions) => {
           console.error('Error stopping speech recognition:', error);
         }
       }
+      
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+      
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+      
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close().catch(console.error);
+      }
     };
   }, []);
+
+  // Setup audio visualization
+  const setupAudioVisualization = (stream: MediaStream) => {
+    try {
+      // Create audio context
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      audioContextRef.current = new AudioContext();
+      
+      // Create analyser node
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 256;
+      
+      // Connect source to analyser
+      sourceNodeRef.current = audioContextRef.current.createMediaStreamSource(stream);
+      sourceNodeRef.current.connect(analyserRef.current);
+      
+      // Create data array for frequency data
+      const bufferLength = analyserRef.current.frequencyBinCount;
+      dataArrayRef.current = new Uint8Array(bufferLength);
+      
+      // Start visualization loop
+      const updateVisualization = () => {
+        if (!analyserRef.current || !dataArrayRef.current || !state.isListening) return;
+        
+        analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+        
+        // Calculate average volume level
+        let sum = 0;
+        for (let i = 0; i < dataArrayRef.current.length; i++) {
+          sum += dataArrayRef.current[i];
+        }
+        const average = sum / dataArrayRef.current.length;
+        
+        // Update state with normalized audio level (0-100)
+        const normalizedLevel = Math.min(Math.round((average / 255) * 100), 100);
+        if (state.status === 'listening') {
+          setState(prev => ({ ...prev, audioLevel: normalizedLevel }));
+        }
+        
+        animationFrameRef.current = requestAnimationFrame(updateVisualization);
+      };
+      
+      animationFrameRef.current = requestAnimationFrame(updateVisualization);
+    } catch (error) {
+      console.error('Error setting up audio visualization:', error);
+    }
+  };
+
+  // Stop audio visualization
+  const stopAudioVisualization = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    
+    if (sourceNodeRef.current) {
+      sourceNodeRef.current.disconnect();
+      sourceNodeRef.current = null;
+    }
+  };
 
   // Process transcript for passphrase
   useEffect(() => {
     const checkForPassphrase = async () => {
-      if (state.status === 'listening' && state.transcript) {
+      if (state.status === 'listening' && state.transcript && state.audioBlob) {
         // Check if the transcript contains the passphrase (case-insensitive)
         if (state.transcript.toLowerCase().includes(passphrase.toLowerCase())) {
           stopListening();
-          await verifyVoice(state.transcript);
+          // First try context's authenticateWithVoice (which uses voiceAuthService)
+          if (contextAuthenticateWithVoice) {
+            setState(prev => ({ ...prev, status: 'processing' }));
+            const success = await contextAuthenticateWithVoice(state.transcript);
+            if (success) {
+              setState(prev => ({ 
+                ...prev, 
+                status: 'success',
+                errorMessage: '' 
+              }));
+            } else {
+              // Fall back to our verifyVoice implementation
+              await verifyVoice(state.audioBlob);
+            }
+          } else {
+            // If context method is not available, use our implementation
+            await verifyVoice(state.audioBlob);
+          }
         }
       }
     };
 
     checkForPassphrase();
-  }, [state.transcript, state.status]);
+  }, [state.transcript, state.status, state.audioBlob, contextAuthenticateWithVoice, passphrase]);
 
   // Start listening for voice input
-  const startListening = useCallback(() => {
+  const startListening = useCallback(async () => {
     if (!state.isSupported) {
       setState(prev => ({
         ...prev,
@@ -183,7 +304,16 @@ export const useVoiceAuth = (options?: UseVoiceAuthOptions) => {
       setState(prev => ({
         ...prev,
         status: 'error',
-        errorMessage: 'Microphone access denied. Please allow microphone access.'
+        errorMessage: 'Microphone access denied. Please enable microphone access for executive authentication.'
+      }));
+      return;
+    }
+
+    if (state.isLocked) {
+      setState(prev => ({
+        ...prev,
+        status: 'error',
+        errorMessage: `Maximum authentication attempts reached (${maxAttempts}). Please contact system administrator.`
       }));
       return;
     }
@@ -192,33 +322,92 @@ export const useVoiceAuth = (options?: UseVoiceAuthOptions) => {
       ...prev, 
       transcript: '',
       status: 'listening',
-      errorMessage: '' 
+      errorMessage: '',
+      recordingProgress: 0,
+      audioBlob: null
     }));
     
     try {
-      recognitionRef.current.start();
+      // Start audio recording
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      // Set timeout to stop listening if no valid input is detected
-      const timeoutId = setTimeout(() => {
-        if (state.status === 'listening') {
-          stopListening();
-          handleFailedAttempt('No voice detected. Please try again.');
+      // Setup audio visualization
+      setupAudioVisualization(stream);
+      
+      // Set up media recorder
+      audioChunksRef.current = [];
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+      
+      mediaRecorderRef.current.onstop = () => {
+        // Stop visualization
+        stopAudioVisualization();
+        
+        // Create audio blob
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        setState(prev => ({ ...prev, audioBlob: blob }));
+        
+        // Stop all tracks to release microphone
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      // Start recording
+      mediaRecorderRef.current.start();
+      
+      // Start speech recognition
+      try {
+        recognitionRef.current.start();
+      } catch (error) {
+        console.error('Failed to start speech recognition:', error);
+      }
+      
+      // Set up progress timer
+      const updateInterval = 100; // 100ms
+      let elapsed = 0;
+      
+      timerRef.current = setInterval(() => {
+        elapsed += updateInterval;
+        
+        setState(prev => ({
+          ...prev,
+          recordingProgress: Math.min((elapsed / timeoutDuration) * 100, 100)
+        }));
+        
+        // Auto-stop at the end of timeout
+        if (elapsed >= timeoutDuration) {
+          if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            mediaRecorderRef.current.stop();
+          }
+          
+          if (recognitionRef.current) {
+            try {
+              recognitionRef.current.stop();
+            } catch (e) {
+              // Ignore errors when stopping
+            }
+          }
+          
+          clearInterval(timerRef.current as NodeJS.Timeout);
+          timerRef.current = null;
         }
-      }, timeoutDuration);
-
-      return () => clearTimeout(timeoutId);
+      }, updateInterval);
+      
     } catch (error) {
-      console.error('Failed to start speech recognition:', error);
+      console.error('Failed to start voice auth:', error);
       setState(prev => ({
         ...prev,
         status: 'error',
-        errorMessage: 'Failed to start voice recognition. Please try again.'
+        errorMessage: 'Failed to start voice recording. Please try again.'
       }));
     }
-  }, [state.isSupported, state.isMicrophoneAvailable, state.status, timeoutDuration]);
+  }, [state.isSupported, state.isMicrophoneAvailable, state.isLocked, maxAttempts, timeoutDuration]);
 
   // Stop listening
   const stopListening = useCallback(() => {
+    // Stop speech recognition
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
@@ -226,8 +415,26 @@ export const useVoiceAuth = (options?: UseVoiceAuthOptions) => {
         console.error('Error stopping speech recognition:', error);
       }
     }
-
-    setState(prev => ({ ...prev, isListening: false }));
+    
+    // Stop media recorder
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+    
+    // Stop audio visualization
+    stopAudioVisualization();
+    
+    // Clear timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    
+    setState(prev => ({ 
+      ...prev, 
+      isListening: false,
+      recordingProgress: 100
+    }));
   }, []);
 
   // Handle failed authentication attempt
@@ -241,26 +448,49 @@ export const useVoiceAuth = (options?: UseVoiceAuthOptions) => {
         ...prev,
         status: 'error',
         errorMessage: isLocked 
-          ? `Maximum attempts reached (${maxAttempts}). Please try again later.` 
+          ? `Maximum authentication attempts reached (${maxAttempts}). Please contact your system administrator.` 
           : message,
         attempts: newAttempts,
         attemptsRemaining,
         isLocked
       };
     });
-  }, [maxAttempts]);
+    
+    // Reset voice auth in context if available
+    if (resetVoiceAuth) {
+      resetVoiceAuth();
+    }
+  }, [maxAttempts, resetVoiceAuth]);
 
-  // Verify voice against stored profile
-  const verifyVoice = async (voiceInput: string) => {
+  // Play recorded audio
+  const playRecording = useCallback(() => {
+    if (state.audioBlob) {
+      const url = URL.createObjectURL(state.audioBlob);
+      const audio = new Audio(url);
+      audio.play();
+    }
+  }, [state.audioBlob]);
+
+  // Verify voice using audio blob and API
+  const verifyVoice = async (audioBlob: Blob) => {
     setState(prev => ({ ...prev, status: 'processing' }));
     
     try {
-      const userId = localStorage.getItem('userId') || 'user123'; // Fallback for testing
+      // Try to use context authenticateWithVoice first
+      if (contextAuthenticateWithVoice && state.transcript) {
+        const success = await contextAuthenticateWithVoice(state.transcript);
+        if (success) {
+          setState(prev => ({ 
+            ...prev, 
+            status: 'success',
+            errorMessage: '' 
+          }));
+          return true;
+        }
+      }
       
-      // Use mock or real API based on mockMode flag
-      const response = mockMode 
-        ? await voiceAuthService.mockVerifyVoice(voiceInput)
-        : await voiceAuthService.verifyVoice(userId, voiceInput);
+      // Fall back to our API utility
+      const response = await processVoiceAuth(audioBlob, undefined, webhookUrl);
       
       if (response.success) {
         setState(prev => ({ 
@@ -269,10 +499,33 @@ export const useVoiceAuth = (options?: UseVoiceAuthOptions) => {
           errorMessage: '' 
         }));
         
+        // Store authentication in localStorage
         localStorage.setItem('voiceAuthenticated', 'true');
+        
+        // If we have user details, store them too
+        if (response.user) {
+          localStorage.setItem('voiceAuthUser', JSON.stringify(response.user));
+          
+          // Update Supabase user metadata if we have a session
+          try {
+            const { error } = await supabase.auth.updateUser({
+              data: { 
+                voice_authenticated: true,
+                last_voice_auth: new Date().toISOString()
+              }
+            });
+            
+            if (error) {
+              console.error('Error updating user metadata:', error);
+            }
+          } catch (e) {
+            console.error('Error updating Supabase user:', e);
+          }
+        }
+        
         return true;
       } else {
-        handleFailedAttempt(response.message || 'Voice authentication failed. Please try again.');
+        handleFailedAttempt(response.message || 'Executive voice authentication failed. Please try again.');
         return false;
       }
     } catch (error) {
@@ -284,25 +537,28 @@ export const useVoiceAuth = (options?: UseVoiceAuthOptions) => {
 
   // Reset state to initial
   const reset = useCallback(() => {
-    setState({
+    setState(prev => ({
+      ...prev,
       status: 'idle',
       isListening: false,
       transcript: '',
       errorMessage: '',
-      attempts: 0,
-      attemptsRemaining: maxAttempts,
-      isSupported: !!browserSupportsSpeechRecognition,
-      isMicrophoneAvailable: state.isMicrophoneAvailable,
-      isLocked: false
-    });
-  }, [maxAttempts, state.isMicrophoneAvailable]);
+      audioBlob: null,
+      recordingProgress: 0,
+      audioLevel: 0
+      // Note: we don't reset attempts here to maintain lock state
+    }));
+  }, []);
 
+  // Return state and methods
   return {
     ...state,
     startListening,
     stopListening,
     reset,
-    verifyVoice
+    verifyVoice,
+    playRecording,
+    isVoiceEnrolled // From auth context
   };
 };
 
