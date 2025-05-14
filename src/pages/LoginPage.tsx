@@ -12,7 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import VoiceLoginComponent from '@/components/VoiceLoginComponent';
-import { Eye, EyeOff, Lock, LogIn, Mail, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Lock, LogIn, Mail, AlertCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -35,18 +35,25 @@ const LoginPage: React.FC = () => {
   const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
   const [currentEmail, setCurrentEmail] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   
   // Check if already logged in
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         navigate('/');
       }
-    });
-  }, [navigate]);
+    };
+    
+    checkSession();
+    
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [navigate, isAuthenticated]);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -81,15 +88,18 @@ const LoginPage: React.FC = () => {
           
           if (error.message.includes('Email not confirmed')) {
             setEmailNotConfirmed(true);
+          } else if (error.message.includes('Invalid login credentials')) {
+            setLoginError("Invalid email or password. Please try again.");
           } else {
             setLoginError(error.message);
-            toast({
-              title: "Login failed",
-              description: error.message,
-              variant: "destructive",
-              duration: 5000,
-            });
           }
+          
+          toast({
+            title: "Login failed",
+            description: error.message,
+            variant: "destructive",
+            duration: 5000,
+          });
         } else if (!signInData.session) {
           setLoginError("Login failed. Please check your credentials and try again.");
           toast({
@@ -99,10 +109,8 @@ const LoginPage: React.FC = () => {
             duration: 5000,
           });
         }
-      } else {
-        // Successful login
-        navigate('/');
       }
+      // Navigate is handled by the AuthContext on successful login
     } catch (error) {
       console.error("Login error:", error);
       const errorMessage = error instanceof Error ? error.message : 'Invalid email or password';
@@ -296,13 +304,8 @@ const LoginPage: React.FC = () => {
                     >
                       {isSubmitting ? (
                         <div className="flex items-center justify-center">
-                          <span className="mr-2 animate-spin">
-                            <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                          </span>
-                          Logging in...
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          <span>Logging in...</span>
                         </div>
                       ) : (
                         <>
