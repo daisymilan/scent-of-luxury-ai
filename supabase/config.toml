@@ -6,6 +6,7 @@ project_id = "izmgpyqiiuuoulbtjhxb"
 disable_signup = false
 enable_signup = true
 email_autoconfirm = true
+site_url = "http://localhost:3000"
 
 # Test users can be created using the Supabase dashboard
 # or with the seeding script

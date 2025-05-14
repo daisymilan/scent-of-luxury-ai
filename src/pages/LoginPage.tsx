@@ -69,14 +69,8 @@ const LoginPage: React.FC = () => {
         });
         navigate('/');
         return;
-      } else {
-        toast({
-          title: "Login failed",
-          description: "Invalid email or password. Please try again.",
-          variant: "destructive",
-          duration: 5000,
-        });
       }
+      // Note: Error handling is now in the login function in AuthContext
     } catch (error) {
       console.error("Login error:", error);
       const errorMessage = error instanceof Error ? error.message : 'Invalid email or password';
@@ -101,6 +95,11 @@ const LoginPage: React.FC = () => {
 
   const handleForgotPasswordClick = () => {
     navigate('/forgot-password');
+  };
+
+  const handleTestAccountClick = async (email: string) => {
+    form.setValue('email', email);
+    form.setValue('password', 'password123');
   };
 
   return (
@@ -235,10 +234,30 @@ const LoginPage: React.FC = () => {
           <CardFooter className="flex flex-col text-center text-xs text-gray-400 pt-2 pb-6 px-6">
             <p className="mb-2 text-xs uppercase tracking-wide font-light">Available test accounts:</p>
             <div className="grid grid-cols-2 gap-x-6 gap-y-1 w-full">
-              <div className="text-gray-400">Admin: admin@minny.com</div>
-              <div className="text-gray-400">Customer: customer@minny.com</div>
-              <div className="text-gray-400">Perfumer: perfumer@minny.com</div>
-              <div className="text-gray-400">Tester: tester@minny.com</div>
+              <button 
+                onClick={() => handleTestAccountClick('admin@minny.com')}
+                className="text-gray-400 hover:text-white text-left hover:underline"
+              >
+                Admin: admin@minny.com
+              </button>
+              <button
+                onClick={() => handleTestAccountClick('customer@minny.com')}
+                className="text-gray-400 hover:text-white text-left hover:underline"
+              >
+                Customer: customer@minny.com
+              </button>
+              <button
+                onClick={() => handleTestAccountClick('perfumer@minny.com')}
+                className="text-gray-400 hover:text-white text-left hover:underline"
+              >
+                Perfumer: perfumer@minny.com
+              </button>
+              <button
+                onClick={() => handleTestAccountClick('tester@minny.com')}
+                className="text-gray-400 hover:text-white text-left hover:underline"
+              >
+                Tester: tester@minny.com
+              </button>
               <div className="col-span-2 mt-1 font-medium">Password: password123</div>
             </div>
           </CardFooter>

@@ -181,6 +181,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (error) {
         console.error('Login failed:', error.message);
+        toast({
+          title: "Login failed",
+          description: error.message || "Invalid credentials. Please try again.",
+          variant: "destructive",
+        });
         return false;
       }
 
@@ -193,15 +198,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log("User:", data.user);
         console.log("Session:", data.session);
         
+        toast({
+          title: "Login successful",
+          description: "Welcome back!",
+        });
+        
         // We successfully logged in, navigate user to home
         navigate('/');
         return true;
       } else {
         console.error("Login returned no user or session");
+        toast({
+          title: "Login failed",
+          description: "Invalid credentials. Please try again.",
+          variant: "destructive",
+        });
         return false;
       }
     } catch (error) {
       console.error('Login error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Login failed. Please try again.';
+      toast({
+        title: "Login failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
       return false;
     }
   };
@@ -216,19 +237,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { data: authResponse, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            first_name: userData?.firstName,
+            last_name: userData?.lastName,
+            role: userData?.role || 'User'
+          }
+        }
       });
 
       if (authError) {
         console.error('Registration failed:', authError.message);
+        toast({
+          title: "Registration failed",
+          description: authError.message,
+          variant: "destructive"
+        });
         return false;
       }
 
       if (!authResponse.user) {
         console.error('Registration failed: No user returned');
+        toast({
+          title: "Registration failed",
+          description: "Could not create your account. Please try again.",
+          variant: "destructive"
+        });
         return false;
       }
       
-      // Now insert the user data into our custom users table
+      // Now insert the user data into our users table
       const { error: insertError } = await supabase
         .from('users')
         .insert([
@@ -249,6 +287,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.error('Error creating user profile:', insertError);
         // If user table insert fails, we should still continue as the auth user was created
         // Just log the error but don't fail registration
+        toast({
+          title: "Profile creation warning",
+          description: "Account created but profile data could not be saved.",
+          variant: "warning"
+        });
       } else {
         console.log("User profile created successfully for:", email);
       }
@@ -270,12 +313,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setCurrentUser(basicUser);
       setUserRole((userData?.role as UserRole) || 'User');
       
+      toast({
+        title: "Registration successful",
+        description: "Your account has been created!",
+      });
+      
       // Navigate to home after successful registration
       navigate('/');
       
       return true;
     } catch (error) {
       console.error('Registration error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed. Please try again.';
+      toast({
+        title: "Registration failed",
+        description: errorMessage,
+        variant: "destructive"
+      });
       return false;
     } finally {
       setIsLoading(false);
@@ -291,8 +345,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setCurrentUser(null);
       setUserRole(null);
       navigate('/login');
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
     } catch (error) {
       console.error('Logout error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to log out.';
+      toast({
+        title: "Logout failed",
+        description: errorMessage,
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
