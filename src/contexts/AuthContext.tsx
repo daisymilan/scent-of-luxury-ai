@@ -32,8 +32,8 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  signup: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, password: string) => Promise<boolean>; // Alias for signup
+  signup: (email: string, password: string, role?: UserRole) => Promise<boolean>;
+  register: (email: string, password: string, role?: UserRole) => Promise<boolean>; // Alias for signup
   currentUser: any | null;
   user: any | null; // Alias for currentUser for backward compatibility
   userRole: UserRole | null;
@@ -186,11 +186,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Signup function
-  const signup = async (email: string, password: string): Promise<boolean> => {
+  const signup = async (email: string, password: string, role: UserRole = 'User'): Promise<boolean> => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            role: role
+          }
+        }
       });
       
       if (error) throw error;
@@ -199,7 +204,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.session) {
         setIsAuthenticated(true);
         setCurrentUser(data.user);
-        setUserRole('User' as UserRole); // Default role for new users
+        setUserRole(role);
         navigate('/');
       }
       

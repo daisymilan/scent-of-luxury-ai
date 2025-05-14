@@ -8,5 +8,8 @@ enable_signup = true
 email_autoconfirm = true
 site_url = "http://localhost:3000"
 
+# Additional metadata fields to be captured on signup
+additional_user_metadata_fields = ["role"]
+
 # Test users can be created using the Supabase dashboard
 # or with the seeding script

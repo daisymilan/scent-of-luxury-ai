@@ -12,9 +12,10 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { Mail, Lock, AlertCircle, User } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Form validation schema
 const formSchema = z.object({
@@ -23,7 +24,8 @@ const formSchema = z.object({
     .min(1, { message: "Email is required" }),
   password: z.string()
     .min(6, { message: "Password must be at least 6 characters" })
-    .max(100, { message: "Password must be at least 100 characters" }),
+    .max(100, { message: "Password must be at most 100 characters" }),
+  role: z.string().min(1, { message: "Role is required" })
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -49,6 +51,7 @@ const SignupPage: React.FC = () => {
     defaultValues: {
       email: "",
       password: "",
+      role: "User"
     },
   });
 
@@ -57,7 +60,8 @@ const SignupPage: React.FC = () => {
     
     setIsSubmitting(true);
     try {
-      const success = await signup(data.email, data.password);
+      // Include role in the metadata when signing up
+      const success = await signup(data.email, data.password, data.role as UserRole);
       if (success) {
         // Success handling
         toast({
@@ -99,7 +103,7 @@ const SignupPage: React.FC = () => {
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">Create an account</CardTitle>
             <CardDescription className="text-center text-gray-400">
-              Enter your email and password to register
+              Enter your email, password and select a role to register
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
@@ -118,6 +122,7 @@ const SignupPage: React.FC = () => {
                             <Input 
                               placeholder="email@example.com" 
                               className="pl-10 py-6 text-base bg-gray-800 border-gray-700 text-gray-100" 
+                              autoComplete="email"
                               {...field} 
                             />
                           </FormControl>
@@ -139,11 +144,48 @@ const SignupPage: React.FC = () => {
                           <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={16} />
                           <FormControl>
                             <Input 
-                              type="password"
+                              type={showPassword ? "text" : "password"}
                               placeholder="••••••••" 
                               className="pl-10 py-6 text-base bg-gray-800 border-gray-700 text-gray-100" 
+                              autoComplete="new-password"
                               {...field} 
                             />
+                          </FormControl>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <FormLabel className="text-xs uppercase tracking-wider font-light text-gray-300">Role</FormLabel>
+                  <FormField
+                    control={form.control}
+                    name="role"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 z-10" size={16} />
+                          <FormControl>
+                            <Select 
+                              defaultValue={field.value} 
+                              onValueChange={field.onChange}
+                            >
+                              <SelectTrigger className="pl-10 py-6 text-base bg-gray-800 border-gray-700 text-gray-100">
+                                <SelectValue placeholder="Select your role" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-gray-800 border-gray-700 text-gray-100">
+                                <SelectItem value="CEO">CEO</SelectItem>
+                                <SelectItem value="CCO">CCO</SelectItem>
+                                <SelectItem value="Commercial Director">Commercial Director</SelectItem>
+                                <SelectItem value="Regional Manager">Regional Manager</SelectItem>
+                                <SelectItem value="Marketing Manager">Marketing Manager</SelectItem>
+                                <SelectItem value="Social Media Manager">Social Media Manager</SelectItem>
+                                <SelectItem value="Customer Support">Customer Support</SelectItem>
+                                <SelectItem value="User">User</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </FormControl>
                         </div>
                         <FormMessage />
