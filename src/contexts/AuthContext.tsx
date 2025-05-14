@@ -290,7 +290,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         toast({
           title: "Profile creation warning",
           description: "Account created but profile data could not be saved.",
-          variant: "warning"
+          variant: "destructive"  // Changed from "warning" to "destructive" to fix the type error
         });
       } else {
         console.log("User profile created successfully for:", email);
