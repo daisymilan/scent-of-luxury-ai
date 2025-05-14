@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -42,6 +41,8 @@ export interface AuthContextType {
   authenticateWithVoice: (voiceData: any) => Promise<boolean>;
   hasPermission: (requiredRole: UserRole | UserRole[]) => boolean;
   loading: boolean;
+  isCEO: () => boolean; // New function to explicitly check for CEO role
+  updateUserRole: (userId: string, role: UserRole) => Promise<boolean>; // New function to update user role
 }
 
 // Create the context with default values
@@ -58,7 +59,9 @@ const AuthContext = createContext<AuthContextType>({
   isVoiceEnrolled: false,
   authenticateWithVoice: async () => false,
   hasPermission: () => false,
-  loading: true
+  loading: true,
+  isCEO: () => false,
+  updateUserRole: async () => false
 });
 
 // Auth provider component
@@ -78,7 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log("Fetching role for user:", userId);
       const { data, error } = await supabase
         .from('users')
-        .select('role')
+        .select('role, email')
         .eq('id', userId)
         .single();
       
@@ -88,10 +91,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       console.log("User role data:", data);
+      
+      // Check if the user is you (CEO) by email - customize this check to match your email
+      // This is a fallback mechanism if the database role is incorrect
+      const yourCEOEmail = "your-ceo-email@example.com"; // Replace with your actual email
+      if (data?.email === yourCEOEmail && data?.role !== 'CEO') {
+        console.log("Detected CEO by email but role is incorrect, updating...");
+        await updateUserRole(userId, 'CEO' as UserRole);
+        return 'CEO' as UserRole;
+      }
+      
       return data?.role as UserRole || null;
     } catch (err) {
       console.error("Exception in fetchUserRole:", err);
       return null;
+    }
+  };
+
+  // Update user role in database
+  const updateUserRole = async (userId: string, role: UserRole): Promise<boolean> => {
+    try {
+      console.log(`Updating user ${userId} to role: ${role}`);
+      
+      const { error } = await supabase
+        .from('users')
+        .update({ role: role })
+        .eq('id', userId);
+      
+      if (error) {
+        console.error("Error updating user role:", error);
+        return false;
+      }
+      
+      // Update local state if it's the current user
+      if (currentUser && currentUser.id === userId) {
+        setUserRole(role);
+      }
+      
+      return true;
+    } catch (err) {
+      console.error("Error in updateUserRole:", err);
+      return false;
     }
   };
 
@@ -119,6 +159,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const metadataRole = session.user.user_metadata?.role;
                 console.log("Setting user role from metadata:", metadataRole);
                 setUserRole((metadataRole as UserRole) || 'User');
+                
+                // If we had to use metadata, try to persist this role to the database
+                if (metadataRole) {
+                  await updateUserRole(session.user.id, metadataRole as UserRole);
+                }
               }
             } else {
               setIsAuthenticated(false);
@@ -155,6 +200,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const metadataRole = session.user.user_metadata?.role;
             console.log("Setting initial user role from metadata:", metadataRole);
             setUserRole((metadataRole as UserRole) || 'User');
+            
+            // If we had to use metadata, try to persist this role to the database
+            if (metadataRole) {
+              await updateUserRole(session.user.id, metadataRole as UserRole);
+            }
           }
           
           setLoading(false);
@@ -218,6 +268,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const metadataRole = data.user?.user_metadata?.role || 'User';
           console.log("Setting user role from metadata after login:", metadataRole);
           setUserRole(metadataRole as UserRole);
+          
+          // If we had to use metadata, try to persist this role to the database
+          if (data.user) {
+            await updateUserRole(data.user.id, metadataRole as UserRole);
+          }
+        }
+        
+        // Check if this is the CEO's email and force role update if needed
+        const yourCEOEmail = "your-ceo-email@example.com"; // Replace with your actual email
+        if (email === yourCEOEmail && userRole !== 'CEO' && data.user) {
+          console.log("CEO email detected, forcing role update");
+          await updateUserRole(data.user.id, 'CEO' as UserRole);
+          setUserRole('CEO' as UserRole);
         }
         
         // Navigate after state is updated
@@ -249,6 +312,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log("Signup function called with email:", email, "role:", role);
       setLoading(true);
+      
+      // Check if this is the CEO's email and force the role to CEO
+      const yourCEOEmail = "your-ceo-email@example.com"; // Replace with your actual email
+      if (email === yourCEOEmail) {
+        console.log("CEO email detected in signup, forcing role to CEO");
+        role = 'CEO' as UserRole;
+      }
       
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -363,9 +433,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true; // Return true for now as placeholder
   };
 
-  // Permission checking function
+  // CEO role check function
+  const isCEO = (): boolean => {
+    return userRole === 'CEO';
+  };
+
+  // Permission checking function - enhanced to prioritize CEO role
   const hasPermission = (requiredRole: UserRole | UserRole[]): boolean => {
     if (!isAuthenticated || !userRole) return false;
+    
+    // CEO has access to everything
+    if (userRole === 'CEO') return true;
     
     if (Array.isArray(requiredRole)) {
       return requiredRole.includes(userRole);
@@ -387,7 +465,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isVoiceEnrolled,
     authenticateWithVoice,
     hasPermission,
-    loading
+    loading,
+    isCEO,
+    updateUserRole
   };
 
   return (
