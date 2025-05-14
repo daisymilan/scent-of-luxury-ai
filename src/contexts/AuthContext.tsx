@@ -94,7 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Check if the user is you (CEO) by email - customize this check to match your email
       // This is a fallback mechanism if the database role is incorrect
-      const yourCEOEmail = "ceo_test@min.com"; // Replace with your actual email
+      const yourCEOEmail = "your-ceo-email@example.com"; // Replace with your actual email
       if (data?.email === yourCEOEmail && data?.role !== 'CEO') {
         console.log("Detected CEO by email but role is incorrect, updating...");
         await updateUserRole(userId, 'CEO' as UserRole);
@@ -279,7 +279,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         
         // Check if this is the CEO's email and force role update if needed
-        const yourCEOEmail = "ceo_test@min.com"; // Replace with your actual email
+        const yourCEOEmail = "your-ceo-email@example.com"; // Replace with your actual email
         if (email === yourCEOEmail && userRole !== 'CEO' && data.user) {
           console.log("CEO email detected, forcing role update");
           await updateUserRole(data.user.id, 'CEO' as UserRole);
@@ -317,7 +317,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       
       // Check if this is the CEO's email and force the role to CEO
-      const yourCEOEmail = "ceo_test@min.com"; // Replace with your actual email
+      const yourCEOEmail = "your-ceo-email@example.com"; // Replace with your actual email
       if (email === yourCEOEmail) {
         console.log("CEO email detected in signup, forcing role to CEO");
         role = 'CEO' as UserRole;
@@ -430,8 +430,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentUser(null);
       setUserRole(null);
       
-      // Now call the logout API
-      const { error } = await supabase.auth.signOut();
+      // Now call the logout API with global scope to terminate all sessions
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
       
       if (error) {
         console.error("Supabase signOut error:", error);
@@ -450,14 +450,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       }
       
-      // Force clear any session data from supabase
-      supabase.auth.clearSession();
-      
       // Force browser to clear localStorage related to auth
       try {
-        localStorage.removeItem('supabase.auth.token');
-        localStorage.removeItem('supabase.auth.expires_at');
-        // Add any other relevant items here
+        // Clear any relevant localStorage items
+        for (const key of Object.keys(localStorage)) {
+          if (key.startsWith('supabase.auth.') || key.includes('supabase_auth')) {
+            localStorage.removeItem(key);
+            console.log(`Removed localStorage item: ${key}`);
+          }
+        }
       } catch (e) {
         console.warn("Could not clear localStorage", e);
       }
