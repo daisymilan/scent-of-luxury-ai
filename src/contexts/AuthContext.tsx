@@ -95,7 +95,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (userError) {
           console.error('Error fetching user data:', userError);
-          setUserRole('User' as UserRole); // Default role
+          // Try to get role from user metadata as fallback
+          const role = session.user.user_metadata?.role || 'User';
+          setUserRole(role as UserRole);
         } else {
           setUserRole((userData?.role as UserRole) || 'User' as UserRole);
         }
@@ -112,6 +114,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
+        
         if (session) {
           setIsAuthenticated(true);
           setCurrentUser(session.user);
@@ -125,7 +129,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           if (userError) {
             console.error('Error fetching user data:', userError);
-            setUserRole('User' as UserRole); // Default role
+            // Try to get role from user metadata as fallback
+            const role = session.user.user_metadata?.role || 'User';
+            setUserRole(role as UserRole);
           } else {
             setUserRole((userData?.role as UserRole) || 'User' as UserRole);
           }
@@ -166,7 +172,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
         if (userError) {
           console.error('Error fetching user data:', userError);
-          setUserRole('User' as UserRole); // Default role
+          // Try to get role from user metadata as fallback
+          const role = data.user.user_metadata?.role || 'User';
+          setUserRole(role as UserRole);
         } else {
           setUserRole((userData?.role as UserRole) || 'User' as UserRole);
         }
@@ -212,6 +220,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAuthenticated(true);
         setCurrentUser(data.user);
         setUserRole(role);
+        
+        // Create or update the user record in public.users table
+        try {
+          const { error: userError } = await supabase
+            .from('users')
+            .upsert([
+              {
+                id: data.user?.id,
+                email: email,
+                role: role
+              }
+            ]);
+          
+          if (userError) {
+            console.error("Error creating user record:", userError);
+          }
+        } catch (err) {
+          console.error("Error in user record creation:", err);
+        }
         
         // Navigate to the dashboard
         console.log("Auto-confirming and redirecting to dashboard");

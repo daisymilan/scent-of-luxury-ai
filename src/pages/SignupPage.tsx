@@ -34,7 +34,7 @@ const SignupPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { signup } = useAuth(); // Using signup instead of register
+  const { signup } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -63,9 +63,12 @@ const SignupPage: React.FC = () => {
     setError(null);
     
     try {
-      console.log("Signing up with:", data.email, "role:", data.role);
+      console.log("Attempting signup with:", data.email, "role:", data.role);
+      
       // Include role in the metadata when signing up
       const success = await signup(data.email, data.password, data.role as UserRole);
+      
+      console.log("Signup result:", success);
       
       if (success) {
         // Success handling
@@ -173,6 +176,14 @@ const SignupPage: React.FC = () => {
                               {...field} 
                             />
                           </FormControl>
+                          <button 
+                            type="button"
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                            onClick={togglePasswordVisibility}
+                            tabIndex={-1}
+                          >
+                            {showPassword ? 'Hide' : 'Show'}
+                          </button>
                         </div>
                         <FormMessage />
                       </FormItem>

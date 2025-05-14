@@ -1,15 +1,65 @@
 
+# This file is used by Supabase CLI to configure your project
+# Only uncomment the values you need to change from the defaults
+
+# Set project ref.  THis was created for you when you created the project.
 project_id = "izmgpyqiiuuoulbtjhxb"
 
+[api]
+# Port to use for the API URL.
+#port = 54321
+# Hostname to use for the API URL and JWT issuer.
+#hostname = "localhost"
+# Whether to use HTTPS for the API.
+#uri_scheme = "http"
+
 [auth]
-# Enable auto-confirmed email for testing purposes
-disable_signup = false
-enable_signup = true
-email_autoconfirm = true
+# The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
+# in emails.
 site_url = "http://localhost:3000"
+# A list of URLs that auth providers are permitted to redirect to post authentication.
+additional_redirect_urls = ["https://localhost:3000"]
+# How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
+jwt_expiry = 3600
+# Allow/disallow new user signups to your project.
+enable_signup = true
+# If enabled, users need to confirm their email address before signing in.
+enable_email_autoconfirm = true
 
-# Additional metadata fields to be captured on signup
-additional_user_metadata_fields = ["role"]
+[auth.email]
+# Allow/disallow new user signups via email to your project.
+enable_signup = true
+# If enabled, users need to confirm their email address before signing in.
+enable_confirmations = false
 
-# Test users can be created using the Supabase dashboard
-# or with the seeding script
+[auth.phone]
+# Allow/disallow new user signups via phone to your project.
+enable_signup = true
+# If enabled, users need to confirm their phone number before signing in.
+enable_confirmations = false
+
+[auth.google]
+enabled = false
+
+[auth.github]
+enabled = false
+
+[analytics]
+enabled = false
+
+[experimental]
+enable_realtime = true
+
+[database]
+# Port for the database that power your backend API.
+port = 5432
+# Port for the database transaction monitoring logs.
+port_log = 5432
+#max_rows = 1000
+
+[location]
+geolocation_type = "geolocation"
+
+[mysql]
+# Port for the MySQL integration.
+port = 33060
