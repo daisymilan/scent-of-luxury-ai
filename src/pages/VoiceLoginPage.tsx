@@ -1,4 +1,3 @@
-
 // src/pages/VoiceLoginPage.tsx
 
 import { useState, useEffect } from 'react';
@@ -32,7 +31,7 @@ const VoiceLoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { isAuthenticated, authenticateWithVoice, isVoiceEnrolled } = useAuth();
+  const { authenticateWithVoice, isVoiceEnrolled, isAuthenticated } = useAuth();
   const [redirectUrl, setRedirectUrl] = useState<string>('/');
 
   // Get the state from location (where user came from)

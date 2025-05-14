@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
@@ -78,17 +77,6 @@ const LoginPage: React.FC = () => {
           setEmailNotConfirmed(true);
         }
       }
-      
-      if (success) {
-        toast({
-          title: "Login successful",
-          description: "Welcome to MiN New York dashboard",
-          duration: 3000,
-        });
-        navigate('/');
-        return;
-      }
-      // Note: Error handling is now in the login function in AuthContext
     } catch (error) {
       console.error("Login error:", error);
       const errorMessage = error instanceof Error ? error.message : 'Invalid email or password';

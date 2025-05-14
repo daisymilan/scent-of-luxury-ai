@@ -1,113 +1,112 @@
-
+// src/components/voice-auth/hooks/useVoiceAuth.tsx
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
-import voiceAuthService from '@/services/voiceAuthService';
 
-interface UseVoiceAuthProps {
+interface UseVoiceAuthOptions {
+  passphrase: string;
+  maxAttempts?: number;
   onAuthSuccess?: () => void;
-  onAuthFailure?: () => void;
+  onAuthFailed?: (error: string) => void;
+  mockMode?: boolean;
 }
 
-export const useVoiceAuth = ({ onAuthSuccess, onAuthFailure }: UseVoiceAuthProps = {}) => {
+export function useVoiceAuth(options = {}) {
   const { currentUser, isVoiceEnrolled, authenticateWithVoice } = useAuth();
-  const [isListening, setIsListening] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [authAttempts, setAuthAttempts] = useState(0);
-  const maxAttempts = 3;
+  const { passphrase, maxAttempts = 3, onAuthSuccess, onAuthFailed, mockMode = false } = options;
 
-  // Speech recognition setup
-  const {
-    transcript,
-    listening,
-    resetTranscript,
-    browserSupportsSpeechRecognition
-  } = useSpeechRecognition();
+  const [status, setStatus] = useState<'idle' | 'listening' | 'processing' | 'success' | 'error'>('idle');
+  const [transcript, setTranscript] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [attempts, setAttempts] = useState<number>(0);
+  const [isSupported, setIsSupported] = useState<boolean>(false);
+  const [isMicrophoneAvailable, setIsMicrophoneAvailable] = useState<boolean | null>(null);
+  const [isLocked, setIsLocked] = useState<boolean>(false);
+  const attemptsRemaining = maxAttempts - attempts;
 
-  // Start listening for voice input
-  const startListening = useCallback(() => {
-    if (!browserSupportsSpeechRecognition) {
-      setErrorMessage("Your browser doesn't support voice recognition.");
-      return;
-    }
-
-    if (!currentUser) {
-      setErrorMessage("You need to be logged in to use voice authentication.");
-      return;
-    }
-
-    if (!isVoiceEnrolled) {
-      setErrorMessage("You need to enroll your voice before using voice authentication.");
-      return;
-    }
-
-    setIsListening(true);
-    resetTranscript();
-    SpeechRecognition.startListening({ continuous: true });
-  }, [browserSupportsSpeechRecognition, currentUser, isVoiceEnrolled, resetTranscript]);
-
-  // Stop listening and process voice input
-  const stopListening = useCallback(async () => {
-    if (!listening) return;
-
-    SpeechRecognition.stopListening();
-    setIsListening(false);
-    setIsProcessing(true);
-
-    try {
-      if (transcript.trim()) {
-        // Authenticate with the captured transcript
-        const success = await authenticateWithVoice(transcript);
-        
-        if (success) {
-          if (onAuthSuccess) onAuthSuccess();
-        } else {
-          setAuthAttempts(prev => prev + 1);
-          setErrorMessage(`Authentication failed. ${maxAttempts - authAttempts - 1} attempts remaining.`);
-          if (onAuthFailure) onAuthFailure();
-        }
-      } else {
-        setErrorMessage("No voice input detected. Please try again.");
-        if (onAuthFailure) onAuthFailure();
-      }
-    } catch (error) {
-      console.error("Voice auth error:", error);
-      setErrorMessage("An error occurred during voice authentication.");
-      if (onAuthFailure) onAuthFailure();
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [listening, transcript, authenticateWithVoice, authAttempts, onAuthSuccess, onAuthFailure]);
-
-  // Reset the state
-  const resetAuth = useCallback(() => {
-    resetTranscript();
-    setErrorMessage('');
-    setAuthAttempts(0);
-    setIsProcessing(false);
-    setIsListening(false);
-  }, [resetTranscript]);
-
-  // Effect to handle browser compatibility
+  // Check browser support and microphone access on mount
   useEffect(() => {
-    if (!browserSupportsSpeechRecognition) {
-      setErrorMessage("Your browser doesn't support voice recognition.");
+    // Check if SpeechRecognition is supported
+    const isSpeechRecognitionSupported = 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
+    setIsSupported(isSpeechRecognitionSupported);
+
+    if (isSpeechRecognitionSupported) {
+      // Get microphone access
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(() => setIsMicrophoneAvailable(true))
+        .catch(() => setIsMicrophoneAvailable(false));
+    } else {
+      setIsMicrophoneAvailable(false);
     }
-  }, [browserSupportsSpeechRecognition]);
+  }, []);
+
+  // Function to start listening
+  const startListening = useCallback(() => {
+    if (isLocked || !isSupported || isMicrophoneAvailable === false) return;
+
+    setStatus('listening');
+    setTranscript('');
+    setErrorMessage('');
+
+    if (mockMode) {
+      // Simulate listening and processing in mock mode
+      setTimeout(() => {
+        setTranscript(passphrase);
+        setStatus('processing');
+        setTimeout(() => {
+          // Simulate success or failure
+          if (Math.random() > 0.2) {
+            setStatus('success');
+            onAuthSuccess?.();
+          } else {
+            setStatus('error');
+            setErrorMessage('Voice authentication failed in mock mode.');
+            onAuthFailed?.('Voice authentication failed in mock mode.');
+            setAttempts(prevAttempts => prevAttempts + 1);
+          }
+        }, 1500);
+      }, 500);
+    } else {
+      // Implement real speech recognition here
+      console.warn('Real speech recognition not implemented yet.');
+      setStatus('error');
+      setErrorMessage('Real speech recognition not implemented yet.');
+    }
+  }, [isLocked, isSupported, isMicrophoneAvailable, passphrase, mockMode, onAuthSuccess, onAuthFailed]);
+
+  // Function to stop listening
+  const stopListening = () => {
+    if (status === 'listening') {
+      setStatus('idle');
+    }
+  };
+
+  // Function to reset state for a new attempt
+  const reset = () => {
+    setStatus('idle');
+    setTranscript('');
+    setErrorMessage('');
+  };
+
+  // Effect to handle authentication attempts and locking
+  useEffect(() => {
+    if (attempts >= maxAttempts) {
+      setIsLocked(true);
+      setErrorMessage('Too many incorrect attempts. Voice authentication locked.');
+      onAuthFailed?.('Too many incorrect attempts.');
+    }
+  }, [attempts, maxAttempts, onAuthFailed]);
 
   return {
-    isListening,
-    isProcessing,
+    status,
     transcript,
     errorMessage,
-    authAttempts,
-    maxAttempts,
+    attempts,
+    attemptsRemaining,
+    isSupported,
+    isMicrophoneAvailable,
+    isLocked,
     startListening,
     stopListening,
-    resetAuth,
-    browserSupportsSpeechRecognition
+    reset,
   };
-};
-
-export default useVoiceAuth;
+}
