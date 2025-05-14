@@ -122,7 +122,7 @@ const VoiceLoginComponent: React.FC = () => {
         </div>
       ) : (
         <VoiceRecording 
-          onComplete={handleProcessVoice}
+          onProcessVoice={handleProcessVoice}
           isProcessing={isProcessing}
         />
       )}
