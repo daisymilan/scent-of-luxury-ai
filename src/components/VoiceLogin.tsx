@@ -32,7 +32,13 @@ const VoiceLogin: React.FC<VoiceLoginProps> = ({
   } = useVoiceAuth({
     passphrase,
     maxAttempts: 3,
-    mockMode: true // Set to false in production to use real API
+    mockMode: true, // Set to false in production to use real API
+    onAuthSuccess: () => {
+      onSuccess();
+    },
+    onAuthFailed: (error) => {
+      if (onError) onError(error);
+    }
   });
 
   // Call onSuccess when authentication succeeds
@@ -125,7 +131,7 @@ const VoiceLogin: React.FC<VoiceLoginProps> = ({
             <div className="voice-auth-actions">
               <button 
                 className="voice-auth-button stop"
-                onClick={stopListening}
+                onClick={() => stopListening()}
               >
                 Stop Listening
               </button>

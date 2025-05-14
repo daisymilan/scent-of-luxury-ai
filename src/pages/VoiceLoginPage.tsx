@@ -1,10 +1,11 @@
-// src/pages/VoiceLoginPage.tsx - FIXED VERSION
+
+// src/pages/VoiceLoginPage.tsx
 
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import useVoiceAuth from '../hooks/useVoiceAuth';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 // SVG icons inline instead of importing from @/components/icons
 const MicrophoneIcon = () => (
@@ -210,7 +211,7 @@ const VoiceLoginPage = () => {
             )}
             <button 
               className="w-full py-2 px-4 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-              onClick={stopListening}
+              onClick={() => stopListening()}
             >
               Stop Listening
             </button>
