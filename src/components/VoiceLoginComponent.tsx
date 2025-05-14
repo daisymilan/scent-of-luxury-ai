@@ -1,3 +1,4 @@
+
 // src/components/VoiceLoginComponent.tsx
 
 import React, { useState, useEffect } from 'react';
@@ -89,9 +90,9 @@ const VoiceLoginComponent: React.FC<VoiceLoginComponentProps> = ({
           throw new Error(`Unrecognized role: ${authResponse.user.role}`);
         }
       } else {
-        console.error('Voice authentication failed:', authResponse.error || 'Unknown error');
+        console.error('Voice authentication failed:', authResponse.message || 'Unknown error');
         setStatusMessage('Executive voice authentication failed. Please try again.');
-        throw new Error(authResponse.error || 'Voice authentication failed');
+        throw new Error(authResponse.message || 'Voice authentication failed');
       }
     } catch (error) {
       console.error('Voice processing error:', error);

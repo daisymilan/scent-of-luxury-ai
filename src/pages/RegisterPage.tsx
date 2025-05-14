@@ -1,3 +1,4 @@
+
 // src/pages/RegisterPage.tsx
 
 import React, { useState } from 'react';
@@ -74,7 +75,7 @@ const RegisterPage: React.FC = () => {
       // Get values from the form
       const { email, password, firstName, lastName, fragrancePreference, fragranceStyle, fragranceStrength } = data;
       
-      // Call register function from auth context
+      // Call register function from auth context with userData as second parameter
       await register(email, password, {
         firstName,
         lastName,
@@ -89,7 +90,7 @@ const RegisterPage: React.FC = () => {
       // Show success toast
       toast({
         title: "Registration successful",
-        description: "Welcome to Scent of Luxury. Let's find your perfect fragrance.",
+        description: "Welcome to MiN New York. Let's find your perfect fragrance.",
       });
       
       // Redirect to login after 2 seconds

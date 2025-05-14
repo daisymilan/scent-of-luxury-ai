@@ -1,5 +1,3 @@
-// src/utils/voiceAuthApi.ts
-
 import supabase from '../supabase';
 import { User, UserRole } from '../contexts/AuthContext';
 
@@ -13,6 +11,7 @@ export interface VoiceAuthResponse {
     role: UserRole;
   };
   confidence?: number;
+  error?: string; // Add the error property to fix TypeScript errors
 }
 
 interface ExecutiveRole {
