@@ -1,4 +1,5 @@
 
+import * as React from "react";
 import { type ToastActionElement, type ToastProps } from "@/components/ui/toast";
 
 const TOAST_LIMIT = 1;
@@ -190,7 +191,3 @@ export type ToastActionType = {
   altText: string;
   onClick: () => void;
 };
-
-import { createElement } from "react";
-const React = { createElement, useEffect, useState };
-
