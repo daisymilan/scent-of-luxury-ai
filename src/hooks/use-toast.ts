@@ -11,7 +11,6 @@ export interface Toast {
   duration?: number; // Add duration property
 }
 
-// Define the props for the useToast hook
 export interface UseToastProps {
   toasts: Toast[];
   toast: (props: Omit<Toast, "id">) => void;
@@ -50,6 +49,6 @@ export const toast = (props: Omit<Toast, "id">) => {
   if (toastFn) {
     toastFn(props);
   } else {
-    console.warn("Toast function not initialized. Make sure to use the ToastProvider.");
+    console.warn("Toast function not initialized. Make sure ToastProvider is mounted.");
   }
 };

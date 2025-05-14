@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -133,8 +134,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
-      // Add name property by combining first_name and last_name if available
       if (user) {
+        // Construct a proper User object with all required properties
         const processedUser: User = {
           ...user,
           name: user.first_name && user.last_name 
@@ -147,16 +148,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUserRole(processedUser.role || null);
         setIsVoiceEnrolled(!!processedUser.voice_enrolled);
         setIsVoiceAuthenticated(!!processedUser.voice_authenticated);
+
+        console.log("User loaded successfully:", processedUser);
       }
     } catch (error) {
       console.error('Error loading current user:', error);
     }
   };
 
-  // Login function
+  // Login function - improved with better error handling
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
+      console.log("Login attempt for:", email);
       const { data: authResponse, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -170,6 +174,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (authResponse.user) {
         setIsAuthenticated(true);
         await loadCurrentUser(authResponse.user.id);
+        console.log("Login successful for:", email);
         return true;
       }
 
@@ -186,6 +191,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (email: string, password: string, userData?: Record<string, any>): Promise<boolean> => {
     setIsLoading(true);
     try {
+      console.log("Register attempt for:", email, "with user data:", userData);
+      
       // First, sign up the user with Supabase Auth
       const { data: authResponse, error: authError } = await supabase.auth.signUp({
         email,
@@ -223,6 +230,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.error('Error creating user profile:', insertError);
         // If user table insert fails, we should still continue as the auth user was created
         // Just log the error but don't fail registration
+      } else {
+        console.log("User profile created successfully for:", email);
       }
 
       setIsAuthenticated(true);
@@ -336,7 +345,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const resetVoiceAuth = () => {
     updateUserMetadata({
       voice_authenticated: false,
-      last_voice_auth: null,
+      last_voice_auth: undefined,
     });
     setIsVoiceAuthenticated(false);
   };

@@ -46,13 +46,24 @@ const LoginPage: React.FC = () => {
     
     setIsSubmitting(true);
     try {
-      await login(data.email, data.password);
-      toast({
-        title: "Login successful",
-        description: "Welcome to MiN New York dashboard",
-      });
-      navigate('/'); // Navigate to the root route instead of /dashboard
+      console.log("Attempting login with:", data.email); // Add logging
+      const success = await login(data.email, data.password);
+      if (success) {
+        toast({
+          title: "Login successful",
+          description: "Welcome to MiN New York dashboard",
+        });
+        navigate('/'); // Navigate to the root route
+      } else {
+        // This handles the case where login returns false but doesn't throw
+        toast({
+          title: "Login failed",
+          description: "Invalid email or password",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
+      console.error("Login error:", error); // Add error logging
       const errorMessage = error instanceof Error ? error.message : 'Invalid email or password';
       toast({
         title: "Login failed",
@@ -69,7 +80,7 @@ const LoginPage: React.FC = () => {
   };
 
   const handleRegisterClick = () => {
-    navigate('/signup'); // Updated to navigate to /signup instead of /register
+    navigate('/signup');
   };
 
   const handleForgotPasswordClick = () => {
