@@ -141,7 +141,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           name: user.first_name && user.last_name 
             ? `${user.first_name} ${user.last_name}` 
             : user.first_name || user.email?.split('@')[0] || 'User',
-          role: user.role as UserRole || 'User' // Ensure role is cast to UserRole
+          role: (user.role as UserRole) || 'User' // Ensure role is cast to UserRole
         };
         
         setCurrentUser(processedUser);
@@ -183,7 +183,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Register function - Updated to work with the users table
+  // Register function - Fixed to work with the users table
   const register = async (email: string, password: string, userData?: Record<string, any>): Promise<boolean> => {
     setIsLoading(true);
     try {
@@ -191,13 +191,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { data: authResponse, error: authError } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            ...userData,
-            avatar_url: userData?.avatar_url || '',
-            role: userData?.role || 'User',
-          },
-        },
       });
 
       if (authError) {
@@ -205,36 +198,52 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return false;
       }
 
-      if (authResponse.user) {
-        // Now insert the user data into our custom users table
-        const { error: insertError } = await supabase
-          .from('users')
-          .insert([
-            {
-              id: authResponse.user.id,
-              email: email,
-              first_name: userData?.firstName || '',
-              last_name: userData?.lastName || '',
-              avatar_url: userData?.avatar_url || '',
-              role: userData?.role || 'User',
-              fragrancepreference: userData?.fragrancePreference || '',
-              fragrancestyle: userData?.fragranceStyle || '',
-              fragrancestrength: userData?.fragranceStrength || ''
-            },
-          ]);
+      if (!authResponse.user) {
+        console.error('Registration failed: No user returned');
+        return false;
+      }
+      
+      // Now insert the user data into our custom users table
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert([
+          {
+            id: authResponse.user.id,
+            email: email,
+            first_name: userData?.firstName || '',
+            last_name: userData?.lastName || '',
+            avatar_url: userData?.avatar_url || '',
+            role: userData?.role || 'User',
+            fragrancepreference: userData?.fragrancePreference || '',
+            fragrancestyle: userData?.fragranceStyle || '',
+            fragrancestrength: userData?.fragranceStrength || ''
+          },
+        ]);
 
-        if (insertError) {
-          console.error('Error creating user profile:', insertError);
-          // If user table insert fails, we should still continue as the auth user was created
-          // Just log the error but don't fail registration
-        }
-
-        setIsAuthenticated(true);
-        await loadCurrentUser(authResponse.user.id);
-        return true;
+      if (insertError) {
+        console.error('Error creating user profile:', insertError);
+        // If user table insert fails, we should still continue as the auth user was created
+        // Just log the error but don't fail registration
       }
 
-      return false;
+      setIsAuthenticated(true);
+      
+      // Create a basic user object until the full profile loads
+      const basicUser: User = {
+        id: authResponse.user.id,
+        email: email,
+        first_name: userData?.firstName || '',
+        last_name: userData?.lastName || '',
+        role: (userData?.role as UserRole) || 'User',
+        name: userData?.firstName && userData?.lastName
+          ? `${userData.firstName} ${userData.lastName}`
+          : userData?.firstName || email.split('@')[0] || 'User'
+      };
+      
+      setCurrentUser(basicUser);
+      setUserRole((userData?.role as UserRole) || 'User');
+      
+      return true;
     } catch (error) {
       console.error('Registration error:', error);
       return false;

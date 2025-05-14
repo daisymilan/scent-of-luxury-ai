@@ -68,12 +68,15 @@ const SignupPage: React.FC = () => {
         role: data.role || 'User'
       };
       
+      console.log("Registering user with data:", { email: data.email, userData });
+      
       const success = await register(data.email, data.password, userData);
       
       if (success) {
         toast({
           title: "Registration successful",
-          description: "Welcome to MiN New York!"
+          description: "Welcome to MiN New York!",
+          variant: "default"
         });
         navigate('/');
       } else {
@@ -84,6 +87,7 @@ const SignupPage: React.FC = () => {
         });
       }
     } catch (error) {
+      console.error("Registration error:", error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       toast({
         title: "Registration failed",
@@ -177,6 +181,7 @@ const SignupPage: React.FC = () => {
                           <Input 
                             placeholder="your@email.com" 
                             className="pl-10 py-5 text-base bg-gray-800 border-gray-700 text-gray-100" 
+                            type="email"
                             {...field} 
                           />
                         </FormControl>

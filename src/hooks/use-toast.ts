@@ -18,6 +18,14 @@ export interface UseToastProps {
   dismiss: (id: string) => void;
 }
 
+// Store for toast function
+let toastFn: ((props: Omit<Toast, "id">) => void) | undefined;
+
+// Export setter for ToastProvider
+export const setToastFunction = (fn: (props: Omit<Toast, "id">) => void) => {
+  toastFn = fn;
+};
+
 export const useToast = (): UseToastProps => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -39,19 +47,11 @@ export const useToast = (): UseToastProps => {
   return { toasts, toast, dismiss };
 };
 
-// Create a standalone toast function
-let toastFn: (props: Omit<Toast, "id">) => void;
-
-// Remove the JSX from this file and create a separate ToastProvider component in a .tsx file
+// Standalone toast function for use outside of React components
 export const toast = (props: Omit<Toast, "id">) => {
   if (toastFn) {
     toastFn(props);
   } else {
     console.warn("Toast function not initialized. Make sure to use the ToastProvider.");
   }
-};
-
-// Function to set the toast function from outside
-export const setToastFunction = (fn: (props: Omit<Toast, "id">) => void) => {
-  toastFn = fn;
 };
