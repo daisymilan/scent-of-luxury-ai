@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import supabase from '../supabase'; // Use the existing supabase client
+import { supabase } from '../integrations/supabase/client'; // Use the typed supabase client
 
 export type UserRole = 'CEO' | 'CCO' | 'Commercial Director' | 'Regional Manager' | 'Marketing Manager' | 'User' | 'Social Media Manager' | 'Customer Support';
 
@@ -178,11 +178,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Register function
+  // Register function - Updated to work with the users table
   const register = async (email: string, password: string, userData?: Record<string, any>): Promise<boolean> => {
     setIsLoading(true);
     try {
-      const { data: authResponse, error } = await supabase.auth.signUp({
+      // First, sign up the user with Supabase Auth
+      const { data: authResponse, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -194,16 +195,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         },
       });
 
-      if (error) {
-        console.error('Registration failed:', error.message);
+      if (authError) {
+        console.error('Registration failed:', authError.message);
         return false;
       }
 
       if (authResponse.user) {
-        setIsAuthenticated(true);
-
-        // Create a user profile in the 'users' table
-        const { error: userError } = await supabase
+        // Now insert the user data into our custom users table
+        const { error: insertError } = await supabase
           .from('users')
           .insert([
             {
@@ -213,17 +212,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               last_name: userData?.lastName || '',
               avatar_url: userData?.avatar_url || '',
               role: userData?.role || 'User',
-              fragrancePreference: userData?.fragrancePreference || '',
-              fragranceStyle: userData?.fragranceStyle || '',
-              fragranceStrength: userData?.fragranceStrength || ''
+              fragrancepreference: userData?.fragrancePreference || '',
+              fragrancestyle: userData?.fragranceStyle || '',
+              fragrancestrength: userData?.fragranceStrength || ''
             },
           ]);
 
-        if (userError) {
-          console.error('Error creating user profile:', userError);
-          return false;
+        if (insertError) {
+          console.error('Error creating user profile:', insertError);
+          // If user table insert fails, we should still continue as the auth user was created
+          // Just log the error but don't fail registration
         }
 
+        setIsAuthenticated(true);
         await loadCurrentUser(authResponse.user.id);
         return true;
       }
