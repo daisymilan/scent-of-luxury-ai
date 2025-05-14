@@ -8,6 +8,7 @@ export interface Toast {
   description?: string;
   action?: React.ReactNode;
   variant?: "default" | "destructive";
+  duration?: number; // Add duration property
 }
 
 // Define the props for the useToast hook
@@ -22,12 +23,13 @@ export const useToast = (): UseToastProps => {
 
   const toast = useCallback((props: Omit<Toast, "id">) => {
     const id = Math.random().toString(36).substring(2, 9);
+    const duration = props.duration || 5000;
     setToasts((prevToasts) => [...prevToasts, { id, ...props }]);
     
-    // Auto dismiss after 5 seconds
+    // Auto dismiss using the provided duration or default to 5 seconds
     setTimeout(() => {
       setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
-    }, 5000);
+    }, duration);
   }, []);
 
   const dismiss = useCallback((id: string) => {

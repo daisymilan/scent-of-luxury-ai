@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useWooStats, useWooOrders, useWooProducts } from '@/utils/woocommerce';
 import { useToast } from '@/hooks/use-toast';
@@ -52,8 +51,7 @@ const KpiOverview = () => {
         toastUI({
           title: "API Connection Error",
           description: `Could not connect to WooCommerce API: ${errorMessage}`,
-          variant: "destructive",
-          duration: 5000,
+          variant: "destructive"
         });
         
         // Also use Sonner for a more visible toast
@@ -64,8 +62,7 @@ const KpiOverview = () => {
         toastUI({
           title: "No data available",
           description: "Could not load store data from WooCommerce API. Please check your API connection.",
-          variant: "destructive",
-          duration: 5000,
+          variant: "destructive"
         });
         
         toast.warning("No WooCommerce data available", {

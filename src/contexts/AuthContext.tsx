@@ -1,6 +1,7 @@
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../integrations/supabase/client'; // Use the typed supabase client
+import { supabase } from '../integrations/supabase/client';
 
 export type UserRole = 'CEO' | 'CCO' | 'Commercial Director' | 'Regional Manager' | 'Marketing Manager' | 'User' | 'Social Media Manager' | 'Customer Support';
 
@@ -135,15 +136,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Add name property by combining first_name and last_name if available
       if (user) {
-        user.name = user.first_name && user.last_name 
-          ? `${user.first_name} ${user.last_name}` 
-          : user.first_name || user.email?.split('@')[0] || 'User';
+        const processedUser: User = {
+          ...user,
+          name: user.first_name && user.last_name 
+            ? `${user.first_name} ${user.last_name}` 
+            : user.first_name || user.email?.split('@')[0] || 'User',
+          role: user.role as UserRole || 'User' // Ensure role is cast to UserRole
+        };
+        
+        setCurrentUser(processedUser);
+        setUserRole(processedUser.role || null);
+        setIsVoiceEnrolled(!!processedUser.voice_enrolled);
+        setIsVoiceAuthenticated(!!processedUser.voice_authenticated);
       }
-
-      setCurrentUser(user);
-      setUserRole(user?.role as UserRole || null);
-      setIsVoiceEnrolled(user?.voice_enrolled || false);
-      setIsVoiceAuthenticated(user?.voice_authenticated || false);
     } catch (error) {
       console.error('Error loading current user:', error);
     }
