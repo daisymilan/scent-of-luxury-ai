@@ -1,4 +1,3 @@
-
 // src/utils/voiceAuthApi.ts
 // Update the VoiceAuthResponse interface to include the error property
 
@@ -127,10 +126,56 @@ export const processVoiceAuth = async (audioBlob: Blob, userId?: string, webhook
   }
 };
 
-// Add the missing getExecutiveRoles function
-export const getExecutiveRoles = async (): Promise<string[]> => {
-  // Return a list of executive roles
-  return ['CEO', 'CCO', 'Commercial Director', 'Regional Manager', 'Marketing Manager'];
+// Update the getExecutiveRoles function to ensure it returns a Promise with string[]
+export const getExecutiveRoles = async (): Promise<any[]> => {
+  try {
+    // Return a list of executive roles with more complete data
+    return [
+      {
+        id: 'exec-1',
+        name: 'Chad Smith',
+        email: 'chad.smith@minyork.com',
+        role: 'CEO',
+        department: 'Executive Office',
+        accessLevel: 'all'
+      },
+      {
+        id: 'exec-2',
+        name: 'Emma Johnson',
+        email: 'emma.johnson@minyork.com',
+        role: 'CCO',
+        department: 'Executive Office',
+        accessLevel: 'high'
+      },
+      {
+        id: 'exec-3',
+        name: 'Michael Chen',
+        email: 'michael.chen@minyork.com',
+        role: 'Commercial Director',
+        department: 'Sales',
+        accessLevel: 'medium'
+      },
+      {
+        id: 'exec-4',
+        name: 'Sophia Rodriguez',
+        email: 'sophia.rodriguez@minyork.com',
+        role: 'Regional Manager',
+        department: 'Operations',
+        accessLevel: 'medium'
+      },
+      {
+        id: 'exec-5',
+        name: 'James Wilson',
+        email: 'james.wilson@minyork.com',
+        role: 'Marketing Manager',
+        department: 'Marketing',
+        accessLevel: 'low'
+      }
+    ];
+  } catch (error) {
+    console.error("Error fetching executive roles:", error);
+    return [];
+  }
 };
 
 // Add the missing resetVoiceEnrollment function

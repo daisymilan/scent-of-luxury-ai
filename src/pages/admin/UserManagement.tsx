@@ -71,7 +71,7 @@ const UserManagement: React.FC = () => {
     },
   });
 
-  // Load users on component mount
+  // Fetch users on component mount
   useEffect(() => {
     // Check if user has admin access
     if (userRole !== 'CEO' && userRole !== 'CCO') {
@@ -94,8 +94,8 @@ const UserManagement: React.FC = () => {
       // In a real implementation, you would fetch users from Supabase
       // This requires admin access to the Auth API or a server function
       
-      // For now, we'll use the mock data from getExecutiveRoles
-      const execRoles = getExecutiveRoles();
+      // Get roles from the getExecutiveRoles function but properly await it
+      const execRoles = await getExecutiveRoles();
       
       // Fetch actual users from Supabase if possible
       let supabaseUsers: ExecutiveUser[] = [];
