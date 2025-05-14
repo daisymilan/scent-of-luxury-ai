@@ -1,7 +1,7 @@
-
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 export type UserRole = 'CEO' | 'CCO' | 'Commercial Director' | 'Regional Manager' | 'Marketing Manager' | 'User' | 'Social Media Manager' | 'Customer Support';
 
@@ -79,7 +79,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const loadSession = async () => {
       setIsLoading(true);
       try {
+        console.log("Loading session from Supabase");
         const { data: { session } } = await supabase.auth.getSession();
+        
+        console.log("Current session:", session);
         
         if (session) {
           setIsAuthenticated(true);
@@ -100,6 +103,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Subscribe to auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event, session);
+      
       if (event === 'INITIAL_SESSION') {
         // Skip initial session event
         return;
@@ -156,34 +161,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Login function - improved with better error handling
+  // Login function - completely rebuilt for reliability
   const login = async (email: string, password: string): Promise<boolean> => {
-    setIsLoading(true);
     try {
       console.log("Login attempt for:", email);
-      const { data: authResponse, error } = await supabase.auth.signInWithPassword({
+      
+      // Clear any previous session to avoid conflicts
+      await supabase.auth.signOut();
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
         console.error('Login failed:', error.message);
+        toast({
+          title: "Login failed",
+          description: error.message || "Invalid credentials",
+          variant: "destructive",
+          duration: 5000,
+        });
         return false;
       }
 
-      if (authResponse.user) {
-        setIsAuthenticated(true);
-        await loadCurrentUser(authResponse.user.id);
+      console.log("Auth response:", data);
+      
+      if (data.user && data.session) {
         console.log("Login successful for:", email);
+        
+        // Log user and session data for debugging
+        console.log("User:", data.user);
+        console.log("Session:", data.session);
+        
+        // We successfully logged in
         return true;
+      } else {
+        console.error("Login returned no user or session");
+        return false;
       }
-
-      return false;
     } catch (error) {
       console.error('Login error:', error);
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 

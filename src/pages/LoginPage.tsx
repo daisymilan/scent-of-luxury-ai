@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import VoiceLoginComponent from '@/components/VoiceLoginComponent';
 import { Eye, EyeOff, Lock, LogIn, Mail } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 // Enhanced form schema with better validation
 const formSchema = z.object({
@@ -33,6 +35,15 @@ const LoginPage: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   
+  // Check if already logged in
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate('/');
+      }
+    });
+  }, [navigate]);
+  
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -46,29 +57,43 @@ const LoginPage: React.FC = () => {
     
     setIsSubmitting(true);
     try {
-      console.log("Attempting login with:", data.email); // Add logging
+      console.log("Attempting login with:", data.email); 
+      
+      // Add a direct debug request to test the credentials
+      console.log("Testing direct login with Supabase client");
+      const rawResponse = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+      
+      console.log("Direct Supabase login response:", rawResponse);
+      
+      // Try our regular login flow
       const success = await login(data.email, data.password);
+      
       if (success) {
         toast({
           title: "Login successful",
           description: "Welcome to MiN New York dashboard",
+          duration: 3000,
         });
-        navigate('/'); // Navigate to the root route
+        navigate('/');
       } else {
-        // This handles the case where login returns false but doesn't throw
         toast({
           title: "Login failed",
-          description: "Invalid email or password",
+          description: "Invalid email or password. Please try again.",
           variant: "destructive",
+          duration: 5000,
         });
       }
     } catch (error) {
-      console.error("Login error:", error); // Add error logging
+      console.error("Login error:", error);
       const errorMessage = error instanceof Error ? error.message : 'Invalid email or password';
       toast({
         title: "Login failed",
         description: errorMessage,
         variant: "destructive",
+        duration: 5000,
       });
     } finally {
       setIsSubmitting(false);

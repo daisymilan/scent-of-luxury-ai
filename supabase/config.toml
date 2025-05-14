@@ -1,1 +1,11 @@
+
 project_id = "izmgpyqiiuuoulbtjhxb"
+
+[auth]
+# Enable auto-confirmed email for testing purposes
+disable_signup = false
+enable_signup = true
+email_autoconfirm = true
+
+# Test users can be created using the Supabase dashboard
+# or with the seeding script
