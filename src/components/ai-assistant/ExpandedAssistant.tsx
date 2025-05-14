@@ -12,6 +12,7 @@ import { AssistantFooter } from './AssistantFooter';
 import { UserQuery } from './UserQuery';
 import { ResponseDisplay } from './ResponseDisplay';
 import { ThinkingIndicator } from './ThinkingIndicator';
+import { useSpeechSynthesis } from './useSpeechSynthesis';
 
 interface ExpandedAssistantProps {
   setIsExpanded: (expanded: boolean) => void;
@@ -31,10 +32,30 @@ export const ExpandedAssistant = ({ setIsExpanded }: ExpandedAssistantProps) => 
   // Add state for speech functionality
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
   
+  // Use the speech synthesis hook
+  const speechSynthesis = useSpeechSynthesis();
+  
   // Handle read aloud functionality
-  const handleReadAloud = () => {
-    setIsSpeaking(prev => !prev);
-    // Speech functionality would be implemented here
+  const handleReadAloud = (responseText: string) => {
+    if (isSpeaking) {
+      // Stop speaking if already speaking
+      speechSynthesis.stop();
+      setIsSpeaking(false);
+    } else {
+      // Start speaking the response
+      if (speechSynthesis.isSupported()) {
+        setIsSpeaking(true);
+        const result = speechSynthesis.speak(responseText);
+        
+        if (result.utterance) {
+          result.utterance.onend = () => {
+            setIsSpeaking(false);
+          };
+        } else {
+          setIsSpeaking(false);
+        }
+      }
+    }
   };
 
   // Handle query submission
@@ -83,7 +104,7 @@ export const ExpandedAssistant = ({ setIsExpanded }: ExpandedAssistantProps) => 
                     key={message.id} 
                     response={message.content}
                     isSpeaking={isSpeaking}
-                    handleReadAloud={handleReadAloud}
+                    handleReadAloud={() => handleReadAloud(message.content)}
                   />
                 )
               ))}
