@@ -4,7 +4,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "./components/ThemeProvider";
 import Index from "./pages/Index";
 import B2BPage from "./pages/B2BPage";
@@ -20,13 +20,28 @@ import SignupPage from "./pages/SignupPage"; // Import the new SignupPage
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import VoiceLoginPage from "./pages/VoiceLoginPage";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import SocialMediaAdsPage from "./pages/SocialMediaAdsPage";
 import ReorderReminderPage from "./pages/ReorderReminderPage";
 import AiAssistant from "./components/ai-assistant/AiAssistant";
 
 // Import the voice authentication styles
 import "./styles/VoiceAuth.css";
+
+// Component to conditionally render AI Assistant
+const ConditionalAiAssistant = () => {
+  const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  
+  // Don't show assistant on auth pages
+  const isAuthPage = ['/login', '/signup', '/voice-login', '/unauthorized'].includes(location.pathname);
+  
+  if (isAuthenticated && !isAuthPage) {
+    return <AiAssistant />;
+  }
+  
+  return null;
+};
 
 const App = () => (
   <AuthProvider>
@@ -105,7 +120,7 @@ const App = () => (
         </Routes>
         <Toaster />
         <Sonner />
-        <AiAssistant />
+        <ConditionalAiAssistant />
       </TooltipProvider>
     </ThemeProvider>
   </AuthProvider>
