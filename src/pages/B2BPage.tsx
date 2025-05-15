@@ -122,7 +122,7 @@ const B2BPage = () => {
       }
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
-    cacheTime: 1000 * 60 * 30, // 30 minutes
+    gcTime: 1000 * 60 * 30, // 30 minutes - changed from cacheTime to gcTime
   });
 
   const isLoading = isLoadingCustomers || isLoadingOrders || isLoadingProducts;
