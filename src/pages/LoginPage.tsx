@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
@@ -196,10 +195,10 @@ const LoginPage: React.FC = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-2 w-full bg-gray-800">
               <TabsTrigger value="password" className="text-xs uppercase tracking-wider font-light py-3 data-[state=active]:bg-gray-700">
-                Password
+                EMAIL
               </TabsTrigger>
               <TabsTrigger value="voice" className="text-xs uppercase tracking-wider font-light py-3 data-[state=active]:bg-gray-700">
-                Voice
+                VOICE
               </TabsTrigger>
             </TabsList>
             
