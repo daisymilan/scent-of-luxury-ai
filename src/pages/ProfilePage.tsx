@@ -44,7 +44,7 @@ const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ ...userInfo });
 
-  // Enhanced logging to help debug auth issues
+  // Enhanced logging to help debug profile issues
   useEffect(() => {
     console.log("ProfilePage - Current user:", currentUser);
     console.log("ProfilePage - User role from context:", userRole);
@@ -56,10 +56,13 @@ const ProfilePage = () => {
   // Fetch the complete user data from Supabase
   useEffect(() => {
     const fetchUserData = async () => {
-      if (!currentUser?.id) return;
+      if (!currentUser?.id) {
+        console.log("No current user ID, setting loading to false");
+        setLoading(false);
+        return;
+      }
       
       try {
-        setLoading(true);
         console.log("Fetching user data for ID:", currentUser.id);
         
         const { data, error } = await supabase
@@ -71,16 +74,16 @@ const ProfilePage = () => {
         if (error) {
           console.error("Error fetching user data:", error);
           toast.error("Failed to load user data");
+          setLoading(false);
           return;
         }
 
         console.log("User data from Supabase:", data);
         
         // CRITICAL FIX: Priority order for role determination
-        // 1. If user is CEO by email, always set as CEO regardless of stored role
-        const ceoEmails = ["ceo@example.com", "ceo@minyork.com", "ceotest@min.com", "admin@minny.com"];
         // Define userEmail only once and reuse it throughout the function
         const userEmail = currentUser.email || '';
+        const ceoEmails = ["ceo@example.com", "ceo@minyork.com", "ceotest@min.com", "admin@minny.com"];
         const isCeoByEmail = ceoEmails.includes(userEmail.toLowerCase());
         
         // Determine effective role
@@ -127,45 +130,34 @@ const ProfilePage = () => {
         // Construct name from first and last name
         const fullName = `${data?.first_name || ''} ${data?.last_name || ''}`.trim() || 
                          currentUser?.user_metadata?.name || 
+                         currentUser?.user_metadata?.first_name && currentUser?.user_metadata?.last_name ? 
+                         `${currentUser.user_metadata.first_name} ${currentUser.user_metadata.last_name}`.trim() :
                          "Guest User";
         
         // Use type assertion to access woocommerce_id since it might not be in the database schema yet
-        // but we've added it to our custom types
         const extendedData = data as unknown as ExtendedUserData;
         const woocommerceId = extendedData?.woocommerce_id ?? null;
         console.log("WooCommerce ID from database:", woocommerceId);
         
         // Update the user info with data from Supabase and our determined role
-        setUserInfo({
+        const updatedUserInfo = {
           name: fullName,
           email: data?.email || currentUser?.email || "",
           role: effectiveRole,
           department: getDepartmentForRole(effectiveRole),
-          first_name: data?.first_name || "",
-          last_name: data?.last_name || "",
+          first_name: data?.first_name || currentUser?.user_metadata?.first_name || "",
+          last_name: data?.last_name || currentUser?.user_metadata?.last_name || "",
           avatar_url: data?.avatar_url || "",
           voice_enrolled: data?.voice_enrolled || false,
           voice_authenticated: data?.voice_authenticated || false,
           last_voice_auth: data?.last_voice_auth ? new Date(data.last_voice_auth) : null,
           woocommerce_id: woocommerceId,
-        });
+        };
         
-        setFormData({
-          name: fullName,
-          email: data?.email || currentUser?.email || "",
-          role: effectiveRole,
-          department: getDepartmentForRole(effectiveRole),
-          first_name: data?.first_name || "",
-          last_name: data?.last_name || "",
-          avatar_url: data?.avatar_url || "",
-          voice_enrolled: data?.voice_enrolled || false,
-          voice_authenticated: data?.voice_authenticated || false,
-          last_voice_auth: data?.last_voice_auth ? new Date(data.last_voice_auth) : null,
-          woocommerce_id: woocommerceId,
-        });
+        setUserInfo(updatedUserInfo);
+        setFormData(updatedUserInfo);
 
         // Try to fetch WooCommerce customer data if we have an email
-        // Remove duplicate declaration and use the existing userEmail variable
         if (userEmail) {
           try {
             const customerData = await getCustomerByEmail(userEmail);
@@ -202,6 +194,7 @@ const ProfilePage = () => {
         console.error("Exception fetching user data:", err);
         toast.error("An error occurred while loading your profile");
       } finally {
+        console.log("Setting loading to false");
         setLoading(false);
       }
     };
