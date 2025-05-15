@@ -57,20 +57,10 @@ const ProtectedRoute = ({
   if (userIsCEO) {
     console.log("ProtectedRoute - CEO ACCESS GRANTED for", location.pathname);
     
-    // Voice authentication still applies even for CEO
-    if (requireVoiceAuth) {
-      if (!isVoiceEnrolled) {
-        console.log("ProtectedRoute - CEO needs voice enrollment");
-        return <Navigate to="/profile" state={{ from: location, requireVoiceSetup: true }} replace />;
-      }
-      
-      if (!isVoiceAuthenticated) {
-        console.log("ProtectedRoute - CEO needs voice authentication");
-        return <Navigate to="/voice-login" state={{ from: location }} replace />;
-      }
-    }
+    // CRITICAL FIX: For CEO users, never redirect to profile for voice enrollment
+    // Just let them through to the requested page regardless of voice enrollment status
     
-    // CEO can access this route
+    // CEO can access this route regardless of voice authentication status
     return children;
   }
 
@@ -108,8 +98,8 @@ const ProtectedRoute = ({
     }
   }
 
-  // Check voice authentication if required
-  if (requireVoiceAuth) {
+  // Check voice authentication if required for non-CEO users
+  if (requireVoiceAuth && !userIsCEO) {
     if (!isVoiceEnrolled) {
       console.log("ProtectedRoute - Voice not enrolled, redirecting to profile");
       return <Navigate to="/profile" state={{ from: location, requireVoiceSetup: true }} replace />;
