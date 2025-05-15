@@ -92,7 +92,7 @@ const ProductDetail = ({ products, isLoading }: ProductDetailProps) => {
   
   // Extract product images
   const images = product.images || [];
-  const mainImage = images.length > 0 ? images[selectedImage] : { id: 0, src: '/placeholder.svg' };
+  const mainImage = images.length > 0 ? images[selectedImage] : { id: 0, src: '/placeholder.svg', alt: '' };
   
   // Check if the product has variations
   const hasVariations = product.type === 'variable';
@@ -113,7 +113,7 @@ const ProductDetail = ({ products, isLoading }: ProductDetailProps) => {
             <AspectRatio ratio={1 / 1}>
               <img 
                 src={mainImage.src} 
-                alt={product.name} 
+                alt={mainImage.alt || product.name} 
                 className="object-contain w-full h-full"
               />
             </AspectRatio>
@@ -132,7 +132,7 @@ const ProductDetail = ({ products, isLoading }: ProductDetailProps) => {
                   <AspectRatio ratio={1 / 1}>
                     <img 
                       src={image.src} 
-                      alt={`${product.name} - Image ${index + 1}`} 
+                      alt={image.alt || `${product.name} - Image ${index + 1}`} 
                       className="object-cover w-full h-full"
                     />
                   </AspectRatio>

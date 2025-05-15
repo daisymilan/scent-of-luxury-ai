@@ -1,5 +1,5 @@
 
-import { WooCustomer, WooOrder, WooProduct } from '@/lib/mockData';
+import { WooCustomer, WooOrder, WooProduct } from '@/utils/woocommerce/types';
 
 // Type definitions for B2B leads
 export interface B2BLeadDisplay {

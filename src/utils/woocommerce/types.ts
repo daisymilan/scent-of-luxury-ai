@@ -8,18 +8,35 @@ export interface WooProduct {
   id: number;
   name: string;
   slug: string;
+  permalink?: string;
+  date_created?: string;
+  type?: string;
+  status?: string;
+  featured?: boolean;
+  catalog_visibility?: string;
   price: string;
   regular_price: string;
   sale_price?: string;
+  price_html?: string;
+  on_sale?: boolean;
+  purchasable?: boolean;
+  total_sales?: number;
+  virtual?: boolean;
+  downloadable?: boolean;
   sku?: string;
   stock_quantity?: number;
   stock_status: 'instock' | 'outofstock' | 'onbackorder';
+  in_stock?: boolean;
   description: string;
   short_description?: string;
   categories?: { id: number; name: string; slug: string }[];
+  tags?: { id: number; name: string; slug: string }[];
   images?: { id: number; src: string; name?: string; alt?: string }[];
-  date_created?: string;
-  total_sales?: number;
+  attributes?: any[];
+  related_ids?: number[];
+  average_rating?: string;
+  rating_count?: number;
+  has_options?: boolean;
 }
 
 export interface WooProductVariation {
@@ -42,6 +59,7 @@ export interface WooProductVariation {
 
 export interface WooOrder {
   id: number;
+  number?: string;
   status: string;
   date_created: string;
   total: string;
@@ -64,7 +82,7 @@ export interface WooOrder {
     name: string;
     product_id: number;
     quantity: number;
-    price: number;
+    price?: number;
     total?: string;
   }>;
 }

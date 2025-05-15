@@ -7,10 +7,10 @@ import N8nConfig from '@/components/N8nConfig';
 import B2BKingDashboard from '@/components/b2b/B2BKingDashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
-import { WooCustomer, WooOrder, WooProduct } from '@/lib/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { WOO_API_BASE_URL } from '@/utils/woocommerce';
 import { WOO_API_CREDENTIALS, WOO_API_AUTH_PARAMS } from '@/utils/woocommerce/config';
+import { WooCustomer, WooOrder, WooProduct } from '@/utils/woocommerce/types';
 
 // Column mapping for B2B leads import
 export const B2BColumnMapping = {

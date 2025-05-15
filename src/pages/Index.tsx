@@ -10,6 +10,7 @@ import SEODashboard from '@/components/SEODashboard';
 import AbandonedCartRecovery from '@/components/AbandonedCartRecovery';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { WooOrder, WooProduct, WooCustomer } from '@/utils/woocommerce/types';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('overview');
