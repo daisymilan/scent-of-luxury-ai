@@ -18,8 +18,8 @@ export type UserRole =
 export enum UserRoleEnum {
   CEO = 'CEO',
   CCO = 'CCO',
-  CommercialDirector = 'Commercial Director',
-  RegionalManager = 'Regional Manager',
+  CommercialDirector = 'CommercialDirector',
+  RegionalManager = 'RegionalManager',
   MarketingManager = 'MarketingManager',
   SocialMediaManager = 'SocialMediaManager',
   CustomerSupport = 'CustomerSupport',
@@ -31,8 +31,8 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  signup: (email: string, password: string, role?: UserRole) => Promise<boolean>;
-  register: (email: string, password: string, role?: UserRole) => Promise<boolean>; // Alias for signup
+  signup: (email: string, password: string, role?: UserRole, metadata?: { first_name?: string; last_name?: string }) => Promise<boolean>;
+  register: (email: string, password: string, role?: UserRole, metadata?: { first_name?: string; last_name?: string }) => Promise<boolean>; // Alias for signup
   currentUser: any | null;
   user: any | null; // Alias for currentUser for backward compatibility
   userRole: UserRole | null;
@@ -340,10 +340,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Signup function
-  const signup = async (email: string, password: string, role: UserRole = 'User'): Promise<boolean> => {
+  // Updated Signup function
+  const signup = async (
+    email: string, 
+    password: string, 
+    role: UserRole = 'User', 
+    metadata: { first_name?: string; last_name?: string } = {}
+  ): Promise<boolean> => {
     try {
       console.log("Signup function called with email:", email, "role:", role);
+      console.log("User metadata:", metadata);
       setLoading(true);
       
       // Check if this is the CEO's email and force the role to CEO
@@ -358,7 +364,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
         options: {
           data: {
-            role: role
+            role: role,
+            first_name: metadata.first_name || '',
+            last_name: metadata.last_name || ''
           }
         }
       });
@@ -390,12 +398,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .upsert([
               {
                 id: data.user?.id,
+                user_id: data.user?.id,
                 email: email,
                 role: role,
+                first_name: metadata.first_name || '',
+                last_name: metadata.last_name || '',
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
-                first_name: role === 'CEO' ? 'CEO' : '', // Set first name if CEO
-                last_name: role === 'CEO' ? 'User' : '',  // Set last name if CEO
                 voice_enrolled: false,
                 voice_authenticated: false
               }
@@ -516,19 +525,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAuthenticated,
     login,
     logout,
-    signup: async (email: string, password: string, role?: UserRole) => {
+    signup: async (email: string, password: string, role?: UserRole, metadata?: { first_name?: string; last_name?: string }) => {
       // Check if this is CEO by email
       if (email === ceoEmail) {
         role = 'CEO';
       }
-      return signup(email, password, role);
+      return signup(email, password, role, metadata);
     },
-    register: async (email: string, password: string, role?: UserRole) => {
+    register: async (email: string, password: string, role?: UserRole, metadata?: { first_name?: string; last_name?: string }) => {
       // Check if this is CEO by email 
       if (email === ceoEmail) {
         role = 'CEO';
       }
-      return signup(email, password, role);
+      return signup(email, password, role, metadata);
     },
     currentUser,
     user: currentUser, 

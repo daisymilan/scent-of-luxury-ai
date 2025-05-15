@@ -12,20 +12,27 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Lock, AlertCircle, User } from 'lucide-react';
+import { Mail, Lock, AlertCircle, User, UserPlus } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-// Form validation schema
+// Form validation schema enhanced with first and last name
 const formSchema = z.object({
+  firstName: z.string().min(1, { message: "First name is required" }),
+  lastName: z.string().min(1, { message: "Last name is required" }),
   email: z.string()
     .email({ message: "Please enter a valid email address" })
     .min(1, { message: "Email is required" }),
   password: z.string()
     .min(6, { message: "Password must be at least 6 characters" })
     .max(100, { message: "Password must be at most 100 characters" }),
-  role: z.string().min(1, { message: "Role is required" })
+  role: z.string().min(1, { message: "Role is required" }),
+  termsAccepted: z.boolean().refine(val => val === true, {
+    message: "You must accept the terms and conditions"
+  })
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -34,9 +41,15 @@ const SignupPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [signupType, setSignupType] = useState<'standard' | 'executive'>('standard');
   const { signup } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  
+  // Executive roles
+  const executiveRoles = ['CEO', 'CCO', 'Commercial Director', 'Regional Manager'];
+  // Standard roles
+  const standardRoles = ['Marketing Manager', 'Social Media Manager', 'Customer Support', 'User'];
   
   // Check if already logged in
   useEffect(() => {
@@ -50,11 +63,19 @@ const SignupPage: React.FC = () => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      firstName: "",
+      lastName: "",
       email: "",
       password: "",
-      role: "User"
+      role: signupType === 'executive' ? "CEO" : "User",
+      termsAccepted: false
     },
   });
+
+  // Update default role when signup type changes
+  useEffect(() => {
+    form.setValue('role', signupType === 'executive' ? "CEO" : "User");
+  }, [signupType, form]);
 
   const onSubmit = async (data: FormValues) => {
     if (isSubmitting) return;
@@ -64,9 +85,18 @@ const SignupPage: React.FC = () => {
     
     try {
       console.log("Attempting signup with:", data.email, "role:", data.role);
+      console.log("Name:", data.firstName, data.lastName);
       
-      // Include role in the metadata when signing up
-      const success = await signup(data.email, data.password, data.role as UserRole);
+      // Include role and name in the metadata when signing up
+      const success = await signup(
+        data.email, 
+        data.password, 
+        data.role as UserRole,
+        {
+          first_name: data.firstName,
+          last_name: data.lastName
+        }
+      );
       
       console.log("Signup result:", success);
       
@@ -119,8 +149,25 @@ const SignupPage: React.FC = () => {
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">Create an account</CardTitle>
             <CardDescription className="text-center text-gray-400">
-              Enter your email, password and select a role to register
+              Enter your details to register
             </CardDescription>
+            
+            <Tabs 
+              defaultValue="standard" 
+              className="w-full" 
+              onValueChange={(value) => setSignupType(value as 'standard' | 'executive')}
+            >
+              <TabsList className="grid w-full grid-cols-2 bg-gray-800">
+                <TabsTrigger value="standard" className="data-[state=active]:bg-gray-700">
+                  <User className="mr-2 h-4 w-4" />
+                  Standard
+                </TabsTrigger>
+                <TabsTrigger value="executive" className="data-[state=active]:bg-gray-700">
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Executive
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </CardHeader>
           <CardContent className="p-6">
             {error && (
@@ -131,7 +178,51 @@ const SignupPage: React.FC = () => {
             )}
             
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <FormLabel className="text-xs uppercase tracking-wider font-light text-gray-300">First Name</FormLabel>
+                    <FormField
+                      control={form.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input 
+                              placeholder="John" 
+                              className="py-6 text-base bg-gray-800 border-gray-700 text-gray-100" 
+                              disabled={isSubmitting}
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <FormLabel className="text-xs uppercase tracking-wider font-light text-gray-300">Last Name</FormLabel>
+                    <FormField
+                      control={form.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input 
+                              placeholder="Doe" 
+                              className="py-6 text-base bg-gray-800 border-gray-700 text-gray-100" 
+                              disabled={isSubmitting}
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+                
                 <div className="space-y-2">
                   <FormLabel className="text-xs uppercase tracking-wider font-light text-gray-300">Email</FormLabel>
                   <FormField
@@ -210,14 +301,15 @@ const SignupPage: React.FC = () => {
                                 <SelectValue placeholder="Select your role" />
                               </SelectTrigger>
                               <SelectContent className="bg-gray-800 border-gray-700 text-gray-100">
-                                <SelectItem value="CEO">CEO</SelectItem>
-                                <SelectItem value="CCO">CCO</SelectItem>
-                                <SelectItem value="Commercial Director">Commercial Director</SelectItem>
-                                <SelectItem value="Regional Manager">Regional Manager</SelectItem>
-                                <SelectItem value="Marketing Manager">Marketing Manager</SelectItem>
-                                <SelectItem value="Social Media Manager">Social Media Manager</SelectItem>
-                                <SelectItem value="Customer Support">Customer Support</SelectItem>
-                                <SelectItem value="User">User</SelectItem>
+                                {signupType === 'executive' ? (
+                                  executiveRoles.map(role => (
+                                    <SelectItem key={role} value={role}>{role}</SelectItem>
+                                  ))
+                                ) : (
+                                  standardRoles.map(role => (
+                                    <SelectItem key={role} value={role}>{role}</SelectItem>
+                                  ))
+                                )}
                               </SelectContent>
                             </Select>
                           </FormControl>
@@ -227,6 +319,27 @@ const SignupPage: React.FC = () => {
                     )}
                   />
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="termsAccepted"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md p-4 bg-gray-800">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="text-sm text-gray-300">
+                          I accept the <Link to="/terms" className="text-gray-300 underline hover:text-white">terms and conditions</Link>
+                        </FormLabel>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
                 
                 <Button 
                   type="submit" 

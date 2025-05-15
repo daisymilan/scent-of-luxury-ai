@@ -9,48 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      users: {
-        Row: {
-          avatar_url: string | null
-          created_at: string | null
-          email: string
-          first_name: string | null
-          id: string
-          last_name: string | null
-          last_voice_auth: string | null
-          role: string | null
-          updated_at: string | null
-          voice_authenticated: boolean | null
-          voice_enrolled: boolean | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string | null
-          email: string
-          first_name?: string | null
-          id: string
-          last_name?: string | null
-          last_voice_auth?: string | null
-          role?: string | null
-          updated_at?: string | null
-          voice_authenticated?: boolean | null
-          voice_enrolled?: boolean | null
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string | null
-          email?: string
-          first_name?: string | null
-          id?: string
-          last_name?: string | null
-          last_voice_auth?: string | null
-          role?: string | null
-          updated_at?: string | null
-          voice_authenticated?: boolean | null
-          voice_enrolled?: boolean | null
-        }
-        Relationships: []
-      }
       voice_data: {
         Row: {
           authentication_count: number | null
