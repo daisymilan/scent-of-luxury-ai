@@ -15,10 +15,13 @@ const MobileNavigationLink = ({ to, label, requiredRoles, userRole }: MobileNavi
   const isActive = location.pathname === to || 
                   (to !== '/' && location.pathname.startsWith(to));
   
-  console.log(`MobileNavigationLink "${label}" - userRole: ${userRole}, requiredRoles: ${JSON.stringify(requiredRoles)}, hasAccess: ${!requiredRoles || !userRole || userRole === 'CEO' || requiredRoles.includes(userRole)}`);
+  // Simplified role check: Always show navigation for CEO, regardless of required roles
+  const isCEO = userRole === 'CEO';
+  const hasRequiredRole = !requiredRoles || !userRole || isCEO || requiredRoles.includes(userRole);
+  
+  console.log(`MobileNavigationLink "${label}" - userRole: ${userRole}, requiredRoles: ${JSON.stringify(requiredRoles)}, isCEO: ${isCEO}, hasAccess: ${hasRequiredRole}`);
                   
-  // If no required roles are specified or user is CEO or the user's role is in the required roles, render the link
-  if (!requiredRoles || !userRole || userRole === 'CEO' || requiredRoles.includes(userRole)) {
+  if (hasRequiredRole) {
     return (
       <Link 
         to={to} 

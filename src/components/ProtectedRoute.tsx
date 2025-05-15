@@ -1,10 +1,10 @@
 
-// src/components/ProtectedRoute.tsx - FIXED VERSION FOR CEO ACCESS
+// src/components/ProtectedRoute.tsx - CEO ACCESS HOTFIX
 
 import { ReactElement, useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { UserRole } from "../contexts/AuthContext"; // Import your UserRole type
+import { UserRole } from "../contexts/AuthContext";
 
 interface ProtectedRouteProps {
   children: ReactElement;
@@ -24,36 +24,18 @@ const ProtectedRoute = ({
     userRole, 
     isVoiceAuthenticated, 
     isVoiceEnrolled,
-    hasPermission, // Use the hasPermission function from AuthContext
-    isCEO // Use the new isCEO function from AuthContext
+    hasPermission,
+    isCEO
   } = useAuth();
 
-  // Debug logging
+  // Enhanced debugging
   useEffect(() => {
     console.log("ProtectedRoute - Path:", location.pathname);
     console.log("ProtectedRoute - User:", currentUser?.email);
     console.log("ProtectedRoute - userRole:", userRole);
     console.log("ProtectedRoute - requiredRole:", requiredRole);
-    
-    // Check if CEO by various methods
-    console.log("ProtectedRoute - Is CEO by role match:", userRole === 'CEO');
-    if (typeof isCEO === 'function') {
-      console.log("ProtectedRoute - Is CEO by function:", isCEO());
-    }
-    
-    // Check permission status
-    if (requiredRole) {
-      if (typeof hasPermission === 'function') {
-        console.log("ProtectedRoute - hasPermission result:", hasPermission(requiredRole));
-      } else {
-        // Manual check
-        const manualCheck = Array.isArray(requiredRole) 
-          ? requiredRole.includes(userRole as any) 
-          : userRole === requiredRole;
-        console.log("ProtectedRoute - Manual role check:", manualCheck);
-      }
-    }
-  }, [location.pathname, currentUser, userRole, requiredRole, hasPermission, isCEO]);
+    console.log("ProtectedRoute - User is CEO check:", userRole === 'CEO' || (typeof isCEO === 'function' && isCEO()));
+  }, [location.pathname, currentUser, userRole, requiredRole, isCEO]);
 
   // If not authenticated at all, redirect to login
   if (!isAuthenticated || !currentUser) {
@@ -61,19 +43,19 @@ const ProtectedRoute = ({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // CRITICAL FIX: Always check CEO status first before any other role checks
-  // Use both direct role comparison and the isCEO function for redundancy
+  // CRITICAL FIX: Always check CEO status first - using multiple methods to be certain
   const userIsCEO = userRole === 'CEO' || (typeof isCEO === 'function' && isCEO());
   
-  // ENHANCED CEO DEBUG LOGGING
-  console.log(`ProtectedRoute - CEO CHECK FOR ${location.pathname}:`);
-  console.log(`- userRole === 'CEO': ${userRole === 'CEO'}`);
-  console.log(`- isCEO function exists: ${typeof isCEO === 'function'}`);
-  console.log(`- isCEO function result: ${typeof isCEO === 'function' ? isCEO() : 'N/A'}`);
-  console.log(`- Final userIsCEO determination: ${userIsCEO}`);
+  console.log("ProtectedRoute - CEO ACCESS CHECK:", {
+    path: location.pathname,
+    userRole,
+    isCEOFunction: typeof isCEO === 'function' ? isCEO() : 'not available',
+    finalCEOStatus: userIsCEO
+  });
   
+  // If user is CEO, they can access everything (subject only to voice authentication)
   if (userIsCEO) {
-    console.log("ProtectedRoute - User is CEO, allowing access to:", location.pathname);
+    console.log("ProtectedRoute - CEO ACCESS GRANTED for", location.pathname);
     
     // Voice authentication still applies even for CEO
     if (requireVoiceAuth) {
@@ -88,52 +70,53 @@ const ProtectedRoute = ({
       }
     }
     
+    // CEO can access this route
     return children;
   }
 
-  // For non-CEO users, check role-based access if required
+  // For non-CEO users, check role-based access
   if (requiredRole) {
     let hasRequiredRole = false;
     
-    // Try using hasPermission function first
+    // Use hasPermission function if available
     if (typeof hasPermission === 'function') {
       try {
         hasRequiredRole = hasPermission(requiredRole);
+        console.log("ProtectedRoute - hasPermission check result:", hasRequiredRole);
       } catch (err) {
         console.error("Error in hasPermission check:", err);
-        // Fallback to manual check if function fails
+        
+        // Fallback to manual check
         hasRequiredRole = Array.isArray(requiredRole)
-          ? requiredRole.includes(userRole as any)
+          ? requiredRole.includes(userRole as UserRole)
           : userRole === requiredRole;
+          
+        console.log("ProtectedRoute - Manual permission check result:", hasRequiredRole);
       }
     } else {
-      // Fallback if hasPermission is not available
+      // Direct check if function not available
       hasRequiredRole = Array.isArray(requiredRole)
-        ? requiredRole.includes(userRole as any)
+        ? requiredRole.includes(userRole as UserRole)
         : userRole === requiredRole;
+        
+      console.log("ProtectedRoute - Direct permission check result:", hasRequiredRole);
     }
 
     if (!hasRequiredRole) {
-      console.log("ProtectedRoute - Role check failed", {
-        required: requiredRole,
-        actual: userRole,
-        path: location.pathname
-      });
+      console.log("ProtectedRoute - Access denied, redirecting to unauthorized page");
       return <Navigate to="/unauthorized" state={{ from: location, requiredRole }} replace />;
     }
   }
 
   // Check voice authentication if required
   if (requireVoiceAuth) {
-    // If voice is not enrolled, redirect to profile page
     if (!isVoiceEnrolled) {
-      console.log("ProtectedRoute - Redirecting to profile, voice not enrolled");
+      console.log("ProtectedRoute - Voice not enrolled, redirecting to profile");
       return <Navigate to="/profile" state={{ from: location, requireVoiceSetup: true }} replace />;
     }
     
-    // If voice is enrolled but not authenticated in this session, redirect to voice login
     if (!isVoiceAuthenticated) {
-      console.log("ProtectedRoute - Redirecting to voice login, voice not authenticated");
+      console.log("ProtectedRoute - Voice not authenticated, redirecting to voice login");
       return <Navigate to="/voice-login" state={{ from: location }} replace />;
     }
   }
