@@ -5,13 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
-import { UserRole } from "@/contexts/AuthContext"; // Import UserRole type
-import { Shield, ShieldCheck } from "lucide-react";
+import { UserRole } from "@/contexts/AuthContext"; 
+import { Shield, ShieldCheck, User } from "lucide-react";
+import { ProfileImage } from "@/components/ui/profile-image";
+import { getCustomerByEmail } from "@/utils/woocommerce/customerApi";
+import { WooCustomer } from "@/utils/woocommerce/types";
 
 const ProfilePage = () => {
   const { currentUser, userRole, isCEO } = useAuth();
@@ -23,16 +25,18 @@ const ProfilePage = () => {
   const [userInfo, setUserInfo] = useState({
     name: "",
     email: "",
-    role: "" as UserRole | null, // Cast to UserRole or null
+    role: "" as UserRole | null,
     department: "",
     first_name: "",
     last_name: "",
     avatar_url: "",
     voice_enrolled: false,
     voice_authenticated: false,
-    last_voice_auth: null as Date | null
+    last_voice_auth: null as Date | null,
+    woocommerce_id: null as number | null,
   });
 
+  const [wooCustomer, setWooCustomer] = useState<WooCustomer | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ ...userInfo });
 
@@ -131,7 +135,8 @@ const ProfilePage = () => {
           avatar_url: data?.avatar_url || "",
           voice_enrolled: data?.voice_enrolled || false,
           voice_authenticated: data?.voice_authenticated || false,
-          last_voice_auth: data?.last_voice_auth ? new Date(data.last_voice_auth) : null
+          last_voice_auth: data?.last_voice_auth ? new Date(data.last_voice_auth) : null,
+          woocommerce_id: data?.woocommerce_id || null,
         });
         
         setFormData({
@@ -144,8 +149,39 @@ const ProfilePage = () => {
           avatar_url: data?.avatar_url || "",
           voice_enrolled: data?.voice_enrolled || false,
           voice_authenticated: data?.voice_authenticated || false,
-          last_voice_auth: data?.last_voice_auth ? new Date(data.last_voice_auth) : null
+          last_voice_auth: data?.last_voice_auth ? new Date(data.last_voice_auth) : null,
+          woocommerce_id: data?.woocommerce_id || null,
         });
+
+        // Try to fetch WooCommerce customer data if we have an email
+        if (userEmail) {
+          try {
+            const customerData = await getCustomerByEmail(userEmail);
+            
+            if (customerData) {
+              console.log("Found WooCommerce customer data:", customerData);
+              setWooCustomer(customerData);
+              
+              // Update woocommerce_id in our local state if it's not already set
+              if (!data?.woocommerce_id) {
+                try {
+                  await supabase
+                    .from('users')
+                    .update({ woocommerce_id: customerData.id })
+                    .eq('id', currentUser.id);
+                    
+                  console.log("Updated woocommerce_id in database:", customerData.id);
+                } catch (err) {
+                  console.error("Failed to update woocommerce_id:", err);
+                }
+              }
+            } else {
+              console.log("No WooCommerce customer found for email:", userEmail);
+            }
+          } catch (err) {
+            console.error("Error fetching WooCommerce customer:", err);
+          }
+        }
       } catch (err) {
         console.error("Exception fetching user data:", err);
         toast.error("An error occurred while loading your profile");
@@ -239,16 +275,6 @@ const ProfilePage = () => {
     setIsEditing(false);
   };
 
-  // Get initials for avatar fallback
-  const getInitials = () => {
-    if (!userInfo.name) return "?";
-    return userInfo.name
-      .split(' ')
-      .map(name => name[0])
-      .join('')
-      .toUpperCase();
-  };
-
   // Format date for display
   const formatDate = (date: Date | null) => {
     if (!date) return "Never";
@@ -307,10 +333,12 @@ const ProfilePage = () => {
             {/* Profile picture and quick info */}
             <Card>
               <CardContent className="pt-6 flex flex-col items-center">
-                <Avatar className="h-24 w-24 mb-4">
-                  <AvatarImage src={userInfo.avatar_url || ""} />
-                  <AvatarFallback className="text-2xl bg-primary text-white">{getInitials()}</AvatarFallback>
-                </Avatar>
+                <ProfileImage 
+                  src={userInfo.avatar_url} 
+                  name={userInfo.name} 
+                  size="xl" 
+                  className="mb-4" 
+                />
                 <h2 className="text-xl font-semibold">{userInfo.name}</h2>
                 <div className="flex items-center">
                   <p className="text-gray-500">{userInfo.role || "Guest"}</p>
@@ -406,6 +434,32 @@ const ProfilePage = () => {
                       disabled={!isEditing}
                     />
                   </div>
+                  
+                  {/* WooCommerce Integration Information */}
+                  {wooCustomer && (
+                    <div className="pt-4 border-t border-gray-100">
+                      <h3 className="text-lg font-medium mb-2 flex items-center">
+                        <User className="h-5 w-5 text-blue-500 mr-2" />
+                        WooCommerce Customer
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="mb-1 block">Customer ID</Label>
+                          <p className="text-sm text-gray-600">#{wooCustomer.id}</p>
+                        </div>
+                        
+                        <div>
+                          <Label className="mb-1 block">Orders</Label>
+                          <p className="text-sm text-gray-600">{wooCustomer.orders_count || 0} orders</p>
+                        </div>
+                        
+                        <div>
+                          <Label className="mb-1 block">Total Spent</Label>
+                          <p className="text-sm text-gray-600">${wooCustomer.total_spent || '0.00'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Voice Authentication Status */}
                   <div className="pt-4 border-t border-gray-100">
