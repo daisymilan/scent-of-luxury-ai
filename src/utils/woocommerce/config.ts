@@ -20,6 +20,7 @@ export const HARDCODED_WOO_CONFIG: WooCommerceConfig | null = {
 };
 
 // Export constants for direct use in components
+export const WOO_API_VERSION = '3';
 export const WOO_API_BASE_URL = 'https://staging.min.com/int/wp-json/wc/v3';
 export const WOO_API_CREDENTIALS = 'Basic ' + btoa(`${HARDCODED_WOO_CONFIG.consumerKey}:${HARDCODED_WOO_CONFIG.consumerSecret}`);
 export const WOO_API_AUTH_PARAMS = `consumer_key=${HARDCODED_WOO_CONFIG.consumerKey}&consumer_secret=${HARDCODED_WOO_CONFIG.consumerSecret}`;

@@ -1,8 +1,7 @@
 
-import { WooCommerceConfig, getWooCommerceConfig } from './config';
+import { WooCommerceConfig, getWooCommerceConfig, WOO_API_BASE_URL } from './config';
 import { fetchWooCommerceData } from './apiClient';
 import { B2BKingGroup, B2BKingUser, B2BKingRule } from './types';
-import { WOO_API_BASE_URL } from './index';
 
 // Endpoint for B2BKing REST API
 const B2BKING_API_BASE = `${WOO_API_BASE_URL}/b2bking`;
@@ -105,4 +104,3 @@ export const getB2BKingRulesByType = async (
     throw error;
   }
 };
-
