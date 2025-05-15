@@ -1,293 +1,161 @@
-
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { getProductById, getProductVariation } from '@/utils/woocommerce/productApi';
+import { WooProduct, WooProductVariation } from '@/utils/woocommerce/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  useWooProduct, 
-  useWooProductVariation, 
-  useWooOrder, 
-  useWooCustomer 
-} from '@/utils/woocommerce/hooks';
-import { ErrorDialog } from '@/components/ui/error-dialog';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
 const ProductDetail = () => {
-  const [productId, setProductId] = useState<number | null>(null);
-  const [variationId, setVariationId] = useState<number | null>(null);
-  const [orderId, setOrderId] = useState<number | null>(null);
-  const [customerId, setCustomerId] = useState<number | null>(null);
-  const [tempProductId, setTempProductId] = useState('');
-  const [tempVariationId, setTempVariationId] = useState('');
-  const [tempOrderId, setTempOrderId] = useState('');
-  const [tempCustomerId, setTempCustomerId] = useState('');
-  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const { productId } = useParams<{ productId: string }>();
+  const [product, setProduct] = useState<WooProduct | null>(null);
+  const [variation, setVariation] = useState<WooProductVariation | null>(null);
+  const [selectedVariation, setSelectedVariation] = useState<number | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Use our custom hooks to fetch data
-  const { 
-    data: product, 
-    isLoading: isLoadingProduct, 
-    error: productError 
-  } = useWooProduct(productId);
-  
-  const { 
-    data: variation, 
-    isLoading: isLoadingVariation,
-    error: variationError
-  } = useWooProductVariation(productId, variationId);
-  
-  const {
-    data: order,
-    isLoading: isLoadingOrder,
-    error: orderError
-  } = useWooOrder(orderId);
-  
-  const {
-    data: customer,
-    isLoading: isLoadingCustomer,
-    error: customerError
-  } = useWooCustomer(customerId);
+  useEffect(() => {
+    const fetchProduct = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        if (productId) {
+          const id = parseInt(productId, 10);
+          const fetchedProduct = await getProductById(id);
+          setProduct(fetchedProduct);
+        } else {
+          setError('Product ID is missing.');
+        }
+      } catch (err: any) {
+        setError(err.message || 'Failed to fetch product.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  // Handle form submissions
-  const handleFetchProduct = (e: React.FormEvent) => {
-    e.preventDefault();
-    const id = parseInt(tempProductId);
-    if (!isNaN(id)) {
-      setProductId(id);
-      // Reset variation when changing product
-      setVariationId(null);
-      setTempVariationId('');
+    fetchProduct();
+  }, [productId]);
+
+  useEffect(() => {
+    const fetchVariation = async () => {
+      if (product && selectedVariation) {
+        try {
+          const fetchedVariation = await getProductVariation(product.id, selectedVariation);
+          setVariation(fetchedVariation);
+        } catch (err: any) {
+          console.error('Error fetching variation:', err);
+          setError(err.message || 'Failed to fetch product variation.');
+        }
+      } else {
+        setVariation(null);
+      }
+    };
+
+    fetchVariation();
+  }, [product, selectedVariation]);
+
+  const handleAddToCart = () => {
+    if (!product) {
+      toast.error('Product not loaded.');
+      return;
     }
+
+    // Basic validation
+    if (quantity <= 0) {
+      toast.error('Quantity must be greater than 0.');
+      return;
+    }
+
+    // Add to cart logic here
+    toast.success(`${quantity} ${product.name} added to cart!`);
   };
 
-  const handleFetchVariation = (e: React.FormEvent) => {
-    e.preventDefault();
-    const id = parseInt(tempVariationId);
-    if (!isNaN(id) && productId) {
-      setVariationId(id);
-    } else {
-      setErrorMessage('You must enter a valid product ID first');
-      setErrorDialogOpen(true);
-    }
-  };
+  if (isLoading) {
+    return <div>Loading product details...</div>;
+  }
 
-  const handleFetchOrder = (e: React.FormEvent) => {
-    e.preventDefault();
-    const id = parseInt(tempOrderId);
-    if (!isNaN(id)) {
-      setOrderId(id);
-    }
-  };
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
-  const handleFetchCustomer = (e: React.FormEvent) => {
-    e.preventDefault();
-    const id = parseInt(tempCustomerId);
-    if (!isNaN(id)) {
-      setCustomerId(id);
-    }
-  };
-
-  // Handle errors from any of our queries
-  const error = productError || variationError || orderError || customerError;
-  if (error && !errorDialogOpen) {
-    setErrorMessage(error.message);
-    setErrorDialogOpen(true);
+  if (!product) {
+    return <div>Product not found.</div>;
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <div className="container mx-auto px-4 py-8">
       <Card>
         <CardHeader>
-          <CardTitle>MIN Products & Variations</CardTitle>
-          <CardDescription>View MIN product details from the WooCommerce API</CardDescription>
+          <CardTitle className="text-2xl font-bold">{product.name}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <form onSubmit={handleFetchProduct} className="flex items-end gap-2">
-              <div className="flex-1">
-                <Label htmlFor="productId">Product ID</Label>
-                <Input 
-                  id="productId" 
-                  type="number" 
-                  placeholder="Enter product ID" 
-                  value={tempProductId}
-                  onChange={(e) => setTempProductId(e.target.value)}
-                />
-              </div>
-              <Button type="submit">Fetch</Button>
-            </form>
-            
-            {isLoadingProduct ? (
-              <div className="space-y-3">
-                <Skeleton className="h-8 w-2/3" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-4/5" />
-              </div>
-            ) : product ? (
-              <div className="space-y-2 border p-3 rounded-md">
-                <h3 className="font-medium text-lg">{product.name}</h3>
-                <p className="text-sm">Price: ${product.price}</p>
-                <p className="text-sm">Stock: {product.stock_status}</p>
-                {product.images && product.images[0] && (
-                  <img 
-                    src={product.images[0].src} 
-                    alt={product.name} 
-                    className="w-full h-48 object-cover rounded-md"
-                  />
-                )}
-              </div>
-            ) : productId ? (
-              <p className="text-sm text-red-500">Failed to load product</p>
-            ) : null}
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            {product.images && product.images[0] && (
+              <img 
+                src={product.images[0].src} 
+                alt={product.name} 
+                className="w-full h-48 object-cover rounded-md"
+              />
+            )}
+            {variation && variation.image && (
+              <img 
+                src={variation.image.src} 
+                alt="Product variation" 
+                className="w-full h-48 object-cover rounded-md"
+              />
+            )}
           </div>
-
-          <div className="space-y-2">
-            <form onSubmit={handleFetchVariation} className="flex items-end gap-2">
-              <div className="flex-1">
-                <Label htmlFor="variationId">Variation ID</Label>
-                <Input 
-                  id="variationId" 
-                  type="number" 
-                  placeholder="Enter variation ID" 
-                  value={tempVariationId}
-                  onChange={(e) => setTempVariationId(e.target.value)}
-                  disabled={!productId}
+          <div>
+            <div className="mb-4">
+              <Badge variant="secondary">
+                {product.stock_status}
+              </Badge>
+            </div>
+            <p className="text-gray-600">{product.description}</p>
+            <Separator className="my-4" />
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xl font-semibold">
+                Price: ${variation ? variation.price : product.price}
+              </div>
+            </div>
+            {product.variations && product.variations.length > 0 && (
+              <div className="mb-4">
+                <Select onValueChange={(value) => setSelectedVariation(parseInt(value, 10))}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a variation" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {product.variations.map((variationId) => (
+                      <SelectItem key={variationId} value={variationId.toString()}>
+                        Variation #{variationId}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="flex items-center space-x-4">
+              <div>
+                <Input
+                  type="number"
+                  min="1"
+                  value={quantity}
+                  onChange={(e) => setQuantity(parseInt(e.target.value, 10))}
+                  className="w-24"
                 />
               </div>
-              <Button type="submit" disabled={!productId}>Fetch</Button>
-            </form>
-            
-            {isLoadingVariation ? (
-              <div className="space-y-3">
-                <Skeleton className="h-8 w-2/3" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-4/5" />
+              <div>
+                <Button onClick={handleAddToCart}>Add to Cart</Button>
               </div>
-            ) : variation ? (
-              <div className="space-y-2 border p-3 rounded-md">
-                <h3 className="font-medium text-lg">Variation: {variation.sku || 'N/A'}</h3>
-                <p className="text-sm">Price: ${variation.price}</p>
-                <p className="text-sm">Stock: {variation.stock_status}</p>
-                {variation.image && (
-                  <img 
-                    src={variation.image.src} 
-                    alt="Product variation" 
-                    className="w-full h-48 object-cover rounded-md"
-                  />
-                )}
-              </div>
-            ) : variationId ? (
-              <p className="text-sm text-red-500">Failed to load variation</p>
-            ) : null}
+            </div>
           </div>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Orders & Customers</CardTitle>
-          <CardDescription>View orders and customer details from the WooCommerce API</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <form onSubmit={handleFetchOrder} className="flex items-end gap-2">
-              <div className="flex-1">
-                <Label htmlFor="orderId">Order ID</Label>
-                <Input 
-                  id="orderId" 
-                  type="number" 
-                  placeholder="Enter order ID" 
-                  value={tempOrderId}
-                  onChange={(e) => setTempOrderId(e.target.value)}
-                />
-              </div>
-              <Button type="submit">Fetch</Button>
-            </form>
-            
-            {isLoadingOrder ? (
-              <div className="space-y-3">
-                <Skeleton className="h-8 w-2/3" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-4/5" />
-              </div>
-            ) : order ? (
-              <div className="space-y-2 border p-3 rounded-md">
-                <h3 className="font-medium text-lg">Order #{order.id}</h3>
-                <p className="text-sm">Status: {order.status}</p>
-                <p className="text-sm">Total: ${order.total}</p>
-                <p className="text-sm">Date: {new Date(order.date_created).toLocaleDateString()}</p>
-                <p className="text-sm">Customer: {order.billing?.first_name} {order.billing?.last_name}</p>
-                {order.line_items && (
-                  <div>
-                    <p className="text-sm font-medium">Items:</p>
-                    <ul className="text-xs space-y-1 list-disc list-inside">
-                      {order.line_items.map((item, index) => (
-                        <li key={index}>{item.name} x{item.quantity} (${item.total})</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            ) : orderId ? (
-              <p className="text-sm text-red-500">Failed to load order</p>
-            ) : null}
-          </div>
-
-          <div className="space-y-2">
-            <form onSubmit={handleFetchCustomer} className="flex items-end gap-2">
-              <div className="flex-1">
-                <Label htmlFor="customerId">Customer ID</Label>
-                <Input 
-                  id="customerId" 
-                  type="number" 
-                  placeholder="Enter customer ID" 
-                  value={tempCustomerId}
-                  onChange={(e) => setTempCustomerId(e.target.value)}
-                />
-              </div>
-              <Button type="submit">Fetch</Button>
-            </form>
-            
-            {isLoadingCustomer ? (
-              <div className="space-y-3">
-                <Skeleton className="h-8 w-2/3" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-4/5" />
-              </div>
-            ) : customer ? (
-              <div className="space-y-2 border p-3 rounded-md">
-                <h3 className="font-medium text-lg">{customer.first_name} {customer.last_name}</h3>
-                <p className="text-sm">Email: {customer.email}</p>
-                <p className="text-sm">Username: {customer.username}</p>
-                <p className="text-sm">Orders: {customer.orders_count}</p>
-                <p className="text-sm">Total spent: ${customer.total_spent}</p>
-                {customer.billing && (
-                  <div>
-                    <p className="text-sm font-medium">Billing Address:</p>
-                    <p className="text-xs">
-                      {customer.billing.address_1}<br />
-                      {customer.billing.city}, {customer.billing.state} {customer.billing.postcode}<br />
-                      {customer.billing.country}
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : customerId ? (
-              <p className="text-sm text-red-500">Failed to load customer</p>
-            ) : null}
-          </div>
-        </CardContent>
-      </Card>
-
-      <ErrorDialog
-        open={errorDialogOpen}
-        onOpenChange={setErrorDialogOpen}
-        title="API Error"
-        description={errorMessage}
-        errorType="api"
-      />
     </div>
   );
 };

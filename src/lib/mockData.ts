@@ -6,8 +6,8 @@ import { WooOrder as ApiWooOrder, WooCustomer as ApiWooCustomer, WooProduct as A
 // Make the mock types extend and be compatible with the API types
 export interface WooOrder extends Omit<ApiWooOrder, 'billing' | 'line_items'> {
   billing: {
-    first_name: string;
-    last_name: string;
+    first_name?: string;
+    last_name?: string;
     company?: string;
     email: string;
     city?: string;
@@ -47,7 +47,7 @@ export interface WooCustomer extends Omit<ApiWooCustomer, 'billing'> {
 }
 
 export interface WooProduct extends Omit<ApiWooProduct, 'sale_price'> {
-  sale_price: string;
+  sale_price?: string;
 }
 
 // Empty SEO performance data structure
