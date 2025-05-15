@@ -50,9 +50,9 @@ const Index = () => {
 
   // Fetch data from WooCommerce API for all components
   const { stats, isLoading: isStatsLoading, error: statsError } = useWooStats('week');
-  const { orders, isLoading: isOrdersLoading, error: ordersError } = useWooOrders(50); // Increased to get more data
-  const { products, isLoading: isProductsLoading, error: productsError } = useWooProducts(50); // Increased to get more data
-  const { customers, isLoading: isCustomersLoading, error: customersError } = useWooCustomers(50); // Fetch customers for B2B
+  const { orders, isLoading: isOrdersLoading, error: ordersError } = useWooOrders(50); 
+  const { products, isLoading: isProductsLoading, error: productsError } = useWooProducts(50);
+  const { customers, isLoading: isCustomersLoading, error: customersError } = useWooCustomers(50);
 
   const isLoading = isStatsLoading || isOrdersLoading || isProductsLoading || isCustomersLoading;
   const hasError = !!(statsError || ordersError || productsError || customersError);

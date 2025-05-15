@@ -120,7 +120,9 @@ const B2BPage = () => {
         });
         return null;
       }
-    }
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    cacheTime: 1000 * 60 * 30, // 30 minutes
   });
 
   const isLoading = isLoadingCustomers || isLoadingOrders || isLoadingProducts;
@@ -138,7 +140,7 @@ const B2BPage = () => {
             </div>
             <div className="mt-4 sm:mt-0">
               <span className="text-sm text-gray-500 mr-2">Last updated:</span>
-              <span className="text-sm font-medium">May 8, 2025, {new Date().toLocaleTimeString()}</span>
+              <span className="text-sm font-medium">{new Date().toLocaleDateString()}, {new Date().toLocaleTimeString()}</span>
             </div>
           </div>
           
