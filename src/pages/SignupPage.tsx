@@ -1,4 +1,3 @@
-
 // Import statements
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -113,6 +112,7 @@ const SignupPage: React.FC = () => {
         }, 1500);
       } else {
         setError("Failed to create account. Please try again.");
+        setIsSubmitting(false); // Reset submission state on failure
       }
     } catch (error) {
       console.error("Signup error:", error);
@@ -123,8 +123,7 @@ const SignupPage: React.FC = () => {
         description: errorMessage,
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false); // Reset submission state on error
     }
   };
   

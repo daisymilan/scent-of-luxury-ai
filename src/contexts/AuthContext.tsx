@@ -385,14 +385,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log("Signup response:", data);
       
-      // If automatic confirmation is enabled, this will have a session
-      if (data.session) {
-        setIsAuthenticated(true);
-        setCurrentUser(data.user);
-        setUserRole(role);
-        
-        // Create or update the user record in public.users table
-        try {
+      // Always create or update the user record in public.users table
+      // Regardless of whether email confirmation is enabled
+      try {
+        if (data.user) {
           const { error: userError } = await supabase
             .from('users')
             .upsert([
@@ -413,9 +409,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (userError) {
             console.error("Error creating user record:", userError);
           }
-        } catch (err) {
-          console.error("Error in user record creation:", err);
         }
+      } catch (err) {
+        console.error("Error in user record creation:", err);
+      }
+      
+      // If automatic confirmation is enabled, this will have a session
+      if (data.session) {
+        setIsAuthenticated(true);
+        setCurrentUser(data.user);
+        setUserRole(role);
         
         // Navigate to the dashboard
         console.log("Auto-confirming and redirecting to dashboard");
@@ -438,6 +441,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setLoading(false);
       return !!data.user;
+      
     } catch (error) {
       console.error('Signup error:', error);
       toast({
