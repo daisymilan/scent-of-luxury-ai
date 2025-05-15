@@ -25,8 +25,7 @@ export const useB2BKingGroups = () => {
     },
     retry: 1,
     retryDelay: 1000,
-    // Don't show error in UI - handle it gracefully
-    useErrorBoundary: false
+    // Error handling is done in queryFn instead of using useErrorBoundary
   });
 };
 
@@ -46,7 +45,6 @@ export const useB2BKingGroup = (groupId: number | null) => {
     enabled: !!groupId,
     retry: 1,
     retryDelay: 1000,
-    useErrorBoundary: false
   });
 };
 
@@ -65,7 +63,6 @@ export const useB2BKingUsers = () => {
     },
     retry: 1,
     retryDelay: 1000,
-    useErrorBoundary: false
   });
 };
 
@@ -85,7 +82,6 @@ export const useB2BKingUser = (userId: number | null) => {
     enabled: !!userId,
     retry: 1,
     retryDelay: 1000,
-    useErrorBoundary: false
   });
 };
 
@@ -104,7 +100,6 @@ export const useB2BKingRules = () => {
     },
     retry: 1,
     retryDelay: 1000,
-    useErrorBoundary: false
   });
 };
 
@@ -125,6 +120,5 @@ export const useB2BKingRulesByType = (type: string | null) => {
     enabled: !!type,
     retry: 1,
     retryDelay: 1000,
-    useErrorBoundary: false
   });
 };
