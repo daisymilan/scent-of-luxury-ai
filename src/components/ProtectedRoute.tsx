@@ -61,11 +61,19 @@ const ProtectedRoute = ({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // CRITICAL FIX: Check if user is CEO first, using both direct role comparison and isCEO function
+  // CRITICAL FIX: Always check CEO status first before any other role checks
+  // Use both direct role comparison and the isCEO function for redundancy
   const userIsCEO = userRole === 'CEO' || (typeof isCEO === 'function' && isCEO());
   
+  // ENHANCED CEO DEBUG LOGGING
+  console.log(`ProtectedRoute - CEO CHECK FOR ${location.pathname}:`);
+  console.log(`- userRole === 'CEO': ${userRole === 'CEO'}`);
+  console.log(`- isCEO function exists: ${typeof isCEO === 'function'}`);
+  console.log(`- isCEO function result: ${typeof isCEO === 'function' ? isCEO() : 'N/A'}`);
+  console.log(`- Final userIsCEO determination: ${userIsCEO}`);
+  
   if (userIsCEO) {
-    console.log("ProtectedRoute - User is CEO, allowing access");
+    console.log("ProtectedRoute - User is CEO, allowing access to:", location.pathname);
     
     // Voice authentication still applies even for CEO
     if (requireVoiceAuth) {
@@ -108,7 +116,8 @@ const ProtectedRoute = ({
     if (!hasRequiredRole) {
       console.log("ProtectedRoute - Role check failed", {
         required: requiredRole,
-        actual: userRole
+        actual: userRole,
+        path: location.pathname
       });
       return <Navigate to="/unauthorized" state={{ from: location, requiredRole }} replace />;
     }
@@ -130,6 +139,7 @@ const ProtectedRoute = ({
   }
 
   // All checks passed, allow access
+  console.log("ProtectedRoute - All checks passed, allowing access to:", location.pathname);
   return children;
 };
 

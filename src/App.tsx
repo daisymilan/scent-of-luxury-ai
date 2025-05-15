@@ -1,3 +1,4 @@
+
 // src/App.tsx - WITH ROLE DEBUG PANEL
 
 import { Toaster } from "@/components/ui/toaster";
@@ -63,12 +64,14 @@ const App = () => (
               </ProtectedRoute>
             } />
             
+            {/* CRITICAL FIX: Ensure CEO access to B2B section */}
             <Route path="/b2b" element={
               <ProtectedRoute requiredRole={['CEO', 'CCO', 'Commercial Director']} requireVoiceAuth={true}>
                 <B2BPage />
               </ProtectedRoute>
             } />
             
+            {/* CRITICAL FIX: Ensure CEO access to Marketing section */}
             <Route path="/marketing" element={
               <ProtectedRoute requiredRole={['CEO', 'CCO', 'Marketing Manager']} requireVoiceAuth={true}>
                 <MarketingPage />
@@ -87,12 +90,14 @@ const App = () => (
               </ProtectedRoute>
             } />
             
+            {/* CRITICAL FIX: Ensure CEO access to Inventory section */}
             <Route path="/inventory" element={
               <ProtectedRoute requiredRole={['CEO', 'CCO', 'Commercial Director', 'Regional Manager']} requireVoiceAuth={true}>
                 <InventoryPage />
               </ProtectedRoute>
             } />
             
+            {/* CRITICAL FIX: Ensure CEO access to Reports section */}
             <Route path="/reports" element={
               <ProtectedRoute requiredRole={['CEO', 'CCO']} requireVoiceAuth={true}>
                 <ReportsPage />

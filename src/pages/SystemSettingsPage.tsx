@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { ShieldAlert, Info, Loader2 } from 'lucide-react';
+import DashboardHeader from '@/components/DashboardHeader';
 
 const SystemSettingsPage = () => {
   const { userRole, isCEO, isAuthenticated, loading } = useAuth();
@@ -14,11 +15,11 @@ const SystemSettingsPage = () => {
     // Only check permissions after the auth state is loaded
     if (!loading) {
       console.log("SystemSettingsPage - Current user role:", userRole);
-      console.log("SystemSettingsPage - Is CEO function result:", isCEO());
+      console.log("SystemSettingsPage - Is CEO function result:", isCEO ? isCEO() : "function not available");
       
       if (!isAuthenticated) {
         navigate('/login');
-      } else if (userRole !== 'CEO' && !isCEO()) {
+      } else if (userRole !== 'CEO' && (!isCEO || !isCEO())) {
         console.log("User is not CEO, redirecting to unauthorized");
         navigate('/unauthorized');
       }
@@ -40,26 +41,29 @@ const SystemSettingsPage = () => {
 
   // If we've passed the check and still on this page, the user is a CEO
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-2xl font-bold mb-4">System Settings</h1>
-      
-      <Alert className="mb-6 bg-blue-50 border-blue-200">
-        <Info className="h-4 w-4 text-blue-600" />
-        <AlertTitle className="font-medium">CEO Access Granted</AlertTitle>
-        <AlertDescription>
-          You are viewing this page because you have CEO privileges.
-        </AlertDescription>
-      </Alert>
-      
-      <div className="prose max-w-none">
-        <p>As the CEO, you have access to the following system settings:</p>
-        <ul className="list-disc pl-5 mt-2">
-          <li>Global security policies</li>
-          <li>Company-wide announcements</li>
-          <li>User role management</li>
-          <li>Integration configuration</li>
-          <li>Data retention policies</li>
-        </ul>
+    <div className="min-h-screen bg-gray-50">
+      <DashboardHeader />
+      <div className="container mx-auto py-8">
+        <h1 className="text-2xl font-bold mb-4">System Settings</h1>
+        
+        <Alert className="mb-6 bg-blue-50 border-blue-200">
+          <Info className="h-4 w-4 text-blue-600" />
+          <AlertTitle className="font-medium">CEO Access Granted</AlertTitle>
+          <AlertDescription>
+            You are viewing this page because you have CEO privileges.
+          </AlertDescription>
+        </Alert>
+        
+        <div className="prose max-w-none">
+          <p>As the CEO, you have access to the following system settings:</p>
+          <ul className="list-disc pl-5 mt-2">
+            <li>Global security policies</li>
+            <li>Company-wide announcements</li>
+            <li>User role management</li>
+            <li>Integration configuration</li>
+            <li>Data retention policies</li>
+          </ul>
+        </div>
       </div>
     </div>
   );
