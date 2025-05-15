@@ -6,7 +6,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { ShieldAlert, Info, Loader2 } from 'lucide-react';
 
 const SystemSettingsPage = () => {
-  const { userRole, isAuthenticated, loading } = useAuth();
+  const { userRole, isCEO, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
   const [checkingRole, setCheckingRole] = useState(true);
 
@@ -14,15 +14,17 @@ const SystemSettingsPage = () => {
     // Only check permissions after the auth state is loaded
     if (!loading) {
       console.log("SystemSettingsPage - Current user role:", userRole);
+      console.log("SystemSettingsPage - Is CEO function result:", isCEO());
+      
       if (!isAuthenticated) {
         navigate('/login');
-      } else if (userRole !== 'CEO') {
+      } else if (userRole !== 'CEO' && !isCEO()) {
         console.log("User is not CEO, redirecting to unauthorized");
         navigate('/unauthorized');
       }
       setCheckingRole(false);
     }
-  }, [loading, isAuthenticated, userRole, navigate]);
+  }, [loading, isAuthenticated, userRole, navigate, isCEO]);
 
   // Show loading state while checking permissions
   if (loading || checkingRole) {

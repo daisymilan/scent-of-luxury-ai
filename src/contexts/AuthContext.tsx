@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -75,8 +76,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Define CEO email for role verification - replace with your actual CEO email
-  const ceoEmail = "ceo@example.com"; // Replace with actual CEO email
+  // Define CEO email for role verification - UPDATED: Adding multiple possible CEO emails
+  const ceoEmails = ["ceo@example.com", "ceo@minyork.com", "ceotest@min.com", "admin@minny.com"]; // Updated array of CEO emails
 
   // Fetch user role from users table
   const fetchUserRole = async (userId: string) => {
@@ -99,8 +100,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userEmail = data?.email || currentUser?.email;
       console.log("User email for CEO check:", userEmail);
       
-      // CEO detection: If email matches CEO email OR role is already set to CEO
-      const isCeoUser = (userEmail === ceoEmail || data?.role === 'CEO');
+      // CEO detection: If email matches ANY CEO email OR role is already set to CEO
+      const isCeoUser = (ceoEmails.includes(userEmail) || data?.role === 'CEO');
       
       if (isCeoUser && data?.role !== 'CEO') {
         console.log("Detected CEO by criteria, updating...");
@@ -159,7 +160,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setCurrentUser(session.user);
               
               // Check if user is CEO by email
-              const isCeoByEmail = session.user?.email === ceoEmail;
+              const userEmail = session.user?.email || '';
+              const isCeoByEmail = ceoEmails.includes(userEmail);
+              
               if (isCeoByEmail) {
                 console.log("Setting CEO role based on email match");
                 setUserRole('CEO');
@@ -210,7 +213,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setCurrentUser(session.user);
           
           // Check if user is CEO by email
-          const isCeoByEmail = session.user?.email === ceoEmail;
+          const userEmail = session.user?.email || '';
+          const isCeoByEmail = ceoEmails.includes(userEmail);
+          
           if (isCeoByEmail) {
             console.log("Setting CEO role based on email match");
             setUserRole('CEO');
@@ -288,7 +293,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCurrentUser(data.user);
         
         // Check if this is CEO by email
-        if (email === ceoEmail) {
+        const isCeoByEmail = ceoEmails.includes(email);
+        
+        if (isCeoByEmail) {
           console.log("CEO email detected, setting role to CEO");
           setUserRole('CEO');
           
@@ -353,8 +360,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       
       // Check if this is the CEO's email and force the role to CEO
-      const yourCEOEmail = "your-ceo-email@example.com"; // Replace with your actual email
-      if (email === yourCEOEmail) {
+      if (ceoEmails.includes(email)) {
         console.log("CEO email detected in signup, forcing role to CEO");
         role = 'CEO' as UserRole;
       }
@@ -531,14 +537,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
     signup: async (email: string, password: string, role?: UserRole, metadata?: { first_name?: string; last_name?: string }) => {
       // Check if this is CEO by email
-      if (email === ceoEmail) {
+      if (ceoEmails.includes(email)) {
         role = 'CEO';
       }
       return signup(email, password, role, metadata);
     },
     register: async (email: string, password: string, role?: UserRole, metadata?: { first_name?: string; last_name?: string }) => {
       // Check if this is CEO by email 
-      if (email === ceoEmail) {
+      if (ceoEmails.includes(email)) {
         role = 'CEO';
       }
       return signup(email, password, role, metadata);
