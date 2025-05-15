@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import DashboardHeader from "@/components/DashboardHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,6 +74,7 @@ const ProfilePage = () => {
         // CRITICAL FIX: Priority order for role determination
         // 1. If user is CEO by email, always set as CEO regardless of stored role
         const ceoEmails = ["ceo@example.com", "ceo@minyork.com", "ceotest@min.com", "admin@minny.com"];
+        // Define userEmail only once and reuse it throughout the function
         const userEmail = currentUser.email || '';
         const isCeoByEmail = ceoEmails.includes(userEmail.toLowerCase());
         
@@ -157,7 +157,7 @@ const ProfilePage = () => {
         });
 
         // Try to fetch WooCommerce customer data if we have an email
-        const userEmail = currentUser.email || '';
+        // Remove duplicate declaration and use the existing userEmail variable
         if (userEmail) {
           try {
             const customerData = await getCustomerByEmail(userEmail);
