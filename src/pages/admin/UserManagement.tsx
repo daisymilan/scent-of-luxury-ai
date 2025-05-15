@@ -58,14 +58,15 @@ const UserManagement = () => {
     }
     
     try {
-      // Generate a UUID for the user id
+      // Generate a UUID for both id and user_id (required fields)
       const userId = crypto.randomUUID();
       
       // Insert the new user into users table
       const { error } = await supabase
         .from('users')
         .insert({
-          id: userId, // Required field
+          id: userId,
+          user_id: userId, // Adding the required user_id field
           email: inviteEmail,
           role: inviteRole,
           created_at: new Date().toISOString()
