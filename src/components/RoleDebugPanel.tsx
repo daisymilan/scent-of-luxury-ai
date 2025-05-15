@@ -1,3 +1,4 @@
+
 // Add this file to your project: src/components/RoleDebugPanel.tsx
 // This will help you diagnose role issues in real-time
 
@@ -9,10 +10,11 @@ import { X } from 'lucide-react';
 const RoleDebugPanel: React.FC = () => {
   const [isVisible, setIsVisible] = useState(true);
   const auth = useAuth();
-  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [expandedSection, setExpandedSection] = useState<string | null>("role"); // Default to expanded role section
 
   // Check if auth context is available
   if (!auth) {
+    console.error("Auth context not available in RoleDebugPanel");
     return null;
   }
 
@@ -23,6 +25,15 @@ const RoleDebugPanel: React.FC = () => {
       setExpandedSection(section);
     }
   };
+
+  // Add effect to log role info on mount
+  useEffect(() => {
+    console.log("RoleDebugPanel - Auth Context:", {
+      userRole: auth.userRole,
+      userMetadataRole: auth.currentUser?.user_metadata?.role,
+      isCEO: typeof auth.isCEO === 'function' ? auth.isCEO() : 'function not available',
+    });
+  }, [auth]);
 
   // Extract role information from various sources
   const userRole = auth.userRole;
@@ -108,6 +119,7 @@ const RoleDebugPanel: React.FC = () => {
               <p><span className="font-medium">hasPermission(['CEO', 'CCO']):</span> {String(testPermission(['CEO' as UserRole, 'CCO' as UserRole]))}</p>
               <p><span className="font-medium">hasPermission('CCO'):</span> {String(testPermission('CCO' as UserRole))}</p>
               <p><span className="font-medium">hasPermission('Marketing Manager'):</span> {String(testPermission('Marketing Manager' as UserRole))}</p>
+              <p><span className="font-medium">hasPermission('Regional Manager'):</span> {String(testPermission('Regional Manager' as UserRole))}</p>
             </div>
           )}
         </div>

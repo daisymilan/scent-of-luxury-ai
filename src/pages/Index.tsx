@@ -81,7 +81,7 @@ const Index = () => {
       <DashboardHeader />
       
       <div className="py-6">
-        <h1 className="text-3xl font-normal mb-1">MiN NEW YORK {userRole || 'User'} Dashboard</h1>
+        <h1 className="text-3xl font-normal mb-1">MiN NEW YORK {userRole || 'Guest'} Dashboard</h1>
         <p className="text-gray-600">Welcome back to your luxury fragrance dashboard, {currentUser?.user_metadata?.name || 'Guest'}</p>
         <div className="text-sm text-gray-500 mt-4 text-right">Last updated: {formattedDate}</div>
       </div>
