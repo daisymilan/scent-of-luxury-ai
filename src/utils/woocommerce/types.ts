@@ -1,68 +1,24 @@
+
 /**
- * WooCommerce API Types
+ * WooCommerce and B2BKing API Types
  */
 
+// General WooCommerce Types
 export interface WooProduct {
   id: number;
   name: string;
-  slug?: string;
-  permalink?: string;
-  sku?: string;  // Added sku property
+  slug: string;
   price: string;
-  regular_price: string;
-  sale_price: string;
-  description?: string;
-  short_description?: string;
-  stock_quantity: number | null;
-  stock_status: string;
-  total_sales: number;
-  date_created: string;
-  categories: Array<{
-    id: number;
-    name: string;
-    slug: string;
-  }>;
-  images: Array<{
-    id: number;
-    src: string;
-    alt: string;
-  }>;
-  attributes: Array<{
-    id: number;
-    name: string;
-    options: string[];
-  }>;
-  meta_data?: Array<{
-    id: number;
-    key: string;
-    value: any;
-  }>;
-}
-
-export interface WooProductVariation {
-  id: number;
+  regular_price?: string;
+  sale_price?: string;
+  stock_quantity?: number;
+  stock_status: 'instock' | 'outofstock' | 'onbackorder';
   description: string;
-  permalink: string;
-  sku: string;
-  price: string;
-  regular_price: string;
-  sale_price: string;
-  date_created: string;
-  on_sale: boolean;
-  purchasable: boolean;
-  virtual: boolean;
-  stock_quantity: number | null;
-  stock_status: string;
-  attributes: Array<{
-    id: number;
-    name: string;
-    option: string;
-  }>;
-  image: {
-    id: number;
-    src: string;
-    alt: string;
-  };
+  short_description?: string;
+  categories?: { id: number; name: string; slug: string }[];
+  images?: { id: number; src: string; name?: string; alt?: string }[];
+  date_created?: string;
+  total_sales?: number;
 }
 
 export interface WooOrder {
@@ -71,53 +27,38 @@ export interface WooOrder {
   date_created: string;
   total: string;
   customer_id: number;
-  billing: {
-    first_name: string;
-    last_name: string;
-    email: string;
+  billing?: {
+    first_name?: string;
+    last_name?: string;
+    company?: string;
+    address_1?: string;
+    address_2?: string;
+    city?: string;
+    state?: string;
+    postcode?: string;
+    country?: string;
+    email?: string;
     phone?: string;
-    address_1?: string;
-    address_2?: string;
-    city?: string;
-    state?: string;
-    postcode?: string;
-    country?: string;
-  };
-  shipping?: {
-    first_name: string;
-    last_name: string;
-    address_1?: string;
-    address_2?: string;
-    city?: string;
-    state?: string;
-    postcode?: string;
-    country?: string;
   };
   line_items: Array<{
-    product_id: number;
+    id: number;
     name: string;
+    product_id: number;
     quantity: number;
-    total: string;
-    price: string;
+    price: number;
   }>;
-  payment_method?: string;
-  payment_method_title?: string;
-  transaction_id?: string;
-  customer_note?: string;
 }
 
 export interface WooCustomer {
   id: number;
+  date_created?: string;
   email: string;
   first_name: string;
   last_name: string;
-  username: string;
-  orders_count: number;
-  total_spent: string;
-  avatar_url: string;
-  billing: {
-    first_name: string;
-    last_name: string;
+  username?: string;
+  billing?: {
+    first_name?: string;
+    last_name?: string;
     company?: string;
     address_1?: string;
     address_2?: string;
@@ -125,12 +66,12 @@ export interface WooCustomer {
     state?: string;
     postcode?: string;
     country?: string;
-    email: string;
+    email?: string;
     phone?: string;
   };
   shipping?: {
-    first_name: string;
-    last_name: string;
+    first_name?: string;
+    last_name?: string;
     company?: string;
     address_1?: string;
     address_2?: string;
@@ -138,47 +79,48 @@ export interface WooCustomer {
     state?: string;
     postcode?: string;
     country?: string;
+    phone?: string;
   };
-  date_created: string;
-  date_modified: string;
+  meta_data?: Array<{
+    key: string;
+    value: any;
+  }>;
 }
 
-// B2BKing specific types
+// B2BKing Specific Types
 export interface B2BKingGroup {
   id: number;
   name: string;
-  description: string;
-  registered_date: string;
-  status: string;
+  description?: string;
+  status: 'active' | 'inactive' | string;
   user_count: number;
   rules_count: number;
+  custom_data?: Record<string, any>;
 }
 
 export interface B2BKingUser {
   id: number;
   username: string;
-  email: string;
   first_name: string;
   last_name: string;
+  email: string;
   company: string;
-  position: string;
-  groups: number[];
-  registration_date: string;
-  last_login: string;
+  position?: string;
   approved: boolean;
-  vat_number?: string;
+  group_id?: number;
+  registration_date: string;
+  custom_fields?: Record<string, any>;
 }
 
 export interface B2BKingRule {
   id: number;
   name: string;
-  type: string;
-  what: string;
-  who: number[] | string;
-  quantity_value?: number;
+  description?: string;
+  type: 'discount' | 'tax_exemption' | 'minimum_order' | 'product_visibility' | string;
+  who: number[] | string;  // Could be group IDs or "all_registered", "everyone", etc.
   discount_value?: number;
   minimum_order?: number;
-  tax_exemption?: boolean;
-  requires_approval?: boolean;
-  requires_login?: boolean;
+  requires_approval: boolean;
+  requires_login: boolean;
+  conditions?: Record<string, any>;
 }

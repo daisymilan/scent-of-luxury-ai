@@ -21,7 +21,9 @@ export const useB2BKingGroups = () => {
         console.error('Error in useB2BKingGroups hook:', error);
         throw error;
       }
-    }
+    },
+    retry: 1, // Only retry once since we already have fallback in the API client
+    retryDelay: 1000
   });
 };
 
@@ -38,7 +40,9 @@ export const useB2BKingGroup = (groupId: number | null) => {
         throw error;
       }
     },
-    enabled: !!groupId
+    enabled: !!groupId,
+    retry: 1,
+    retryDelay: 1000
   });
 };
 
@@ -53,7 +57,9 @@ export const useB2BKingUsers = () => {
         console.error('Error in useB2BKingUsers hook:', error);
         throw error;
       }
-    }
+    },
+    retry: 1,
+    retryDelay: 1000
   });
 };
 
@@ -70,7 +76,9 @@ export const useB2BKingUser = (userId: number | null) => {
         throw error;
       }
     },
-    enabled: !!userId
+    enabled: !!userId,
+    retry: 1,
+    retryDelay: 1000
   });
 };
 
@@ -85,7 +93,9 @@ export const useB2BKingRules = () => {
         console.error('Error in useB2BKingRules hook:', error);
         throw error;
       }
-    }
+    },
+    retry: 1,
+    retryDelay: 1000
   });
 };
 
@@ -102,7 +112,8 @@ export const useB2BKingRulesByType = (type: string | null) => {
         throw error;
       }
     },
-    enabled: !!type
+    enabled: !!type,
+    retry: 1,
+    retryDelay: 1000
   });
 };
-
