@@ -124,6 +124,9 @@ const ProfilePage = () => {
                          currentUser?.user_metadata?.name || 
                          "Guest User";
         
+        // Use optional chaining and nullish coalescing for woocommerce_id
+        const woocommerceId = data?.woocommerce_id ?? null;
+        
         // Update the user info with data from Supabase and our determined role
         setUserInfo({
           name: fullName,
@@ -136,7 +139,7 @@ const ProfilePage = () => {
           voice_enrolled: data?.voice_enrolled || false,
           voice_authenticated: data?.voice_authenticated || false,
           last_voice_auth: data?.last_voice_auth ? new Date(data.last_voice_auth) : null,
-          woocommerce_id: data?.woocommerce_id || null,
+          woocommerce_id: woocommerceId,
         });
         
         setFormData({
@@ -150,10 +153,11 @@ const ProfilePage = () => {
           voice_enrolled: data?.voice_enrolled || false,
           voice_authenticated: data?.voice_authenticated || false,
           last_voice_auth: data?.last_voice_auth ? new Date(data.last_voice_auth) : null,
-          woocommerce_id: data?.woocommerce_id || null,
+          woocommerce_id: woocommerceId,
         });
 
         // Try to fetch WooCommerce customer data if we have an email
+        const userEmail = currentUser.email || '';
         if (userEmail) {
           try {
             const customerData = await getCustomerByEmail(userEmail);
@@ -163,7 +167,7 @@ const ProfilePage = () => {
               setWooCustomer(customerData);
               
               // Update woocommerce_id in our local state if it's not already set
-              if (!data?.woocommerce_id) {
+              if (!woocommerceId && customerData.id) {
                 try {
                   await supabase
                     .from('users')

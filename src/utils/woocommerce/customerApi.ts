@@ -5,6 +5,7 @@
 import { WooCommerceConfig, getWooCommerceConfig } from './config';
 import { WooCustomer } from './types';
 import { fetchWooCommerceData } from './apiClient';
+import { supabase } from "@/integrations/supabase/client";
 
 // Get a single customer by ID
 export const getCustomerById = async (
@@ -39,6 +40,27 @@ export const getCustomerByEmail = async (
   } catch (error) {
     console.error(`Error fetching WooCommerce customer by email ${email}:`, error);
     return null; // Return null instead of throwing to handle gracefully
+  }
+};
+
+// Ensure WooCommerce ID field exists in database
+export const ensureWooCommerceIdField = async () => {
+  try {
+    // Check if woocommerce_id column exists
+    const { data, error } = await supabase
+      .from('users')
+      .select('woocommerce_id')
+      .limit(1);
+      
+    if (error) {
+      console.error('Error checking woocommerce_id column:', error);
+      // If the column doesn't exist, we'll get a specific error
+      if (error.message.includes('column "woocommerce_id" does not exist')) {
+        console.warn('WooCommerce ID field missing - please contact your database administrator');
+      }
+    }
+  } catch (err) {
+    console.error('Exception checking woocommerce_id column:', err);
   }
 };
 
