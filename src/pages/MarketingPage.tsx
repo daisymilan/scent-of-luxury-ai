@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
 import DashboardHeader from '@/components/DashboardHeader';
 import SEODashboard from '@/components/SEODashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +13,14 @@ import { useToast } from '@/hooks/use-toast';
 const MarketingPage = () => {
   const [activeTab, setActiveTab] = useState('seo');
   const { toast } = useToast();
+  const { userRole, isCEO: isCEOFn } = useAuth();
+  
+  // Determine CEO status - check both role and function to be sure
+  const isCEO = userRole === 'CEO' || (typeof isCEOFn === 'function' && isCEOFn());
+  
+  console.log("MarketingPage - userRole:", userRole);
+  console.log("MarketingPage - isCEO function result:", typeof isCEOFn === 'function' ? isCEOFn() : "function not available");
+  console.log("MarketingPage - combined isCEO result:", isCEO);
 
   // Fetch categories for SEO analysis
   const { data: categories, isLoading: isLoadingCategories } = useQuery({

@@ -15,14 +15,21 @@ interface DashboardHeaderProps {
 
 const DashboardHeader = ({ title, heading }: DashboardHeaderProps = {}) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const { currentUser, userRole, logout } = useAuth();
+  const { currentUser, userRole, logout, isAuthenticated } = useAuth();
   
   console.log("DashboardHeader - currentUser:", currentUser);
   console.log("DashboardHeader - userRole from context:", userRole);
+  console.log("DashboardHeader - isAuthenticated:", isAuthenticated);
   
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
+  
+  // Extract username from metadata or use email
+  const username = currentUser?.user_metadata?.name || 
+                   (currentUser?.user_metadata?.first_name && 
+                    `${currentUser.user_metadata.first_name} ${currentUser.user_metadata.last_name || ''}`) || 
+                   'User';
   
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
@@ -48,7 +55,7 @@ const DashboardHeader = ({ title, heading }: DashboardHeaderProps = {}) => {
           
           {/* User Profile Dropdown */}
           <UserMenu 
-            username={currentUser?.user_metadata?.name || 'Guest'} 
+            username={username.trim()} 
             email={currentUser?.email || ''} 
             onLogout={logout} 
           />

@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import SEOFilters from './seo/SEOFilters';
 import SEOTable from './seo/SEOTable';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, ShieldCheck } from 'lucide-react';
 import { getScoreColor } from './seo/seoUtils';
 import { SEODashboardProps } from './seo/types';
 
@@ -15,8 +15,10 @@ const SEODashboard: React.FC<SEODashboardProps> = ({ categories, productsWithSEO
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const { toast } = useToast();
-  const { user } = useAuth();
-  const isCEO = user?.role === 'CEO';
+  const { userRole } = useAuth();
+  const isCEO = userRole === 'CEO';
+  
+  console.log("SEODashboard - userRole:", userRole, "isCEO:", isCEO);
 
   // Filter products based on selected category and search query
   const filteredProducts = useMemo(() => {
@@ -65,9 +67,24 @@ const SEODashboard: React.FC<SEODashboardProps> = ({ categories, productsWithSEO
     setSortOrder(prevOrder => (prevOrder === 'asc' ? 'desc' : 'asc'));
   };
 
-  // Render pending access notice for non-CEO users
-  const renderAccessNotice = () => {
-    if (isCEO) return null;
+  // Render pending access notice or CEO badge
+  const renderAccessBanner = () => {
+    if (isCEO) {
+      return (
+        <div className="bg-blue-50 p-4 mb-4 rounded-md flex items-center gap-3 border border-blue-200">
+          <ShieldCheck className="h-5 w-5 text-blue-500" />
+          <div>
+            <h4 className="font-medium text-blue-800">CEO Access Granted</h4>
+            <p className="text-sm text-blue-700">
+              You have full access to all SEO analytics data.
+            </p>
+          </div>
+          <Badge variant="outline" className="ml-auto bg-blue-100 text-blue-800 border-blue-200">
+            CEO
+          </Badge>
+        </div>
+      );
+    }
     
     return (
       <div className="bg-amber-50 p-4 mb-4 rounded-md flex items-center gap-3 border border-amber-200">
@@ -95,7 +112,7 @@ const SEODashboard: React.FC<SEODashboardProps> = ({ categories, productsWithSEO
       </CardHeader>
       <CardContent className="p-6">
         <div className="grid gap-6">
-          {renderAccessNotice()}
+          {renderAccessBanner()}
 
           <SEOFilters 
             categories={categories}

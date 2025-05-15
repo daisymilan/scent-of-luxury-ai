@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { extractSEOData } from './seoUtils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Product {
   id: number;
@@ -26,8 +27,14 @@ const SEOTable: React.FC<SEOTableProps> = ({
   sortOrder,
   onToggleSortOrder,
   getScoreColor,
-  isCEO = true
+  isCEO: propIsCEO
 }) => {
+  const { userRole } = useAuth();
+  
+  // Determine CEO status from props or context
+  const isCEO = propIsCEO !== undefined ? propIsCEO : userRole === 'CEO';
+  console.log("SEOTable - userRole:", userRole, "isCEO:", isCEO);
+  
   // If no products, show message
   if (!products || products.length === 0) {
     return (

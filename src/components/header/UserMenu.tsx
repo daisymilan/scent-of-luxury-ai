@@ -9,8 +9,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { User, LogOut } from 'lucide-react';
+import { User, LogOut, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UserMenuProps {
   username: string;
@@ -21,6 +22,7 @@ interface UserMenuProps {
 const UserMenu = ({ username, email, onLogout }: UserMenuProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { userRole } = useAuth();
   
   const handleLogout = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -44,6 +46,8 @@ const UserMenu = ({ username, email, onLogout }: UserMenuProps) => {
     }
   };
   
+  const isCEO = userRole === 'CEO';
+  
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -56,6 +60,12 @@ const UserMenu = ({ username, email, onLogout }: UserMenuProps) => {
           <div>
             <p className="font-medium text-gray-900">{username || 'Guest'}</p>
             <p className="text-xs text-gray-500">{email || ''}</p>
+            {isCEO && (
+              <div className="flex items-center mt-1 text-xs font-medium text-blue-600">
+                <ShieldCheck size={12} className="mr-1" />
+                CEO Account
+              </div>
+            )}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -64,6 +74,13 @@ const UserMenu = ({ username, email, onLogout }: UserMenuProps) => {
             Profile
           </DropdownMenuItem>
         </Link>
+        {isCEO && (
+          <Link to="/settings/system">
+            <DropdownMenuItem className="cursor-pointer hover:text-black rounded-none">
+              System Settings
+            </DropdownMenuItem>
+          </Link>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem 
           className="cursor-pointer hover:text-black rounded-none" 

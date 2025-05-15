@@ -11,10 +11,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { UserRole } from "@/contexts/AuthContext"; // Import UserRole type
+import { Shield, ShieldCheck } from "lucide-react";
 
 const ProfilePage = () => {
   const { currentUser, userRole, isCEO } = useAuth();
   const [loading, setLoading] = useState(true);
+  
+  // Use both methods to check for CEO role (direct comparison and function call)
+  const userIsCEO = userRole === 'CEO' || (typeof isCEO === 'function' && isCEO());
   
   const [userInfo, setUserInfo] = useState({
     name: "",
@@ -38,7 +42,8 @@ const ProfilePage = () => {
     console.log("ProfilePage - User role from context:", userRole);
     console.log("ProfilePage - User metadata:", currentUser?.user_metadata);
     console.log("ProfilePage - Is CEO function:", typeof isCEO === 'function' ? isCEO() : 'not available');
-  }, [currentUser, userRole, isCEO]);
+    console.log("ProfilePage - Combined CEO check:", userIsCEO);
+  }, [currentUser, userRole, isCEO, userIsCEO]);
 
   // Fetch the complete user data from Supabase
   useEffect(() => {
@@ -64,25 +69,24 @@ const ProfilePage = () => {
         console.log("User data from Supabase:", data);
         
         // CRITICAL FIX: Priority order for role determination
-        // 1. Auth context userRole (most reliable source)
-        // 2. User metadata role (set during registration/login)
-        // 3. Database role (for persistence)
-        // 4. Default to null if all others are null/undefined
+        // 1. If user is CEO by email, always set as CEO regardless of stored role
+        const ceoEmails = ["ceo@example.com", "ceo@minyork.com", "ceotest@min.com", "admin@minny.com"];
+        const userEmail = currentUser.email || '';
+        const isCeoByEmail = ceoEmails.includes(userEmail.toLowerCase());
         
-        // First check if we have the role in the auth context
-        let effectiveRole = userRole;
+        // Determine effective role
+        let effectiveRole: UserRole | null = null;
         
-        // If not in auth context, try user metadata
-        if (!effectiveRole && currentUser?.user_metadata?.role) {
-          // Ensure it's a valid UserRole value
-          const metadataRole = currentUser.user_metadata.role as UserRole;
-          effectiveRole = metadataRole;
+        if (isCeoByEmail) {
+          effectiveRole = 'CEO';
+          console.log("Setting role to CEO based on email match:", userEmail);
+        } else if (userRole) {
+          effectiveRole = userRole;
+          console.log("Using role from auth context:", effectiveRole);
+        } else if (currentUser?.user_metadata?.role) {
+          effectiveRole = currentUser.user_metadata.role as UserRole;
           console.log("Using role from user metadata:", effectiveRole);
-        }
-        
-        // If still not found, try database
-        if (!effectiveRole && data?.role) {
-          // Cast to UserRole if it's a valid role string
+        } else if (data?.role) {
           effectiveRole = data.role as UserRole;
           console.log("Using role from database:", effectiveRole);
         }
@@ -97,14 +101,28 @@ const ProfilePage = () => {
               .from('users')
               .update({ role: effectiveRole })
               .eq('id', currentUser.id);
+            
+            // Also update user metadata for consistency
+            const { error: metadataError } = await supabase.auth.updateUser({
+              data: { role: effectiveRole }
+            });
+            
+            if (metadataError) {
+              console.error("Failed to update user metadata:", metadataError);
+            }
           } catch (err) {
             console.error("Failed to sync role to database:", err);
           }
         }
         
+        // Construct name from first and last name
+        const fullName = `${data?.first_name || ''} ${data?.last_name || ''}`.trim() || 
+                         currentUser?.user_metadata?.name || 
+                         "Guest User";
+        
         // Update the user info with data from Supabase and our determined role
         setUserInfo({
-          name: `${data?.first_name || ''} ${data?.last_name || ''}`.trim() || "Guest User",
+          name: fullName,
           email: data?.email || currentUser?.email || "",
           role: effectiveRole,
           department: getDepartmentForRole(effectiveRole),
@@ -117,7 +135,7 @@ const ProfilePage = () => {
         });
         
         setFormData({
-          name: `${data?.first_name || ''} ${data?.last_name || ''}`.trim() || "Guest User",
+          name: fullName,
           email: data?.email || currentUser?.email || "",
           role: effectiveRole,
           department: getDepartmentForRole(effectiveRole),
@@ -187,6 +205,20 @@ const ProfilePage = () => {
         return;
       }
       
+      // Update user metadata as well for consistency
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: { 
+          role: formData.role,
+          first_name: firstName,
+          last_name: lastName
+        }
+      });
+      
+      if (metadataError) {
+        console.error("Error updating user metadata:", metadataError);
+        // Continue anyway as this is not critical
+      }
+      
       // Update the local state
       setUserInfo({
         ...formData,
@@ -229,6 +261,16 @@ const ProfilePage = () => {
       <main className="container max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <h1 className="text-2xl font-bold mb-6">User Profile</h1>
         
+        {userIsCEO && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md flex items-center space-x-3">
+            <ShieldCheck className="h-5 w-5 text-blue-500" />
+            <div>
+              <h3 className="font-medium text-blue-700">CEO Account</h3>
+              <p className="text-sm text-blue-600">You have full access to all system features and settings.</p>
+            </div>
+          </div>
+        )}
+        
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card>
@@ -270,7 +312,12 @@ const ProfilePage = () => {
                   <AvatarFallback className="text-2xl bg-primary text-white">{getInitials()}</AvatarFallback>
                 </Avatar>
                 <h2 className="text-xl font-semibold">{userInfo.name}</h2>
-                <p className="text-gray-500">{userInfo.role || "Guest"}</p>
+                <div className="flex items-center">
+                  <p className="text-gray-500">{userInfo.role || "Guest"}</p>
+                  {userInfo.role === 'CEO' && (
+                    <Shield className="h-4 w-4 ml-1 text-blue-500" />
+                  )}
+                </div>
                 <p className="text-sm text-gray-400 mb-4">{userInfo.department}</p>
                 
                 <div className="w-full mt-4">
@@ -327,8 +374,15 @@ const ProfilePage = () => {
                       name="role"
                       value={isEditing ? formData.role || "" : userInfo.role || ""}
                       onChange={handleInputChange}
-                      disabled={!isEditing}
+                      disabled={!isEditing || userIsCEO} // Disable role editing for CEO
+                      className={userIsCEO ? "bg-blue-50" : ""}
                     />
+                    {userIsCEO && (
+                      <p className="text-xs text-blue-600 mt-1 flex items-center">
+                        <ShieldCheck className="inline h-3 w-3 mr-1" />
+                        CEO role cannot be changed
+                      </p>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
@@ -397,4 +451,3 @@ const ProfilePage = () => {
 };
 
 export default ProfilePage;
-
