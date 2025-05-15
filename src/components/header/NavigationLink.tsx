@@ -16,10 +16,10 @@ const NavigationLink = ({ to, label, requiredRoles, userRole }: NavigationLinkPr
   const isActive = location.pathname === to || 
                   (to !== '/' && location.pathname.startsWith(to));
   
-  console.log(`NavigationLink "${label}" - userRole: ${userRole}, requiredRoles: ${JSON.stringify(requiredRoles)}, hasAccess: ${!requiredRoles || !userRole || requiredRoles.includes(userRole)}`);
+  console.log(`NavigationLink "${label}" - userRole: ${userRole}, requiredRoles: ${JSON.stringify(requiredRoles)}, hasAccess: ${!requiredRoles || !userRole || userRole === 'CEO' || requiredRoles.includes(userRole)}`);
   
-  // If no required roles are specified or the user's role is in the required roles, render the link
-  if (!requiredRoles || !userRole || requiredRoles.includes(userRole)) {
+  // If no required roles are specified or user is CEO or the user's role is in the required roles, render the link
+  if (!requiredRoles || !userRole || userRole === 'CEO' || requiredRoles.includes(userRole)) {
     return (
       <Link 
         to={to} 

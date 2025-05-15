@@ -1,3 +1,4 @@
+
 // src/components/ProtectedRoute.tsx - FIXED VERSION FOR CEO ACCESS
 
 import { ReactElement, useEffect } from "react";
@@ -60,9 +61,10 @@ const ProtectedRoute = ({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // CRITICAL FIX: Direct CEO check first, bypass all other checks
-  // Check both methods: direct role comparison and isCEO function (if available)
-  if (userRole === 'CEO' || (typeof isCEO === 'function' && isCEO())) {
+  // CRITICAL FIX: Check if user is CEO first, using both direct role comparison and isCEO function
+  const userIsCEO = userRole === 'CEO' || (typeof isCEO === 'function' && isCEO());
+  
+  if (userIsCEO) {
     console.log("ProtectedRoute - User is CEO, allowing access");
     
     // Voice authentication still applies even for CEO
