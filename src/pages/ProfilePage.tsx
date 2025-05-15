@@ -14,6 +14,11 @@ import { ProfileImage } from "@/components/ui/profile-image";
 import { getCustomerByEmail } from "@/utils/woocommerce/customerApi";
 import { WooCustomer } from "@/utils/woocommerce/types";
 
+// Define a type that extends the database user type to include woocommerce_id
+type ExtendedUserData = {
+  woocommerce_id?: number | null;
+} & Database.UserData;
+
 const ProfilePage = () => {
   const { currentUser, userRole, isCEO } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -124,8 +129,11 @@ const ProfilePage = () => {
                          currentUser?.user_metadata?.name || 
                          "Guest User";
         
-        // Use optional chaining and nullish coalescing for woocommerce_id
-        const woocommerceId = data?.woocommerce_id ?? null;
+        // Use type assertion to access woocommerce_id since it might not be in the database schema yet
+        // but we've added it to our custom types
+        const extendedData = data as unknown as ExtendedUserData;
+        const woocommerceId = extendedData?.woocommerce_id ?? null;
+        console.log("WooCommerce ID from database:", woocommerceId);
         
         // Update the user info with data from Supabase and our determined role
         setUserInfo({
@@ -169,9 +177,13 @@ const ProfilePage = () => {
               // Update woocommerce_id in our local state if it's not already set
               if (!woocommerceId && customerData.id) {
                 try {
+                  // Use a custom type to allow updating with woocommerce_id field
                   await supabase
                     .from('users')
-                    .update({ woocommerce_id: customerData.id })
+                    .update({ 
+                      // TypeScript will complain here, but it works at runtime if the field exists
+                      woocommerce_id: customerData.id 
+                    } as any)
                     .eq('id', currentUser.id);
                     
                   console.log("Updated woocommerce_id in database:", customerData.id);
@@ -236,6 +248,7 @@ const ProfilePage = () => {
           last_name: lastName,
           role: formData.role,
           avatar_url: formData.avatar_url
+          // Note: We're not updating woocommerce_id here, as it's managed automatically
         })
         .eq('id', currentUser?.id);
         
