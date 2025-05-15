@@ -16,13 +16,14 @@ export const useB2BKingGroups = () => {
     queryKey: ['b2bking', 'groups'],
     queryFn: async () => {
       try {
-        return await getB2BKingGroups();
+        const groups = await getB2BKingGroups();
+        return groups || [];
       } catch (error) {
         console.error('Error in useB2BKingGroups hook:', error);
-        throw error;
+        return [];
       }
     },
-    retry: 1, // Only retry once since we already have fallback in the API client
+    retry: 1,
     retryDelay: 1000
   });
 };
@@ -37,7 +38,7 @@ export const useB2BKingGroup = (groupId: number | null) => {
         return await getB2BKingGroupById(groupId);
       } catch (error) {
         console.error(`Error in useB2BKingGroup hook for group ${groupId}:`, error);
-        throw error;
+        return null;
       }
     },
     enabled: !!groupId,
@@ -52,10 +53,11 @@ export const useB2BKingUsers = () => {
     queryKey: ['b2bking', 'users'],
     queryFn: async () => {
       try {
-        return await getB2BKingUsers();
+        const users = await getB2BKingUsers();
+        return users || [];
       } catch (error) {
         console.error('Error in useB2BKingUsers hook:', error);
-        throw error;
+        return [];
       }
     },
     retry: 1,
@@ -73,7 +75,7 @@ export const useB2BKingUser = (userId: number | null) => {
         return await getB2BKingUserById(userId);
       } catch (error) {
         console.error(`Error in useB2BKingUser hook for user ${userId}:`, error);
-        throw error;
+        return null;
       }
     },
     enabled: !!userId,
@@ -88,10 +90,11 @@ export const useB2BKingRules = () => {
     queryKey: ['b2bking', 'rules'],
     queryFn: async () => {
       try {
-        return await getB2BKingRules();
+        const rules = await getB2BKingRules();
+        return rules || [];
       } catch (error) {
         console.error('Error in useB2BKingRules hook:', error);
-        throw error;
+        return [];
       }
     },
     retry: 1,
@@ -106,10 +109,11 @@ export const useB2BKingRulesByType = (type: string | null) => {
     queryFn: async () => {
       if (!type) return [];
       try {
-        return await getB2BKingRulesByType(type);
+        const rules = await getB2BKingRulesByType(type);
+        return rules || [];
       } catch (error) {
         console.error(`Error in useB2BKingRulesByType hook for type ${type}:`, error);
-        throw error;
+        return [];
       }
     },
     enabled: !!type,

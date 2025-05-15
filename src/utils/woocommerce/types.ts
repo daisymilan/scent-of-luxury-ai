@@ -9,8 +9,9 @@ export interface WooProduct {
   name: string;
   slug: string;
   price: string;
-  regular_price?: string;
+  regular_price: string;
   sale_price?: string;
+  sku?: string;
   stock_quantity?: number;
   stock_status: 'instock' | 'outofstock' | 'onbackorder';
   description: string;
@@ -19,6 +20,24 @@ export interface WooProduct {
   images?: { id: number; src: string; name?: string; alt?: string }[];
   date_created?: string;
   total_sales?: number;
+}
+
+export interface WooProductVariation {
+  id: number;
+  name?: string;
+  sku?: string;
+  price: string;
+  regular_price: string;
+  sale_price?: string;
+  description?: string;
+  attributes: Array<{
+    id: number;
+    name: string;
+    option: string;
+  }>;
+  stock_quantity?: number;
+  stock_status: 'instock' | 'outofstock' | 'onbackorder';
+  image?: { id: number; src: string };
 }
 
 export interface WooOrder {
@@ -46,6 +65,7 @@ export interface WooOrder {
     product_id: number;
     quantity: number;
     price: number;
+    total?: string;
   }>;
 }
 
@@ -56,6 +76,8 @@ export interface WooCustomer {
   first_name: string;
   last_name: string;
   username?: string;
+  orders_count?: number;
+  total_spent?: string;
   billing?: {
     first_name?: string;
     last_name?: string;

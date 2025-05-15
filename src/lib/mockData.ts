@@ -20,6 +20,7 @@ export interface WooOrder {
     name: string;
     price?: number | string;
     quantity?: number;
+    total?: number | string;
   }>;
 }
 
@@ -28,6 +29,8 @@ export interface WooCustomer {
   first_name: string;
   last_name: string;
   email: string;
+  orders_count?: number;
+  total_spent?: string;
   billing?: {
     company?: string;
     email?: string;
@@ -46,6 +49,7 @@ export interface WooProduct {
   price: string;
   regular_price: string;
   sale_price: string;
+  sku?: string;
   images: Array<{
     src: string;
   }>;

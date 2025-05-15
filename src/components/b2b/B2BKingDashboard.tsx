@@ -16,32 +16,37 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useB2BKingGroups, useB2BKingUsers, useB2BKingRules } from '@/utils/woocommerce';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { UsersIcon, ShieldIcon, BookOpenIcon, AlertTriangle } from 'lucide-react';
+import { UsersIcon, ShieldIcon, BookOpenIcon, AlertTriangle, RefreshCcw } from 'lucide-react';
 import { B2BKingGroup, B2BKingUser, B2BKingRule } from '@/utils/woocommerce/types';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { useToast } from '@/hooks/use-toast';
 
 const B2BKingDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('groups');
+  const { toast } = useToast();
   
   const {
     data: groups,
     isLoading: isLoadingGroups,
-    error: groupsError
+    error: groupsError,
+    refetch: refetchGroups
   } = useB2BKingGroups();
   
   const {
     data: users,
     isLoading: isLoadingUsers,
-    error: usersError
+    error: usersError,
+    refetch: refetchUsers
   } = useB2BKingUsers();
   
   const {
     data: rules,
     isLoading: isLoadingRules,
-    error: rulesError
+    error: rulesError,
+    refetch: refetchRules
   } = useB2BKingRules();
   
   const isLoading = isLoadingGroups || isLoadingUsers || isLoadingRules;
@@ -50,21 +55,54 @@ const B2BKingDashboard: React.FC = () => {
     groupsError?.message || 
     usersError?.message || 
     rulesError?.message || 
-    'Failed to load B2BKing data';
+    'Failed to load B2BKing data. Please ensure the B2BKing plugin is properly installed and activated in your WooCommerce store.';
+
+  const handleRefresh = () => {
+    refetchGroups();
+    refetchUsers();
+    refetchRules();
+    
+    toast({
+      title: "Refreshing B2BKing data",
+      description: "Attempting to fetch the latest data from WooCommerce",
+    });
+  };
 
   return (
     <Card className="w-full">
-      <CardHeader>
-        <CardTitle>B2BKing Dashboard</CardTitle>
-        <CardDescription>
-          Manage your B2B customer groups, users, and rules
-        </CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <div>
+          <CardTitle>B2BKing Dashboard</CardTitle>
+          <CardDescription>
+            Manage your B2B customer groups, users, and rules
+          </CardDescription>
+        </div>
+        <Button variant="outline" size="sm" onClick={handleRefresh} className="flex items-center gap-1">
+          <RefreshCcw className="h-4 w-4" />
+          <span>Refresh</span>
+        </Button>
       </CardHeader>
       <CardContent>
         {hasError ? (
-          <div className="bg-red-50 border-red-200 border rounded-md p-4 mb-4 flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-red-500" />
-            <span className="text-sm text-red-800">{errorMessage}</span>
+          <div className="flex flex-col gap-4">
+            <div className="bg-red-50 border-red-200 border rounded-md p-4 mb-4 flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500 shrink-0" />
+              <div className="flex flex-col">
+                <span className="text-sm text-red-800 font-medium">B2BKing API Error</span>
+                <span className="text-xs text-red-600">{errorMessage}</span>
+              </div>
+            </div>
+            <div className="bg-amber-50 border-amber-200 border rounded-md p-4 flex flex-col gap-2">
+              <p className="text-sm text-amber-800">
+                Please check the following:
+              </p>
+              <ul className="list-disc pl-5 text-sm text-amber-700">
+                <li>B2BKing plugin is installed on your WooCommerce site</li>
+                <li>B2BKing plugin is activated</li>
+                <li>B2BKing API endpoints are correctly configured</li>
+                <li>WooCommerce API credentials have permission to access B2BKing data</li>
+              </ul>
+            </div>
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
