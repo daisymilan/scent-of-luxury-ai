@@ -157,7 +157,7 @@ const ProfilePage = () => {
           role: formData.role,
           avatar_url: formData.avatar_url
         })
-        .eq('id', user?.id);
+        .eq('id', currentUser?.id); // Fix: Changed 'user?.id' to 'currentUser?.id'
         
       if (error) {
         console.error("Error updating user:", error);
