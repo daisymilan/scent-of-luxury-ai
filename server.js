@@ -1,3 +1,4 @@
+
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
@@ -93,6 +94,60 @@ app.get('/api/customers', async (req, res) => {
 app.get('/api/customers/:id', async (req, res) => {
   try {
     const { data } = await woo.get(`/customers/${req.params.id}`);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- B2BKing endpoints ---
+
+// --- All B2BKing Groups ---
+app.get('/api/b2bking/groups', async (req, res) => {
+  try {
+    const { data } = await woo.get('/b2bking/groups');
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Single B2BKing Group ---
+app.get('/api/b2bking/groups/:id', async (req, res) => {
+  try {
+    const { data } = await woo.get(`/b2bking/groups/${req.params.id}`);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- All B2BKing Users ---
+app.get('/api/b2bking/users', async (req, res) => {
+  try {
+    const { data } = await woo.get('/b2bking/users');
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Single B2BKing User ---
+app.get('/api/b2bking/users/:id', async (req, res) => {
+  try {
+    const { data } = await woo.get(`/b2bking/users/${req.params.id}`);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- All B2BKing Rules ---
+app.get('/api/b2bking/rules', async (req, res) => {
+  try {
+    const { type } = req.query;
+    const endpoint = type ? `/b2bking/rules?type=${type}` : '/b2bking/rules';
+    const { data } = await woo.get(endpoint);
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });

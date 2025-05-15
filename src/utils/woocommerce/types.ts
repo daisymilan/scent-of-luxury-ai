@@ -1,4 +1,3 @@
-
 /**
  * WooCommerce API Types
  */
@@ -144,3 +143,42 @@ export interface WooCustomer {
   date_modified: string;
 }
 
+// B2BKing specific types
+export interface B2BKingGroup {
+  id: number;
+  name: string;
+  description: string;
+  registered_date: string;
+  status: string;
+  user_count: number;
+  rules_count: number;
+}
+
+export interface B2BKingUser {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  company: string;
+  position: string;
+  groups: number[];
+  registration_date: string;
+  last_login: string;
+  approved: boolean;
+  vat_number?: string;
+}
+
+export interface B2BKingRule {
+  id: number;
+  name: string;
+  type: string;
+  what: string;
+  who: number[] | string;
+  quantity_value?: number;
+  discount_value?: number;
+  minimum_order?: number;
+  tax_exemption?: boolean;
+  requires_approval?: boolean;
+  requires_login?: boolean;
+}

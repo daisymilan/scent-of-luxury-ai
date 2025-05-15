@@ -12,6 +12,7 @@ export * from './useOrders';
 export * from './useCustomers';
 export * from './useStats';
 export * from './hooks';
+export * from './useB2BKing';
 
 // Export direct access to the MIN API endpoint with correct URL
 export const MIN_API_URL = 'https://staging.min.com/int';
@@ -25,5 +26,11 @@ export const WOO_API_ENDPOINTS = {
   PRODUCTS: `${WOO_API_BASE_URL}/products`,
   ORDERS: `${WOO_API_BASE_URL}/orders`,
   CUSTOMERS: `${WOO_API_BASE_URL}/customers`,
-  PRODUCT_VARIATIONS: (productId: number) => `${WOO_API_BASE_URL}/products/${productId}/variations`
+  PRODUCT_VARIATIONS: (productId: number) => `${WOO_API_BASE_URL}/products/${productId}/variations`,
+  B2BKING: {
+    GROUPS: `${WOO_API_BASE_URL}/b2bking/groups`,
+    USERS: `${WOO_API_BASE_URL}/b2bking/users`,
+    RULES: `${WOO_API_BASE_URL}/b2bking/rules`,
+  }
 };
+

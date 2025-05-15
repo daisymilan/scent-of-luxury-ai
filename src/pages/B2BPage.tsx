@@ -1,8 +1,10 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import DashboardHeader from '@/components/DashboardHeader';
 import B2BLeadGeneration from '@/components/B2BLeadGeneration';
 import N8nConfig from '@/components/N8nConfig';
+import B2BKingDashboard from '@/components/b2b/B2BKingDashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { WooCustomer, WooOrder, WooProduct } from '@/lib/mockData';
@@ -132,7 +134,7 @@ const B2BPage = () => {
           <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
             <div>
               <h1 className="text-3xl font-semibold">B2B Management</h1>
-              <p className="text-gray-500">Manage your B2B leads and accounts</p>
+              <p className="text-gray-500">Manage your B2B leads, accounts, and B2BKing integration</p>
             </div>
             <div className="mt-4 sm:mt-0">
               <span className="text-sm text-gray-500 mr-2">Last updated:</span>
@@ -149,6 +151,7 @@ const B2BPage = () => {
             <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
               <TabsList>
                 <TabsTrigger value="leads">Lead Management</TabsTrigger>
+                <TabsTrigger value="b2bking">B2BKing</TabsTrigger>
                 <TabsTrigger value="automation">Automation Config</TabsTrigger>
               </TabsList>
               <TabsContent value="leads">
@@ -157,6 +160,9 @@ const B2BPage = () => {
                   wooOrders={orders} 
                   wooProducts={products} 
                 />
+              </TabsContent>
+              <TabsContent value="b2bking">
+                <B2BKingDashboard />
               </TabsContent>
               <TabsContent value="automation">
                 <N8nConfig />

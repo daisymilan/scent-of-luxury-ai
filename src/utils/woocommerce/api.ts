@@ -17,6 +17,10 @@ export * from './orderApi';
 // Re-export customer-related API functions
 export * from './customerApi';
 
+// Re-export B2BKing-related API functions
+export * from './b2bkingApi';
+
 // Re-export testWooCommerceConnection from config.ts with a specific name
 // This ensures we don't have conflicts with the one from apiClient.ts
 export { testWooCommerceConnection } from './config';
+
