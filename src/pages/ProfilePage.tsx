@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 
 const ProfilePage = () => {
-  const { user, userRole } = useAuth();
+  const { currentUser, userRole, isCEO } = useAuth();
   const [loading, setLoading] = useState(true);
   
   const [userInfo, setUserInfo] = useState({
@@ -31,17 +31,26 @@ const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ ...userInfo });
 
+  // Log auth information to help debug
+  useEffect(() => {
+    console.log("ProfilePage - Current user:", currentUser);
+    console.log("ProfilePage - User role from context:", userRole);
+    console.log("ProfilePage - Is CEO function:", typeof isCEO === 'function' ? isCEO() : 'not available');
+  }, [currentUser, userRole, isCEO]);
+
   // Fetch the complete user data from Supabase
   useEffect(() => {
     const fetchUserData = async () => {
-      if (!user?.id) return;
+      if (!currentUser?.id) return;
       
       try {
         setLoading(true);
+        console.log("Fetching user data for ID:", currentUser.id);
+        
         const { data, error } = await supabase
           .from('users')
           .select('*')
-          .eq('id', user.id)
+          .eq('id', currentUser.id)
           .single();
 
         if (error) {
@@ -52,31 +61,52 @@ const ProfilePage = () => {
 
         console.log("User data from Supabase:", data);
         
+        // IMPORTANT: Priority order for role:
+        // 1. Auth context userRole (most reliable source)
+        // 2. Database role
+        // 3. User metadata role
+        // 4. Default to "Guest"
+        const effectiveRole = userRole || data?.role || currentUser?.user_metadata?.role || "Guest";
+        console.log("Determined effective role:", effectiveRole);
+        
+        // If the database role doesn't match our effective role, update it
+        if (data && data.role !== effectiveRole && effectiveRole !== "Guest") {
+          console.log("Updating database role to match context role:", effectiveRole);
+          try {
+            await supabase
+              .from('users')
+              .update({ role: effectiveRole })
+              .eq('id', currentUser.id);
+          } catch (err) {
+            console.error("Failed to sync role to database:", err);
+          }
+        }
+        
         // Update the user info with data from Supabase
         setUserInfo({
-          name: `${data.first_name || ''} ${data.last_name || ''}`.trim() || "Guest",
-          email: data.email || user?.email || "",
-          role: data.role || userRole || "Guest",
-          department: getDepartmentForRole(data.role || userRole),
-          first_name: data.first_name || "",
-          last_name: data.last_name || "",
-          avatar_url: data.avatar_url || "",
-          voice_enrolled: data.voice_enrolled || false,
-          voice_authenticated: data.voice_authenticated || false,
-          last_voice_auth: data.last_voice_auth ? new Date(data.last_voice_auth) : null
+          name: `${data?.first_name || ''} ${data?.last_name || ''}`.trim() || "Guest",
+          email: data?.email || currentUser?.email || "",
+          role: effectiveRole,
+          department: getDepartmentForRole(effectiveRole),
+          first_name: data?.first_name || "",
+          last_name: data?.last_name || "",
+          avatar_url: data?.avatar_url || "",
+          voice_enrolled: data?.voice_enrolled || false,
+          voice_authenticated: data?.voice_authenticated || false,
+          last_voice_auth: data?.last_voice_auth ? new Date(data.last_voice_auth) : null
         });
         
         setFormData({
-          name: `${data.first_name || ''} ${data.last_name || ''}`.trim() || "Guest",
-          email: data.email || user?.email || "",
-          role: data.role || userRole || "Guest",
-          department: getDepartmentForRole(data.role || userRole),
-          first_name: data.first_name || "",
-          last_name: data.last_name || "",
-          avatar_url: data.avatar_url || "",
-          voice_enrolled: data.voice_enrolled || false,
-          voice_authenticated: data.voice_authenticated || false,
-          last_voice_auth: data.last_voice_auth ? new Date(data.last_voice_auth) : null
+          name: `${data?.first_name || ''} ${data?.last_name || ''}`.trim() || "Guest",
+          email: data?.email || currentUser?.email || "",
+          role: effectiveRole,
+          department: getDepartmentForRole(effectiveRole),
+          first_name: data?.first_name || "",
+          last_name: data?.last_name || "",
+          avatar_url: data?.avatar_url || "",
+          voice_enrolled: data?.voice_enrolled || false,
+          voice_authenticated: data?.voice_authenticated || false,
+          last_voice_auth: data?.last_voice_auth ? new Date(data.last_voice_auth) : null
         });
       } catch (err) {
         console.error("Exception fetching user data:", err);
@@ -87,7 +117,7 @@ const ProfilePage = () => {
     };
 
     fetchUserData();
-  }, [user, userRole]);
+  }, [currentUser, userRole]);
 
   function getDepartmentForRole(role?: string): string {
     switch(role) {

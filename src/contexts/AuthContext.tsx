@@ -75,6 +75,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Define CEO email for role verification - replace with your actual CEO email
+  const ceoEmail = "ceo@example.com"; // Replace with actual CEO email
+
   // Fetch user role from users table
   const fetchUserRole = async (userId: string) => {
     try {
@@ -92,11 +95,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log("User role data:", data);
       
-      // Check if the user is you (CEO) by email - customize this check to match your email
-      // This is a fallback mechanism if the database role is incorrect
-      const yourCEOEmail = "your-ceo-email@example.com"; // Replace with your actual email
-      if (data?.email === yourCEOEmail && data?.role !== 'CEO') {
-        console.log("Detected CEO by email but role is incorrect, updating...");
+      // Get user email to check if this is the CEO
+      const userEmail = data?.email || currentUser?.email;
+      console.log("User email for CEO check:", userEmail);
+      
+      // CEO detection: If email matches CEO email OR role is already set to CEO
+      const isCeoUser = (userEmail === ceoEmail || data?.role === 'CEO');
+      
+      if (isCeoUser && data?.role !== 'CEO') {
+        console.log("Detected CEO by criteria, updating...");
         await updateUserRole(userId, 'CEO' as UserRole);
         return 'CEO' as UserRole;
       }
@@ -151,21 +158,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setIsAuthenticated(true);
               setCurrentUser(session.user);
               
-              // Get user role from the users table
-              const role = await fetchUserRole(session.user.id);
-              
-              if (role) {
-                console.log("Setting user role from database:", role);
-                setUserRole(role);
-              } else {
-                // Fallback to metadata if database query fails
-                const metadataRole = session.user.user_metadata?.role;
-                console.log("Setting user role from metadata:", metadataRole);
-                setUserRole((metadataRole as UserRole) || 'User');
+              // Check if user is CEO by email
+              const isCeoByEmail = session.user?.email === ceoEmail;
+              if (isCeoByEmail) {
+                console.log("Setting CEO role based on email match");
+                setUserRole('CEO');
                 
-                // If we had to use metadata, try to persist this role to the database
-                if (metadataRole) {
-                  await updateUserRole(session.user.id, metadataRole as UserRole);
+                // Ensure database is updated with CEO role
+                await updateUserRole(session.user.id, 'CEO');
+              } else {
+                // Get user role from the users table
+                const role = await fetchUserRole(session.user.id);
+                
+                if (role) {
+                  console.log("Setting user role from database:", role);
+                  setUserRole(role);
+                } else {
+                  // Fallback to metadata if database query fails
+                  const metadataRole = session.user.user_metadata?.role;
+                  console.log("Setting user role from metadata:", metadataRole);
+                  setUserRole((metadataRole as UserRole) || 'User');
+                  
+                  // If we had to use metadata, try to persist this role to the database
+                  if (metadataRole) {
+                    await updateUserRole(session.user.id, metadataRole as UserRole);
+                  }
                 }
               }
             } else {
@@ -192,21 +209,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsAuthenticated(true);
           setCurrentUser(session.user);
           
-          // Get user role from database
-          const role = await fetchUserRole(session.user.id);
-          
-          if (role) {
-            console.log("Setting initial user role from database:", role);
-            setUserRole(role);
-          } else {
-            // Fallback to metadata if database query fails
-            const metadataRole = session.user.user_metadata?.role;
-            console.log("Setting initial user role from metadata:", metadataRole);
-            setUserRole((metadataRole as UserRole) || 'User');
+          // Check if user is CEO by email
+          const isCeoByEmail = session.user?.email === ceoEmail;
+          if (isCeoByEmail) {
+            console.log("Setting CEO role based on email match");
+            setUserRole('CEO');
             
-            // If we had to use metadata, try to persist this role to the database
-            if (metadataRole) {
-              await updateUserRole(session.user.id, metadataRole as UserRole);
+            // Ensure database is updated with CEO role
+            await updateUserRole(session.user.id, 'CEO');
+          } else {
+            // Get user role from database
+            const role = await fetchUserRole(session.user.id);
+            
+            if (role) {
+              console.log("Setting initial user role from database:", role);
+              setUserRole(role);
+            } else {
+              // Fallback to metadata if database query fails
+              const metadataRole = session.user.user_metadata?.role;
+              console.log("Setting initial user role from metadata:", metadataRole);
+              setUserRole((metadataRole as UserRole) || 'User');
+              
+              // If we had to use metadata, try to persist this role to the database
+              if (metadataRole) {
+                await updateUserRole(session.user.id, metadataRole as UserRole);
+              }
             }
           }
           
@@ -260,30 +287,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAuthenticated(true);
         setCurrentUser(data.user);
         
-        // Directly fetch user role to ensure we have the latest data
-        const userRole = await fetchUserRole(data.user?.id);
-        
-        if (userRole) {
-          console.log("Setting user role after login:", userRole);
-          setUserRole(userRole);
-        } else {
-          // Fallback to metadata if database query fails
-          const metadataRole = data.user?.user_metadata?.role || 'User';
-          console.log("Setting user role from metadata after login:", metadataRole);
-          setUserRole(metadataRole as UserRole);
+        // Check if this is CEO by email
+        if (email === ceoEmail) {
+          console.log("CEO email detected, setting role to CEO");
+          setUserRole('CEO');
           
-          // If we had to use metadata, try to persist this role to the database
+          // Update database with CEO role
           if (data.user) {
-            await updateUserRole(data.user.id, metadataRole as UserRole);
+            await updateUserRole(data.user.id, 'CEO');
           }
-        }
-        
-        // Check if this is the CEO's email and force role update if needed
-        const yourCEOEmail = "your-ceo-email@example.com"; // Replace with your actual email
-        if (email === yourCEOEmail && userRole !== 'CEO' && data.user) {
-          console.log("CEO email detected, forcing role update");
-          await updateUserRole(data.user.id, 'CEO' as UserRole);
-          setUserRole('CEO' as UserRole);
+        } else {
+          // Directly fetch user role to ensure we have the latest data
+          const userRole = await fetchUserRole(data.user?.id);
+          
+          if (userRole) {
+            console.log("Setting user role after login:", userRole);
+            setUserRole(userRole);
+          } else {
+            // Fallback to metadata if database query fails
+            const metadataRole = data.user?.user_metadata?.role || 'User';
+            console.log("Setting user role from metadata after login:", metadataRole);
+            setUserRole(metadataRole as UserRole);
+            
+            // If we had to use metadata, try to persist this role to the database
+            if (data.user) {
+              await updateUserRole(data.user.id, metadataRole as UserRole);
+            }
+          }
         }
         
         // Navigate after state is updated
@@ -487,14 +517,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     logout,
     signup: async (email: string, password: string, role?: UserRole) => {
-      // Simplified for this fix - retain core functionality
-      console.log("Signup called but not implemented fully in this hotfix");
-      return false;
+      // Check if this is CEO by email
+      if (email === ceoEmail) {
+        role = 'CEO';
+      }
+      return signup(email, password, role);
     },
     register: async (email: string, password: string, role?: UserRole) => {
-      // Simplified for this fix - retain core functionality
-      console.log("Register called but not implemented fully in this hotfix");
-      return false;
+      // Check if this is CEO by email 
+      if (email === ceoEmail) {
+        role = 'CEO';
+      }
+      return signup(email, password, role);
     },
     currentUser,
     user: currentUser, 
@@ -511,17 +545,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!isAuthenticated || !userRole) return false;
       
       // CEO has access to everything
-      if (userRole === 'CEO') return true;
-      
-      if (Array.isArray(requiredRole)) {
-        return requiredRole.includes(userRole);
+      if (userRole === 'CEO') {
+        console.log("hasPermission granted: user is CEO");
+        return true;
       }
       
-      return userRole === requiredRole;
+      if (Array.isArray(requiredRole)) {
+        const hasRole = requiredRole.includes(userRole);
+        console.log(`hasPermission check (array): ${hasRole ? 'granted' : 'denied'} for role ${userRole} in required roles ${requiredRole}`);
+        return hasRole;
+      }
+      
+      const hasRole = userRole === requiredRole;
+      console.log(`hasPermission check (single): ${hasRole ? 'granted' : 'denied'} for role ${userRole} === required role ${requiredRole}`);
+      return hasRole;
     },
     loading,
     isCEO: (): boolean => {
-      return userRole === 'CEO';
+      const isCeo = userRole === 'CEO';
+      console.log(`isCEO function called, result: ${isCeo}, current userRole: ${userRole}`);
+      return isCeo;
     },
     updateUserRole
   };
