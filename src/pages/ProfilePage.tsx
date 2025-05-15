@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { UserRole } from "@/contexts/AuthContext"; // Import UserRole type
 
 const ProfilePage = () => {
   const { currentUser, userRole, isCEO } = useAuth();
@@ -18,14 +19,14 @@ const ProfilePage = () => {
   const [userInfo, setUserInfo] = useState({
     name: "",
     email: "",
-    role: "",
+    role: "" as UserRole | null, // Cast to UserRole or null
     department: "",
     first_name: "",
     last_name: "",
     avatar_url: "",
     voice_enrolled: false,
     voice_authenticated: false,
-    last_voice_auth: null
+    last_voice_auth: null as Date | null
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -66,33 +67,30 @@ const ProfilePage = () => {
         // 1. Auth context userRole (most reliable source)
         // 2. User metadata role (set during registration/login)
         // 3. Database role (for persistence)
-        // 4. Default to "Guest" only if all others are null/undefined
+        // 4. Default to null if all others are null/undefined
         
         // First check if we have the role in the auth context
         let effectiveRole = userRole;
         
         // If not in auth context, try user metadata
         if (!effectiveRole && currentUser?.user_metadata?.role) {
-          effectiveRole = currentUser.user_metadata.role;
+          // Ensure it's a valid UserRole value
+          const metadataRole = currentUser.user_metadata.role as UserRole;
+          effectiveRole = metadataRole;
           console.log("Using role from user metadata:", effectiveRole);
         }
         
         // If still not found, try database
         if (!effectiveRole && data?.role) {
-          effectiveRole = data.role;
+          // Cast to UserRole if it's a valid role string
+          effectiveRole = data.role as UserRole;
           console.log("Using role from database:", effectiveRole);
-        }
-        
-        // If still no role, use default
-        if (!effectiveRole) {
-          effectiveRole = "Guest";
-          console.log("No role found, defaulting to:", effectiveRole);
         }
         
         console.log("Determined effective role:", effectiveRole);
         
         // If the database role doesn't match our effective role, update it
-        if (data && data.role !== effectiveRole && effectiveRole !== "Guest") {
+        if (data && data.role !== effectiveRole && effectiveRole) {
           console.log("Updating database role to match:", effectiveRole);
           try {
             await supabase
@@ -121,7 +119,7 @@ const ProfilePage = () => {
         setFormData({
           name: `${data?.first_name || ''} ${data?.last_name || ''}`.trim() || "Guest User",
           email: data?.email || currentUser?.email || "",
-          role: effectiveRole, 
+          role: effectiveRole,
           department: getDepartmentForRole(effectiveRole),
           first_name: data?.first_name || "",
           last_name: data?.last_name || "",
@@ -141,7 +139,9 @@ const ProfilePage = () => {
     fetchUserData();
   }, [currentUser, userRole]);
 
-  function getDepartmentForRole(role?: string): string {
+  function getDepartmentForRole(role?: UserRole | null): string {
+    if (!role) return '';
+    
     switch(role) {
       case 'CEO':
       case 'CCO':
@@ -270,7 +270,7 @@ const ProfilePage = () => {
                   <AvatarFallback className="text-2xl bg-primary text-white">{getInitials()}</AvatarFallback>
                 </Avatar>
                 <h2 className="text-xl font-semibold">{userInfo.name}</h2>
-                <p className="text-gray-500">{userInfo.role}</p>
+                <p className="text-gray-500">{userInfo.role || "Guest"}</p>
                 <p className="text-sm text-gray-400 mb-4">{userInfo.department}</p>
                 
                 <div className="w-full mt-4">
@@ -325,7 +325,7 @@ const ProfilePage = () => {
                     <Input 
                       id="role"
                       name="role"
-                      value={isEditing ? formData.role : userInfo.role}
+                      value={isEditing ? formData.role || "" : userInfo.role || ""}
                       onChange={handleInputChange}
                       disabled={!isEditing}
                     />
@@ -397,3 +397,4 @@ const ProfilePage = () => {
 };
 
 export default ProfilePage;
+
