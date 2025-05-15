@@ -133,7 +133,7 @@ const ProductDetail = () => {
                 {product.images && product.images[0] && (
                   <img 
                     src={product.images[0].src} 
-                    alt={product.images[0].alt || product.name} 
+                    alt={product.name} 
                     className="w-full h-48 object-cover rounded-md"
                   />
                 )}
@@ -173,7 +173,7 @@ const ProductDetail = () => {
                 {variation.image && (
                   <img 
                     src={variation.image.src} 
-                    alt={variation.image.alt || 'Product variation'} 
+                    alt="Product variation" 
                     className="w-full h-48 object-cover rounded-md"
                   />
                 )}

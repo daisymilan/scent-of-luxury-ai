@@ -1,13 +1,10 @@
 
-// Empty mock data types for compatibility
-// This file exists to provide type definitions only
+// Mock data types that are compatible with our WooCommerce API types
 
-export interface WooOrder {
-  id: number;
-  customer_id: number;
-  date_created: string;
-  status: string;
-  total: string;
+import { WooOrder as ApiWooOrder, WooCustomer as ApiWooCustomer, WooProduct as ApiWooProduct } from '@/utils/woocommerce/types';
+
+// Make the mock types extend and be compatible with the API types
+export interface WooOrder extends Omit<ApiWooOrder, 'billing' | 'line_items'> {
   billing: {
     first_name: string;
     last_name: string;
@@ -15,44 +12,42 @@ export interface WooOrder {
     email: string;
     city?: string;
     country?: string;
+    // Add other fields to ensure compatibility
+    address_1?: string;
+    address_2?: string;
+    state?: string;
+    postcode?: string;
+    phone?: string;
   };
   line_items: Array<{
     name: string;
     price?: number | string;
     quantity?: number;
     total?: number | string;
+    id?: number;
+    product_id?: number;
   }>;
 }
 
-export interface WooCustomer {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  orders_count?: number;
-  total_spent?: string;
+export interface WooCustomer extends Omit<ApiWooCustomer, 'billing'> {
   billing?: {
     company?: string;
     email?: string;
     city?: string;
     country?: string;
+    // Add other fields to ensure compatibility
+    first_name?: string;
+    last_name?: string;
+    address_1?: string;
+    address_2?: string;
+    state?: string;
+    postcode?: string;
+    phone?: string;
   };
-  meta_data?: Array<{
-    key: string;
-    value: string;
-  }>;
 }
 
-export interface WooProduct {
-  id: number;
-  name: string;
-  price: string;
-  regular_price: string;
+export interface WooProduct extends Omit<ApiWooProduct, 'sale_price'> {
   sale_price: string;
-  sku?: string;
-  images: Array<{
-    src: string;
-  }>;
 }
 
 // Empty SEO performance data structure

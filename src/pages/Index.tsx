@@ -183,8 +183,8 @@ const Index = () => {
         
         {activeTab === 'carts' && (
           <AbandonedCartRecovery 
-            wooOrders={abandonedOrders}
-            wooProducts={products || []}
+            wooOrders={abandonedOrders as any[]}
+            wooProducts={products as any[]}
             wooCustomers={customers || []}
           />
         )}
