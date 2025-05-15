@@ -31,10 +31,11 @@ const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ ...userInfo });
 
-  // Log auth information to help debug
+  // Enhanced logging to help debug auth issues
   useEffect(() => {
     console.log("ProfilePage - Current user:", currentUser);
     console.log("ProfilePage - User role from context:", userRole);
+    console.log("ProfilePage - User metadata:", currentUser?.user_metadata);
     console.log("ProfilePage - Is CEO function:", typeof isCEO === 'function' ? isCEO() : 'not available');
   }, [currentUser, userRole, isCEO]);
 
@@ -61,17 +62,38 @@ const ProfilePage = () => {
 
         console.log("User data from Supabase:", data);
         
-        // IMPORTANT: Priority order for role:
+        // CRITICAL FIX: Priority order for role determination
         // 1. Auth context userRole (most reliable source)
-        // 2. Database role
-        // 3. User metadata role
-        // 4. Default to "Guest"
-        const effectiveRole = userRole || data?.role || currentUser?.user_metadata?.role || "Guest";
+        // 2. User metadata role (set during registration/login)
+        // 3. Database role (for persistence)
+        // 4. Default to "Guest" only if all others are null/undefined
+        
+        // First check if we have the role in the auth context
+        let effectiveRole = userRole;
+        
+        // If not in auth context, try user metadata
+        if (!effectiveRole && currentUser?.user_metadata?.role) {
+          effectiveRole = currentUser.user_metadata.role;
+          console.log("Using role from user metadata:", effectiveRole);
+        }
+        
+        // If still not found, try database
+        if (!effectiveRole && data?.role) {
+          effectiveRole = data.role;
+          console.log("Using role from database:", effectiveRole);
+        }
+        
+        // If still no role, use default
+        if (!effectiveRole) {
+          effectiveRole = "Guest";
+          console.log("No role found, defaulting to:", effectiveRole);
+        }
+        
         console.log("Determined effective role:", effectiveRole);
         
         // If the database role doesn't match our effective role, update it
         if (data && data.role !== effectiveRole && effectiveRole !== "Guest") {
-          console.log("Updating database role to match context role:", effectiveRole);
+          console.log("Updating database role to match:", effectiveRole);
           try {
             await supabase
               .from('users')
@@ -82,9 +104,9 @@ const ProfilePage = () => {
           }
         }
         
-        // Update the user info with data from Supabase
+        // Update the user info with data from Supabase and our determined role
         setUserInfo({
-          name: `${data?.first_name || ''} ${data?.last_name || ''}`.trim() || "Guest",
+          name: `${data?.first_name || ''} ${data?.last_name || ''}`.trim() || "Guest User",
           email: data?.email || currentUser?.email || "",
           role: effectiveRole,
           department: getDepartmentForRole(effectiveRole),
@@ -97,9 +119,9 @@ const ProfilePage = () => {
         });
         
         setFormData({
-          name: `${data?.first_name || ''} ${data?.last_name || ''}`.trim() || "Guest",
+          name: `${data?.first_name || ''} ${data?.last_name || ''}`.trim() || "Guest User",
           email: data?.email || currentUser?.email || "",
-          role: effectiveRole,
+          role: effectiveRole, 
           department: getDepartmentForRole(effectiveRole),
           first_name: data?.first_name || "",
           last_name: data?.last_name || "",
@@ -157,7 +179,7 @@ const ProfilePage = () => {
           role: formData.role,
           avatar_url: formData.avatar_url
         })
-        .eq('id', currentUser?.id); // Fix: Changed 'user?.id' to 'currentUser?.id'
+        .eq('id', currentUser?.id);
         
       if (error) {
         console.error("Error updating user:", error);
