@@ -11,7 +11,7 @@ interface Category {
 }
 
 interface SEOFiltersProps {
-  categories: Category[];
+  categories: Category[] | null | undefined;
   selectedCategory: string;
   searchQuery: string;
   onCategoryChange: (value: string) => void;
@@ -37,9 +37,13 @@ const SEOFilters: React.FC<SEOFiltersProps> = ({
           <SelectContent>
             <SelectGroup>
               <SelectItem value="all">All Categories</SelectItem>
-              {categories.map(category => (
-                <SelectItem key={category.id} value={category.slug}>{category.name}</SelectItem>
-              ))}
+              {categories && categories.length > 0 ? (
+                categories.map(category => (
+                  <SelectItem key={category.id} value={category.slug}>{category.name}</SelectItem>
+                ))
+              ) : (
+                <SelectItem value="loading" disabled>Loading categories...</SelectItem>
+              )}
             </SelectGroup>
           </SelectContent>
         </Select>

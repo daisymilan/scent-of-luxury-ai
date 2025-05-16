@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,6 +9,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { WOO_API_BASE_URL, WOO_API_AUTH_PARAMS } from '@/utils/woocommerce';
 import { useToast } from '@/hooks/use-toast';
+
+// Fallback mock data in case API calls fail
+const fallbackCategories = [
+  { id: 1, name: "Perfumes", slug: "perfumes" },
+  { id: 2, name: "Candles", slug: "candles" },
+  { id: 3, name: "Accessories", slug: "accessories" }
+];
 
 const MarketingPage = () => {
   const [activeTab, setActiveTab] = useState('seo');
@@ -22,7 +30,7 @@ const MarketingPage = () => {
   console.log("MarketingPage - combined isCEO result:", isCEO);
 
   // Fetch categories for SEO analysis
-  const { data: categories, isLoading: isLoadingCategories } = useQuery({
+  const { data: categories, isLoading: isLoadingCategories, isError: isCategoriesError } = useQuery({
     queryKey: ['wooCategories'],
     queryFn: async () => {
       try {
@@ -44,17 +52,17 @@ const MarketingPage = () => {
         console.error('Error fetching categories:', error);
         toast({
           title: "Data Fetch Error",
-          description: "Could not load category data from WooCommerce.",
+          description: "Could not load category data from WooCommerce. Using fallback data.",
           variant: "destructive",
         });
-        return null;
+        return fallbackCategories; // Return fallback data on error
       }
     },
     staleTime: 30 * 60 * 1000, // 30 minutes
   });
 
   // Fetch products with their AIOSEO metadata for analysis
-  const { data: productsWithSEO, isLoading: isLoadingSEOProducts } = useQuery({
+  const { data: productsWithSEO, isLoading: isLoadingSEOProducts, isError: isProductsError } = useQuery({
     queryKey: ['wooProductsWithAIOSEO'],
     queryFn: async () => {
       try {
@@ -91,16 +99,29 @@ const MarketingPage = () => {
         console.error('Error fetching products with AIOSEO data:', error);
         toast({
           title: "Data Fetch Error",
-          description: "Could not load AIOSEO data from WooCommerce.",
+          description: "Could not load AIOSEO data from WooCommerce. Using demo data.",
           variant: "destructive",
         });
-        return null;
+        
+        // Return minimal mock data
+        return [
+          {
+            id: 1,
+            name: "Sample Product",
+            meta_data: [
+              { key: '_aioseo_seo_score', value: '75' },
+              { key: '_aioseo_title', value: 'Sample SEO Title' }
+            ],
+            categories: [{ id: 1, name: "Perfumes", slug: "perfumes" }]
+          }
+        ];
       }
     },
     staleTime: 15 * 60 * 1000, // 15 minutes
   });
 
   const isLoading = isLoadingCategories || isLoadingSEOProducts;
+  const hasError = isCategoriesError || isProductsError;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -115,7 +136,7 @@ const MarketingPage = () => {
             </div>
             <div className="mt-4 sm:mt-0">
               <span className="text-sm text-gray-500 mr-2">Last updated:</span>
-              <span className="text-sm font-medium">May 12, 2025, {new Date().toLocaleTimeString()}</span>
+              <span className="text-sm font-medium">May 16, 2025, {new Date().toLocaleTimeString()}</span>
             </div>
           </div>
           

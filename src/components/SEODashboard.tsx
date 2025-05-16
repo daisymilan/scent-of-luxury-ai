@@ -11,7 +11,7 @@ import { getScoreColor } from './seo/seoUtils';
 import { SEODashboardProps } from './seo/types';
 
 const SEODashboard: React.FC<SEODashboardProps> = ({ categories, productsWithSEO }) => {
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const { toast } = useToast();
@@ -19,6 +19,8 @@ const SEODashboard: React.FC<SEODashboardProps> = ({ categories, productsWithSEO
   const isCEO = userRole === 'CEO';
   
   console.log("SEODashboard - userRole:", userRole, "isCEO:", isCEO);
+  console.log("Categories:", categories);
+  console.log("Products with SEO:", productsWithSEO);
 
   // Filter products based on selected category and search query
   const filteredProducts = useMemo(() => {
@@ -115,7 +117,7 @@ const SEODashboard: React.FC<SEODashboardProps> = ({ categories, productsWithSEO
           {renderAccessBanner()}
 
           <SEOFilters 
-            categories={categories}
+            categories={categories || []}
             selectedCategory={selectedCategory}
             searchQuery={searchQuery}
             onCategoryChange={handleCategoryChange}
