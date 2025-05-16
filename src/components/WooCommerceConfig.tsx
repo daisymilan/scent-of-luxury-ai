@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, MouseEvent } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -81,7 +82,7 @@ const WooCommerceConfig = () => {
       setIsConfigured(true);
       
       // Test connection immediately
-      handleTest(savedConfig);
+      handleTestWithConfig(savedConfig);
       
       toast({
         title: "Connected to MIN NEW YORK WooCommerce",
@@ -139,7 +140,7 @@ const WooCommerceConfig = () => {
   };
   
   // Test connection with provided config
-  const handleTest = async (testConfig: WooConfigType | null = null) => {
+  const handleTestWithConfig = async (testConfig: WooConfigType | null = null) => {
     setIsTestingConnection(true);
     
     try {
@@ -181,6 +182,12 @@ const WooCommerceConfig = () => {
     } finally {
       setIsTestingConnection(false);
     }
+  };
+  
+  // Button click handler for testing connection
+  const handleTest = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    handleTestWithConfig(null);
   };
   
   // Reset configuration
