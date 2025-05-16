@@ -7,7 +7,9 @@
 import { 
   WOO_API_BASE_URL, 
   WOO_API_VERSION,
-  HARDCODED_WOO_CONFIG
+  HARDCODED_WOO_CONFIG,
+  WooCommerceUIConfig,
+  WooCommerceConfig
 } from './config';
 
 // Re-export everything from the individual files

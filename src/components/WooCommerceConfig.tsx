@@ -25,22 +25,15 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { 
+  WooCommerceConfig as WooConfigType,
   WooCommerceUIConfig, 
-  saveWooCommerceUIConfig, 
-  getWooCommerceUIConfig,
+  saveWooCommerceConfig, 
+  getWooCommerceConfig,
   HARDCODED_WOO_CONFIG,
   useWooProducts,
   useWooOrders,
   testWooCommerceConnection
 } from '@/utils/woocommerce';
-
-// We need to create a type for backward compatibility
-interface WooCommerceConfig {
-  url: string;
-  consumerKey: string;
-  consumerSecret: string;
-  version: string;
-}
 
 const WooCommerceConfig = () => {
   const { toast } = useToast();
@@ -52,11 +45,17 @@ const WooCommerceConfig = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [config, setConfig] = useState<WooCommerceConfig>({
+  const [config, setConfig] = useState<WooConfigType>({
     url: '',
     consumerKey: '',
     consumerSecret: '',
-    version: '3'
+    version: '3',
+    features: {
+      productsEnabled: true,
+      ordersEnabled: true,
+      customersEnabled: true,
+      b2bkingEnabled: false
+    }
   });
   
   // Real data hooks instead of mock data
@@ -71,32 +70,23 @@ const WooCommerceConfig = () => {
   // Check for existing config
   useEffect(() => {
     // Check for hardcoded config first
-    const savedConfig = getWooCommerceUIConfig();
+    const savedConfig = getWooCommerceConfig();
     if (savedConfig) {
-      if (savedConfig === HARDCODED_WOO_CONFIG) {
-        // Using hardcoded credentials - mask them for display
-        setConfig({
-          ...savedConfig,
-          consumerKey: savedConfig.consumerKey.substring(0, 10) + '...',
-          consumerSecret: savedConfig.consumerSecret.substring(0, 10) + '...'
-        });
-        setIsConfigured(true);
-        
-        // Test connection immediately
-        handleTest(savedConfig);
-        
-        toast({
-          title: "Connected to MIN NEW YORK WooCommerce",
-          description: "Using the official Min.com store API credentials",
-        });
-      } else {
-        // Using localStorage config
-        setConfig(savedConfig);
-        setIsConfigured(true);
-        
-        // Test connection immediately
-        handleTest(savedConfig);
-      }
+      // If using hardcoded credentials, mask them for display
+      setConfig({
+        ...savedConfig,
+        consumerKey: savedConfig.consumerKey.substring(0, 10) + '...',
+        consumerSecret: savedConfig.consumerSecret.substring(0, 10) + '...'
+      });
+      setIsConfigured(true);
+      
+      // Test connection immediately
+      handleTest(savedConfig);
+      
+      toast({
+        title: "Connected to MIN NEW YORK WooCommerce",
+        description: "Using the official Min.com store API credentials",
+      });
     }
   }, [toast]);
   
@@ -136,7 +126,7 @@ const WooCommerceConfig = () => {
     }
     
     // Save config to localStorage
-    saveWooCommerceUIConfig(config);
+    saveWooCommerceConfig(config);
     setIsConfigured(true);
     
     setShowSuccess(true);
@@ -149,39 +139,25 @@ const WooCommerceConfig = () => {
   };
   
   // Test connection with provided config
-  const handleTest = async (testConfig = null) => {
+  const handleTest = async (testConfig: WooConfigType | null = null) => {
     setIsTestingConnection(true);
     
     try {
       // Get actual config for testing (not the display version with hidden credentials)
-      const configToTest = testConfig || HARDCODED_WOO_CONFIG || getWooCommerceUIConfig();
+      const configToTest = testConfig || HARDCODED_WOO_CONFIG || getWooCommerceConfig();
       
       if (!configToTest) {
         throw new Error("No configuration found");
       }
       
-      // Attempt to make a simple request to test the connection - use products endpoint
-      const endpointUrl = `${configToTest.url}/wp-json/wc/v${configToTest.version}/products?per_page=1`;
-      const queryParams = `consumer_key=${configToTest.consumerKey}&consumer_secret=${configToTest.consumerSecret}`;
+      // Use the testWooCommerceConnection function instead of direct API call
+      const connected = await testWooCommerceConnection();
       
-      console.log(`Testing connection to: ${endpointUrl}?${queryParams}`);
-      
-      const response = await fetch(
-        `${endpointUrl}?${queryParams}`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          cache: 'no-store'
-        }
-      );
-      
-      if (!response.ok) {
-        throw new Error(`API test failed: ${response.status} ${response.statusText}`);
+      if (!connected) {
+        throw new Error("Connection test failed");
       }
       
-      const data = await response.json();
-      console.log('Connection test successful:', data);
+      console.log('Connection test successful');
       
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 5000);
@@ -223,7 +199,13 @@ const WooCommerceConfig = () => {
       url: '',
       consumerKey: '',
       consumerSecret: '',
-      version: '3'
+      version: '3',
+      features: {
+        productsEnabled: true,
+        ordersEnabled: true,
+        customersEnabled: true,
+        b2bkingEnabled: false
+      }
     });
     setIsConfigured(false);
     
