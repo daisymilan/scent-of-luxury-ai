@@ -3,37 +3,24 @@
  * Shared Hooks and Contexts for WooCommerce Data
  */
 import React, { createContext, useContext, useState } from "react";
-import { WOO_API_BASE_URL } from "./index";
-import { WooCommerceConfig, getWooCommerceConfig } from "./config";
+import apiClient from '@/lib/apiClient';
 import { WooProduct, WooProductVariation, WooOrder, WooCustomer } from "./types";
 import { useQuery } from '@tanstack/react-query';
 
-// Authentication parameters builder function
-export const getWooAuthParams = (config?: WooCommerceConfig): string => {
-  const wooConfig = config || getWooCommerceConfig();
-  if (!wooConfig) return '';
-  
-  return `consumer_key=${wooConfig.consumerKey}&consumer_secret=${wooConfig.consumerSecret}`;
-};
-
-// We'll remove this export to avoid conflicts with config.ts
-// and use the one from config.ts consistently
-// export const WOO_API_AUTH_PARAMS = getWooAuthParams();
-
-// WooCommerce Context for sharing config and auth state
+// WooCommerce Context for sharing connection state
 export const WooCommerceContext = createContext<{
-  isConfigured: boolean;
-  setIsConfigured: (value: boolean) => void;
+  isConnected: boolean;
+  setIsConnected: (value: boolean) => void;
 }>({
-  isConfigured: false,
-  setIsConfigured: () => {}
+  isConnected: false,
+  setIsConnected: () => {}
 });
 
 export const WooCommerceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isConfigured, setIsConfigured] = useState<boolean>(!!getWooCommerceConfig());
+  const [isConnected, setIsConnected] = useState<boolean>(false);
   
   return (
-    <WooCommerceContext.Provider value={{ isConfigured, setIsConfigured }}>
+    <WooCommerceContext.Provider value={{ isConnected, setIsConnected }}>
       {children}
     </WooCommerceContext.Provider>
   );
@@ -41,21 +28,15 @@ export const WooCommerceProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
 export const useWooCommerce = () => useContext(WooCommerceContext);
 
-// Add additional hooks needed by ProductDetail component
+// Add additional hooks needed by components
 export const useWooProduct = (productId: number | null) => {
   return useQuery({
     queryKey: ['product', productId],
     queryFn: async () => {
       if (!productId) return null;
       
-      const authParams = getWooAuthParams();
-      const response = await fetch(`${WOO_API_BASE_URL}/products/${productId}?${authParams}`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch product: ${response.statusText}`);
-      }
-      
-      return await response.json() as WooProduct;
+      const response = await apiClient.get(`/woocommerce/products/${productId}`);
+      return response.data as WooProduct;
     },
     enabled: !!productId
   });
@@ -67,14 +48,8 @@ export const useWooProductVariation = (productId: number | null, variationId: nu
     queryFn: async () => {
       if (!productId || !variationId) return null;
       
-      const authParams = getWooAuthParams();
-      const response = await fetch(`${WOO_API_BASE_URL}/products/${productId}/variations/${variationId}?${authParams}`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch product variation: ${response.statusText}`);
-      }
-      
-      return await response.json() as WooProductVariation;
+      const response = await apiClient.get(`/woocommerce/products/${productId}/variations/${variationId}`);
+      return response.data as WooProductVariation;
     },
     enabled: !!productId && !!variationId
   });
@@ -86,14 +61,8 @@ export const useWooOrder = (orderId: number | null) => {
     queryFn: async () => {
       if (!orderId) return null;
       
-      const authParams = getWooAuthParams();
-      const response = await fetch(`${WOO_API_BASE_URL}/orders/${orderId}?${authParams}`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch order: ${response.statusText}`);
-      }
-      
-      return await response.json() as WooOrder;
+      const response = await apiClient.get(`/woocommerce/orders/${orderId}`);
+      return response.data as WooOrder;
     },
     enabled: !!orderId
   });
@@ -105,15 +74,27 @@ export const useWooCustomer = (customerId: number | null) => {
     queryFn: async () => {
       if (!customerId) return null;
       
-      const authParams = getWooAuthParams();
-      const response = await fetch(`${WOO_API_BASE_URL}/customers/${customerId}?${authParams}`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch customer: ${response.statusText}`);
-      }
-      
-      return await response.json() as WooCustomer;
+      const response = await apiClient.get(`/woocommerce/customers/${customerId}`);
+      return response.data as WooCustomer;
     },
     enabled: !!customerId
+  });
+};
+
+// Test API connection hook
+export const useApiConnectionTest = () => {
+  return useQuery({
+    queryKey: ['apiConnectionTest'],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get('/woocommerce/test-connection');
+        return response.data.success;
+      } catch (error) {
+        console.error('API connection test failed:', error);
+        return false;
+      }
+    },
+    refetchOnWindowFocus: false,
+    retry: 1
   });
 };

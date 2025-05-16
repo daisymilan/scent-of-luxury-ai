@@ -1,28 +1,28 @@
 
 /**
- * WooCommerce Order API functions
+ * Order API functions - Communicates with our backend
  */
 import { WooOrder } from './types';
-import woo from '@/lib/api';
+import apiClient from '@/lib/apiClient';
 
 // Get a single order by ID
 export const getOrderById = async (orderId: number): Promise<WooOrder> => {
   try {
-    const response = await woo.get(`orders/${orderId}`);
+    const response = await apiClient.get(`/woocommerce/orders/${orderId}`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching WooCommerce order ${orderId}:`, error);
+    console.error(`Error fetching order ${orderId}:`, error);
     throw error;
   }
 };
 
-// Create a new order in WooCommerce
+// Create a new order
 export const createWooOrder = async (order: Partial<WooOrder>): Promise<WooOrder> => {
   try {
-    const response = await woo.post('orders', order);
+    const response = await apiClient.post('/woocommerce/orders', order);
     return response.data;
   } catch (error) {
-    console.error('Error creating WooCommerce order:', error);
+    console.error('Error creating order:', error);
     throw error;
   }
 };
@@ -33,16 +33,13 @@ export const getAllOrders = async (page = 1, perPage = 10): Promise<{
   totalPages: number;
 }> => {
   try {
-    const response = await woo.get('orders', {
+    const response = await apiClient.get('/woocommerce/orders', {
       params: { page, per_page: perPage }
     });
     
-    // Extract total pages from headers
-    const totalPages = parseInt(response.headers['x-wp-totalpages'] || '1', 10);
-    
     return {
-      orders: response.data,
-      totalPages
+      orders: response.data.orders,
+      totalPages: response.data.totalPages
     };
   } catch (error) {
     console.error('Error fetching orders:', error);
@@ -59,7 +56,7 @@ export const updateOrder = async (
   orderData: Partial<WooOrder>
 ): Promise<WooOrder | null> => {
   try {
-    const response = await woo.put(`orders/${id}`, orderData);
+    const response = await apiClient.put(`/woocommerce/orders/${id}`, orderData);
     return response.data;
   } catch (error) {
     console.error(`Error updating order ${id}:`, error);

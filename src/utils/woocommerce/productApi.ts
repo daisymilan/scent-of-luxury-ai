@@ -1,14 +1,14 @@
 
 /**
- * WooCommerce Product API functions
+ * Product API functions - Communicates with our backend
  */
 import { WooProduct, WooProductVariation } from './types';
-import woo from '@/lib/api';
+import apiClient from '@/lib/apiClient';
 
 // Get a product by ID
 export const getProductById = async (id: number): Promise<WooProduct | null> => {
   try {
-    const response = await woo.get(`products/${id}`);
+    const response = await apiClient.get(`/woocommerce/products/${id}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching product ${id}:`, error);
@@ -22,16 +22,13 @@ export const getAllProducts = async (page = 1, perPage = 10): Promise<{
   totalPages: number;
 }> => {
   try {
-    const response = await woo.get('products', {
+    const response = await apiClient.get('/woocommerce/products', {
       params: { page, per_page: perPage }
     });
     
-    // Extract total pages from headers
-    const totalPages = parseInt(response.headers['x-wp-totalpages'] || '1', 10);
-    
     return {
-      products: response.data,
-      totalPages
+      products: response.data.products,
+      totalPages: response.data.totalPages
     };
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -45,7 +42,7 @@ export const getAllProducts = async (page = 1, perPage = 10): Promise<{
 // Get product variations
 export const getProductVariations = async (productId: number): Promise<WooProductVariation[]> => {
   try {
-    const response = await woo.get(`products/${productId}/variations`);
+    const response = await apiClient.get(`/woocommerce/products/${productId}/variations`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching variations for product ${productId}:`, error);
@@ -59,7 +56,7 @@ export const updateProduct = async (
   productData: Partial<WooProduct>
 ): Promise<WooProduct | null> => {
   try {
-    const response = await woo.put(`products/${id}`, productData);
+    const response = await apiClient.put(`/woocommerce/products/${id}`, productData);
     return response.data;
   } catch (error) {
     console.error(`Error updating product ${id}:`, error);

@@ -3,28 +3,28 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ShoppingCart, Zap, Webhook } from 'lucide-react';
 import KpiOverview from '@/components/KpiOverview';
-import { getWooCommerceConfig } from '@/utils/woocommerce';
+import { useApiConnectionTest } from '@/utils/woocommerce/hooks';
 import { getGrokApiConfig } from '@/utils/grokApi';
 import { getN8nConfig } from '@/components/N8nConfig';
 
 const OverviewTab = () => {
-  const isWooConfigured = !!getWooCommerceConfig();
+  const { data: isApiConnected, isLoading } = useApiConnectionTest();
   const isGrokConfigured = !!getGrokApiConfig();
   const isN8nConfigured = !!getN8nConfig();
   
   return (
     <>
-      {isWooConfigured ? (
+      {isApiConnected ? (
         <KpiOverview />
       ) : (
         <Card className="col-span-full">
           <CardHeader>
-            <CardTitle>WooCommerce Integration Required</CardTitle>
+            <CardTitle>Backend API Connection Required</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-gray-500">
-              Please configure WooCommerce integration to see MIN NEW YORK sales data.
-              Go to the Integrations tab to set up your WooCommerce connection.
+              {isLoading ? 'Checking API connection...' : 
+                'Please ensure the backend API server is running and properly configured to connect to WooCommerce.'}
             </p>
           </CardContent>
         </Card>
@@ -42,8 +42,8 @@ const OverviewTab = () => {
                   <ShoppingCart className="h-5 w-5 text-primary mr-2" />
                   <span>MIN NEW YORK WooCommerce</span>
                 </div>
-                <span className={`px-2 py-1 rounded text-xs ${isWooConfigured ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                  {isWooConfigured ? 'Connected' : 'Not Connected'}
+                <span className={`px-2 py-1 rounded text-xs ${isApiConnected ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                  {isLoading ? 'Checking...' : (isApiConnected ? 'Connected' : 'Not Connected')}
                 </span>
               </div>
               

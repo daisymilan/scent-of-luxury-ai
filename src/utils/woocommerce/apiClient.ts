@@ -1,17 +1,16 @@
 
 /**
  * WooCommerce API Client
- * Handles the core API request functionality
+ * Handles the core API request functionality through our backend
  */
-import { WooCommerceConfig, getWooCommerceConfig } from './config';
-import woo from '@/lib/api';
+import apiClient from '@/lib/apiClient';
 
 /**
- * Core function to fetch data from WooCommerce API with retry logic
+ * Core function to fetch data from our backend API (which connects to WooCommerce)
  */
 export const fetchWooCommerceData = async <T,>(
   endpoint: string,
-  config?: WooCommerceConfig
+  params?: Record<string, any>
 ): Promise<T> => {
   // Add proper error handling and retry logic
   const maxRetries = 2;
@@ -20,15 +19,15 @@ export const fetchWooCommerceData = async <T,>(
   
   while (attempt <= maxRetries) {
     try {
-      console.log(`Fetching WooCommerce data (attempt ${attempt + 1}/${maxRetries + 1}): ${endpoint}`);
+      console.log(`Fetching data (attempt ${attempt + 1}/${maxRetries + 1}): ${endpoint}`);
       
-      // Use the woo client directly from our centralized API module
-      const response = await woo.get(endpoint);
+      // Make request to our backend API
+      const response = await apiClient.get(`/woocommerce/${endpoint}`, { params });
       
       console.log(`Successfully fetched data for endpoint: ${endpoint}`);
       return response.data as T;
     } catch (error) {
-      console.error(`WooCommerce API fetch error (attempt ${attempt + 1}/${maxRetries + 1}):`, error);
+      console.error(`API fetch error (attempt ${attempt + 1}/${maxRetries + 1}):`, error);
       lastError = error instanceof Error ? error : new Error(String(error));
       
       // Add a small delay before retrying
@@ -40,18 +39,18 @@ export const fetchWooCommerceData = async <T,>(
     }
   }
   
-  throw lastError || new Error('Failed to fetch WooCommerce data after multiple attempts');
+  throw lastError || new Error('Failed to fetch data after multiple attempts');
 };
 
-// Connection test function - simpler and using our woo client directly
+// Connection test function
 export const testApiConnection = async (): Promise<boolean> => {
   try {
     // Try to fetch a single product to test the connection
-    await woo.get('products?per_page=1');
-    console.log('WooCommerce connection test successful');
+    await apiClient.get('/woocommerce/status');
+    console.log('API connection test successful');
     return true;
   } catch (error) {
-    console.error('WooCommerce connection test failed:', error);
+    console.error('API connection test failed:', error);
     return false;
   }
 };

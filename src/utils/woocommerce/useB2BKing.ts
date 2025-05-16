@@ -1,13 +1,6 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { 
-  getB2BKingGroups, 
-  getB2BKingGroupById,
-  getB2BKingUsers, 
-  getB2BKingUserById,
-  getB2BKingRules,
-  getB2BKingRulesByType
-} from './b2bkingApi';
+import apiClient from '@/lib/apiClient';
 import { B2BKingGroup, B2BKingUser, B2BKingRule } from './types';
 
 // Hook to get all B2BKing groups
@@ -16,8 +9,8 @@ export const useB2BKingGroups = () => {
     queryKey: ['b2bking', 'groups'],
     queryFn: async () => {
       try {
-        const groups = await getB2BKingGroups();
-        return groups || [];
+        const response = await apiClient.get('/woocommerce/b2bking/groups');
+        return response.data || [];
       } catch (error) {
         console.error('Error in useB2BKingGroups hook:', error);
         return [];
@@ -25,7 +18,6 @@ export const useB2BKingGroups = () => {
     },
     retry: 1,
     retryDelay: 1000,
-    // Error handling is done in queryFn instead of using useErrorBoundary
   });
 };
 
@@ -36,7 +28,8 @@ export const useB2BKingGroup = (groupId: number | null) => {
     queryFn: async () => {
       if (!groupId) return null;
       try {
-        return await getB2BKingGroupById(groupId);
+        const response = await apiClient.get(`/woocommerce/b2bking/groups/${groupId}`);
+        return response.data;
       } catch (error) {
         console.error(`Error in useB2BKingGroup hook for group ${groupId}:`, error);
         return null;
@@ -54,8 +47,8 @@ export const useB2BKingUsers = () => {
     queryKey: ['b2bking', 'users'],
     queryFn: async () => {
       try {
-        const users = await getB2BKingUsers();
-        return users || [];
+        const response = await apiClient.get('/woocommerce/b2bking/users');
+        return response.data || [];
       } catch (error) {
         console.error('Error in useB2BKingUsers hook:', error);
         return [];
@@ -73,7 +66,8 @@ export const useB2BKingUser = (userId: number | null) => {
     queryFn: async () => {
       if (!userId) return null;
       try {
-        return await getB2BKingUserById(userId);
+        const response = await apiClient.get(`/woocommerce/b2bking/users/${userId}`);
+        return response.data;
       } catch (error) {
         console.error(`Error in useB2BKingUser hook for user ${userId}:`, error);
         return null;
@@ -91,8 +85,8 @@ export const useB2BKingRules = () => {
     queryKey: ['b2bking', 'rules'],
     queryFn: async () => {
       try {
-        const rules = await getB2BKingRules();
-        return rules || [];
+        const response = await apiClient.get('/woocommerce/b2bking/rules');
+        return response.data || [];
       } catch (error) {
         console.error('Error in useB2BKingRules hook:', error);
         return [];
@@ -110,8 +104,10 @@ export const useB2BKingRulesByType = (type: string | null) => {
     queryFn: async () => {
       if (!type) return [];
       try {
-        const rules = await getB2BKingRulesByType(type);
-        return rules || [];
+        const response = await apiClient.get('/woocommerce/b2bking/rules', {
+          params: { type }
+        });
+        return response.data || [];
       } catch (error) {
         console.error(`Error in useB2BKingRulesByType hook for type ${type}:`, error);
         return [];

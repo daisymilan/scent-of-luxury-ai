@@ -1,14 +1,14 @@
 
 /**
- * WooCommerce Products Hooks
+ * WooCommerce Products Hooks with backend API
  */
 import { useState, useEffect } from 'react';
 import { WooProduct } from './types';
-import { getWooCommerceConfig } from './config';
+import apiClient from '@/lib/apiClient';
 
 export const useWooProducts = (
-  limit: number = 100,  // Increased default limit to get more products
-  page: number = 1,     // Added pagination support
+  limit: number = 100,
+  page: number = 1,
   category?: number,
   searchTerm?: string,
   orderBy: string = 'date',
@@ -21,59 +21,30 @@ export const useWooProducts = (
   const [totalPages, setTotalPages] = useState(0);
   
   useEffect(() => {
-    const config = getWooCommerceConfig();
-    if (!config) return;
-    
     const fetchProducts = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        // Build endpoint with query parameters
-        let endpoint = `products?per_page=${limit}&page=${page}`;
-        if (category) endpoint += `&category=${category}`;
-        if (searchTerm) endpoint += `&search=${encodeURIComponent(searchTerm)}`;
-        if (orderBy) endpoint += `&orderby=${orderBy}`;
-        if (order) endpoint += `&order=${order}`;
+        // Prepare query parameters
+        const params: Record<string, any> = {
+          per_page: limit,
+          page,
+          orderby: orderBy,
+          order
+        };
         
-        // Add authentication parameters directly in the URL
-        const url = new URL(`${config.url}/wp-json/wc/v${config.version}/${endpoint}`);
-        url.searchParams.append('consumer_key', config.consumerKey);
-        url.searchParams.append('consumer_secret', config.consumerSecret);
+        if (category) params.category = category;
+        if (searchTerm) params.search = searchTerm;
         
-        console.log('Fetching products from URL:', url.toString());
+        const response = await apiClient.get('/woocommerce/products', { params });
         
-        const response = await fetch(url.toString(), {
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          cache: 'no-store'
-        });
+        setProducts(response.data.products);
+        setTotalPages(response.data.totalPages);
+        setTotalProducts(response.data.products.length); // In a real API this would come from the response
         
-        // Get total from headers
-        const totalItems = response.headers.get('x-wp-total');
-        const totalPagesHeader = response.headers.get('x-wp-totalpages');
-        
-        if (totalItems) {
-          setTotalProducts(parseInt(totalItems));
-        }
-        
-        if (totalPagesHeader) {
-          setTotalPages(parseInt(totalPagesHeader));
-        }
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('API error response:', errorText);
-          throw new Error(`API error: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log(`Fetched ${data.length} products successfully`);
-        setProducts(data);
       } catch (err) {
         console.error('Error fetching products:', err);
-        setError(err as Error);
+        setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
         setIsLoading(false);
       }
@@ -92,64 +63,21 @@ export const useAllWooProducts = () => {
   const [error, setError] = useState<Error | null>(null);
   
   useEffect(() => {
-    const config = getWooCommerceConfig();
-    if (!config) return;
-    
     const fetchAllProducts = async () => {
       setIsLoading(true);
       setError(null);
       
       try {
-        // First get total count
-        const countUrl = new URL(`${config.url}/wp-json/wc/v${config.version}/products`);
-        countUrl.searchParams.append('per_page', '1');
-        countUrl.searchParams.append('consumer_key', config.consumerKey);
-        countUrl.searchParams.append('consumer_secret', config.consumerSecret);
-        
-        const countResponse = await fetch(countUrl.toString(), {
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          }
+        // Get products with a large per_page to get as many as possible in one request
+        const response = await apiClient.get('/woocommerce/products', {
+          params: { per_page: 100 } // Maximum allowed by many APIs
         });
         
-        if (!countResponse.ok) {
-          const errorText = await countResponse.text();
-          console.error('Count API error response:', errorText);
-          throw new Error(`API error: ${countResponse.status}`);
-        }
+        setAllProducts(response.data.products);
         
-        const totalHeader = countResponse.headers.get('x-wp-total');
-        const totalCount = totalHeader ? parseInt(totalHeader) : 100;
-        
-        // Then fetch all products in one request with a large per_page
-        const url = new URL(`${config.url}/wp-json/wc/v${config.version}/products`);
-        url.searchParams.append('per_page', totalCount.toString());
-        url.searchParams.append('consumer_key', config.consumerKey);
-        url.searchParams.append('consumer_secret', config.consumerSecret);
-        
-        console.log('Fetching all products from URL:', url.toString());
-        
-        const response = await fetch(url.toString(), {
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          cache: 'no-store'
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Products API error response:', errorText);
-          throw new Error(`API error: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log(`Fetched all ${data.length} products successfully`);
-        setAllProducts(data);
       } catch (err) {
         console.error('Error fetching all products:', err);
-        setError(err as Error);
+        setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
         setIsLoading(false);
       }

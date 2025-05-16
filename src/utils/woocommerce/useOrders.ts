@@ -1,10 +1,10 @@
 
 /**
- * WooCommerce Orders Hooks
+ * WooCommerce Orders Hooks with backend API
  */
 import { useState, useEffect } from 'react';
 import { WooOrder } from './types';
-import { getWooCommerceConfig } from './config';
+import apiClient from '@/lib/apiClient';
 
 export const useWooOrders = (
   limit: number = 10,
@@ -21,59 +21,30 @@ export const useWooOrders = (
   const [totalPages, setTotalPages] = useState(0);
   
   useEffect(() => {
-    const config = getWooCommerceConfig();
-    if (!config) return;
-    
     const fetchOrders = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        // Build endpoint with query parameters
-        let endpoint = `orders?per_page=${limit}&page=${page}`;
-        if (status) endpoint += `&status=${status}`;
-        if (customer) endpoint += `&customer=${customer}`;
-        if (dateAfter) endpoint += `&after=${dateAfter}`;
-        if (dateBefore) endpoint += `&before=${dateBefore}`;
+        // Prepare query parameters
+        const params: Record<string, any> = {
+          per_page: limit,
+          page
+        };
         
-        // Add authentication parameters directly in the URL
-        const url = new URL(`${config.url}/wp-json/wc/v${config.version}/${endpoint}`);
-        url.searchParams.append('consumer_key', config.consumerKey);
-        url.searchParams.append('consumer_secret', config.consumerSecret);
+        if (status) params.status = status;
+        if (customer) params.customer = customer;
+        if (dateAfter) params.after = dateAfter;
+        if (dateBefore) params.before = dateBefore;
         
-        console.log('Fetching orders from URL:', url.toString());
+        const response = await apiClient.get('/woocommerce/orders', { params });
         
-        const response = await fetch(url.toString(), {
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          cache: 'no-store'
-        });
+        setOrders(response.data.orders);
+        setTotalPages(response.data.totalPages);
+        setTotalOrders(response.data.orders.length); // In a real API this would come from the response
         
-        // Get total from headers
-        const totalItems = response.headers.get('x-wp-total');
-        const totalPagesHeader = response.headers.get('x-wp-totalpages');
-        
-        if (totalItems) {
-          setTotalOrders(parseInt(totalItems));
-        }
-        
-        if (totalPagesHeader) {
-          setTotalPages(parseInt(totalPagesHeader));
-        }
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('API error response:', errorText);
-          throw new Error(`API error: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log(`Fetched ${data.length} orders successfully`);
-        setOrders(data);
       } catch (err) {
         console.error('Error fetching orders:', err);
-        setError(err as Error);
+        setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
         setIsLoading(false);
       }
