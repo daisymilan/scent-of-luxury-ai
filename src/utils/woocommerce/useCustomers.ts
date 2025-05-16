@@ -1,10 +1,4 @@
-
-/**
- * WooCommerce Customers Hooks with backend API
- */
 import { useState, useEffect } from 'react';
-import { WooCustomer } from './types';
-import apiClient from '@/lib/apiClient';
 
 export const useWooCustomers = (
   limit: number = 10,
@@ -39,8 +33,14 @@ export const useWooCustomers = (
 
         if (!res.ok) throw new Error('Failed to load customers');
         const data = await res.json();
+
+        if (!Array.isArray(data)) {
+          console.warn('Unexpected customers response format:', data);
+          throw new Error('Unexpected WooCommerce API response format');
+        }
+
         setCustomers(data);
-        setTotalPages(1); // Optional: update if totalPages is returned
+        setTotalPages(1);
         setTotalCustomers(data.length);
       } catch (err) {
         console.error('Error fetching customers:', err);

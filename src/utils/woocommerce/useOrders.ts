@@ -1,10 +1,4 @@
-
-/**
- * WooCommerce Orders Hooks with backend API
- */
 import { useState, useEffect } from 'react';
-import { WooOrder } from './types';
-import apiClient from '@/lib/apiClient';
 
 export const useWooOrders = (
   limit: number = 10,
@@ -42,8 +36,14 @@ export const useWooOrders = (
 
         if (!response.ok) throw new Error('Failed to load orders');
         const data = await response.json();
+
+        if (!Array.isArray(data)) {
+          console.warn('Unexpected orders response format:', data);
+          throw new Error('Unexpected WooCommerce API response format');
+        }
+
         setOrders(data);
-        setTotalPages(1); // update if total pages is known
+        setTotalPages(1);
         setTotalOrders(data.length);
       } catch (err) {
         console.error('Error fetching orders:', err);
