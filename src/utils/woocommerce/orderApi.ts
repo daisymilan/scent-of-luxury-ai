@@ -2,20 +2,14 @@
 /**
  * WooCommerce Order API functions
  */
-import { WooCommerceConfig, getWooCommerceConfig } from './config';
 import { WooOrder } from './types';
-import { fetchWooCommerceData } from './apiClient';
+import woo from '@/lib/api';
 
 // Get a single order by ID
-export const getOrderById = async (
-  orderId: number,
-  config?: WooCommerceConfig
-): Promise<WooOrder> => {
-  const wooConfig = config || getWooCommerceConfig();
-  if (!wooConfig) throw new Error('WooCommerce config not found');
-  
+export const getOrderById = async (orderId: number): Promise<WooOrder> => {
   try {
-    return await fetchWooCommerceData<WooOrder>(`orders/${orderId}`, wooConfig);
+    const response = await woo.get(`orders/${orderId}`);
+    return response.data;
   } catch (error) {
     console.error(`Error fetching WooCommerce order ${orderId}:`, error);
     throw error;
@@ -23,20 +17,52 @@ export const getOrderById = async (
 };
 
 // Create a new order in WooCommerce
-export const createWooOrder = async (
-  order: Partial<WooOrder>,
-  config?: WooCommerceConfig
-): Promise<WooOrder> => {
-  const wooConfig = config || getWooCommerceConfig();
-  if (!wooConfig) throw new Error('WooCommerce config not found');
-  
+export const createWooOrder = async (order: Partial<WooOrder>): Promise<WooOrder> => {
   try {
-    return await fetchWooCommerceData<WooOrder>(
-      'orders',
-      wooConfig
-    );
+    const response = await woo.post('orders', order);
+    return response.data;
   } catch (error) {
     console.error('Error creating WooCommerce order:', error);
     throw error;
+  }
+};
+
+// Get all orders with pagination
+export const getAllOrders = async (page = 1, perPage = 10): Promise<{
+  orders: WooOrder[];
+  totalPages: number;
+}> => {
+  try {
+    const response = await woo.get('orders', {
+      params: { page, per_page: perPage }
+    });
+    
+    // Extract total pages from headers
+    const totalPages = parseInt(response.headers['x-wp-totalpages'] || '1', 10);
+    
+    return {
+      orders: response.data,
+      totalPages
+    };
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    return {
+      orders: [],
+      totalPages: 0
+    };
+  }
+};
+
+// Update an existing order
+export const updateOrder = async (
+  id: number, 
+  orderData: Partial<WooOrder>
+): Promise<WooOrder | null> => {
+  try {
+    const response = await woo.put(`orders/${id}`, orderData);
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating order ${id}:`, error);
+    return null;
   }
 };

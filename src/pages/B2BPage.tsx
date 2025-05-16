@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import DashboardHeader from '@/components/DashboardHeader';
@@ -8,9 +7,8 @@ import B2BKingDashboard from '@/components/b2b/B2BKingDashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { WOO_API_BASE_URL } from '@/utils/woocommerce';
-import { WOO_API_CREDENTIALS, WOO_API_AUTH_PARAMS } from '@/utils/woocommerce/config';
 import { WooCustomer, WooOrder, WooProduct } from '@/utils/woocommerce/types';
+import woo from '@/lib/api';
 
 // Column mapping for B2B leads import
 export const B2BColumnMapping = {
@@ -39,22 +37,13 @@ const B2BPage = () => {
   const [activeTab, setActiveTab] = useState('leads');
   const { toast } = useToast();
 
-  // Fetch customers from WooCommerce API using query parameters
+  // Fetch customers from WooCommerce API using woo client
   const { data: customers, isLoading: isLoadingCustomers } = useQuery({
     queryKey: ['wooCustomers'],
     queryFn: async () => {
       try {
-        const response = await fetch(`${WOO_API_BASE_URL}/customers?per_page=100&${WOO_API_AUTH_PARAMS}`, {
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
-        }
-        
-        return await response.json() as WooCustomer[];
+        const response = await woo.get('/customers', { params: { per_page: 100 } });
+        return response.data as WooCustomer[];
       } catch (error) {
         console.error('Error fetching customers:', error);
         toast({
@@ -72,17 +61,8 @@ const B2BPage = () => {
     queryKey: ['wooOrders'],
     queryFn: async () => {
       try {
-        const response = await fetch(`${WOO_API_BASE_URL}/orders?per_page=100&${WOO_API_AUTH_PARAMS}`, {
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
-        }
-        
-        return await response.json() as WooOrder[];
+        const response = await woo.get('/orders', { params: { per_page: 100 } });
+        return response.data as WooOrder[];
       } catch (error) {
         console.error('Error fetching orders:', error);
         toast({
@@ -100,17 +80,8 @@ const B2BPage = () => {
     queryKey: ['wooProducts'],
     queryFn: async () => {
       try {
-        const response = await fetch(`${WOO_API_BASE_URL}/products?per_page=100&${WOO_API_AUTH_PARAMS}`, {
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
-        }
-        
-        return await response.json() as WooProduct[];
+        const response = await woo.get('/products', { params: { per_page: 100 } });
+        return response.data as WooProduct[];
       } catch (error) {
         console.error('Error fetching products:', error);
         toast({
@@ -122,7 +93,7 @@ const B2BPage = () => {
       }
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
-    gcTime: 1000 * 60 * 30, // 30 minutes - changed from cacheTime to gcTime
+    gcTime: 1000 * 60 * 30, // 30 minutes
   });
 
   const isLoading = isLoadingCustomers || isLoadingOrders || isLoadingProducts;
