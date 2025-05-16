@@ -22,7 +22,7 @@ export const fetchWooCommerceData = async <T,>(
     try {
       console.log(`Fetching WooCommerce data (attempt ${attempt + 1}/${maxRetries + 1}): ${endpoint}`);
       
-      // Use the woo client directly instead of constructing our own fetch call
+      // Use the woo client directly from our centralized API module
       const response = await woo.get(endpoint);
       
       console.log(`Successfully fetched data for endpoint: ${endpoint}`);
@@ -43,11 +43,12 @@ export const fetchWooCommerceData = async <T,>(
   throw lastError || new Error('Failed to fetch WooCommerce data after multiple attempts');
 };
 
-// Renamed from testWooCommerceConnection to avoid conflict with config.ts
-export const testApiConnection = async (config?: WooCommerceConfig): Promise<boolean> => {
+// Connection test function - simpler and using our woo client directly
+export const testApiConnection = async (): Promise<boolean> => {
   try {
     // Try to fetch a single product to test the connection
     await woo.get('products?per_page=1');
+    console.log('WooCommerce connection test successful');
     return true;
   } catch (error) {
     console.error('WooCommerce connection test failed:', error);
