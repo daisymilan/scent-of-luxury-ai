@@ -507,6 +507,20 @@ export const mergeLeadSources = (
   }
 };
 
+export const parseCSVRow = (row: any) => {
+  if (!row.company || !row.email || !row.contact) {
+    return null; // Skip malformed row
+  }
+  return {
+    company: row.company.trim(),
+    contact: row.contact.trim(),
+    email: row.email.trim(),
+    industry: row.industry || '',
+    location: row.location || '',
+    score: parseInt(row.score || '0', 10) || 0
+  };
+};
+
 // ========== Helper Functions ==========
 
 /**

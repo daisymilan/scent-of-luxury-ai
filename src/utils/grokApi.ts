@@ -1,6 +1,3 @@
-
-// This file defines the interfaces and functions for interacting with the Grok API
-
 export interface GrokApiConfig {
   apiKey: string;
   model: string;
@@ -11,62 +8,49 @@ export const DEFAULT_GROK_CONFIG: GrokApiConfig = {
   model: 'grok-1',
 };
 
-// Try to load hardcoded API credentials from environment variables
 const GROK_API_KEY = import.meta.env.VITE_GROK_API_KEY || '';
-const GROK_API_URL = import.meta.env.VITE_GROK_API_URL || '';
+const GROK_API_URL = import.meta.env.VITE_GROK_API_URL || 'https://api.grok.com/v1/chat';
 
-// Create a hardcoded config object if environment variables are available
-export const HARDCODED_GROK_CONFIG: GrokApiConfig | null = GROK_API_KEY ? {
-  apiKey: GROK_API_KEY,
-  model: 'grok-1',
-} : null;
+export const HARDCODED_GROK_CONFIG: GrokApiConfig | null = GROK_API_KEY
+  ? { apiKey: GROK_API_KEY, model: 'grok-1' }
+  : null;
 
-// Save config to localStorage
 export const saveGrokApiConfig = (config: GrokApiConfig): void => {
   localStorage.setItem('grok_api_config', JSON.stringify(config));
 };
 
-// Get config from localStorage or return null if not found
 export const getGrokApiConfig = (): GrokApiConfig | null => {
-  // First check for hardcoded credentials
-  if (HARDCODED_GROK_CONFIG) {
-    return HARDCODED_GROK_CONFIG;
-  }
-  
-  // Then try to load from localStorage
-  const savedConfig = localStorage.getItem('grok_api_config');
-  if (savedConfig) {
+  if (HARDCODED_GROK_CONFIG) return HARDCODED_GROK_CONFIG;
+
+  const saved = localStorage.getItem('grok_api_config');
+  if (saved) {
     try {
-      return JSON.parse(savedConfig);
-    } catch (error) {
-      console.error('Error parsing saved Grok API config:', error);
-      return null;
+      return JSON.parse(saved);
+    } catch (e) {
+      console.error('Failed to parse saved Grok config:', e);
     }
   }
   return null;
 };
 
-// Call Grok API with a prompt
 export const callGrokApi = async (prompt: string): Promise<string> => {
   const config = getGrokApiConfig();
-  if (!config || !config.apiKey) {
-    throw new Error('Grok API configuration not found');
-  }
+  if (!config?.apiKey) throw new Error('Grok API configuration not found');
 
   try {
-    const apiUrl = GROK_API_URL || 'https://api.grok.com/v1/chat';
-    const response = await fetch(apiUrl, {
+    const res = await fetch(GROK_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.apiKey}`,
+        Authorization: `Bearer ${config.apiKey}`,
       },
       body: JSON.stringify({
         model: config.model,
         messages: [
           {
             role: 'system',
-            content: 'You are a business intelligence assistant that helps analyze data and provide insights for a WooCommerce store. Be concise and focused. Provide specific, actionable recommendations when possible.'
+            content:
+              'You are a business intelligence assistant that helps analyze data and provide insights for a WooCommerce store. Be concise and focused. Provide specific, actionable recommendations when possible.'
           },
           {
             role: 'user',
@@ -76,16 +60,32 @@ export const callGrokApi = async (prompt: string): Promise<string> => {
       })
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Grok API error response:', response.status, errorText);
-      throw new Error(`Grok API error: ${response.status} ${response.statusText}`);
+    if (!res.ok) {
+      const text = await res.text();
+      console.error('Grok API Error:', res.status, text);
+      throw new Error(`Grok API error: ${res.status} ${res.statusText}`);
     }
 
-    const data = await response.json();
-    return data.choices[0].message.content;
-  } catch (error) {
-    console.error('Error calling Grok API:', error);
-    throw error;
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || 'No response content';
+  } catch (err) {
+    console.error('Error calling Grok API:', err);
+    throw err;
+  }
+};
+
+export const analyzeProductWithGrok = async (product: any) => {
+  try {
+    const res = await fetch('/api/grok-analyze', {
+      method: 'POST',
+      body: JSON.stringify({ product }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!res.ok) throw new Error('Grok request failed');
+    return await res.json();
+  } catch (err) {
+    console.error('Grok error:', err);
+    return { error: err.message || 'Unknown Grok error' };
   }
 };
