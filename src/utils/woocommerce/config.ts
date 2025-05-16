@@ -1,4 +1,3 @@
-
 /**
  * WooCommerce Configuration - Frontend portion only
  * 
@@ -24,7 +23,6 @@ export interface WooCommerceUIConfig {
   version?: string;
 }
 
-// For backwards compatibility with existing code
 export interface WooCommerceConfig {
   url: string;
   consumerKey: string;
@@ -38,7 +36,6 @@ export interface WooCommerceConfig {
   };
 }
 
-// Default UI configuration
 export const DEFAULT_UI_CONFIG: WooCommerceUIConfig = {
   features: {
     productsEnabled: true,
@@ -48,8 +45,6 @@ export const DEFAULT_UI_CONFIG: WooCommerceUIConfig = {
   }
 };
 
-// Hardcoded configuration for frontend reference only
-// This doesn't include actual credentials
 export const HARDCODED_WOO_CONFIG: WooCommerceConfig = {
   url: 'https://staging.min.com/int',
   consumerKey: '[Available on server only]',
@@ -63,7 +58,6 @@ export const HARDCODED_WOO_CONFIG: WooCommerceConfig = {
   }
 };
 
-// Load UI configuration from localStorage if available
 export const getWooCommerceUIConfig = (): WooCommerceUIConfig => {
   try {
     const stored = localStorage.getItem('woo_ui_config');
@@ -73,11 +67,9 @@ export const getWooCommerceUIConfig = (): WooCommerceUIConfig => {
   } catch (error) {
     console.error('Error loading WooCommerce UI config:', error);
   }
-  
   return DEFAULT_UI_CONFIG;
 };
 
-// Save UI configuration to localStorage
 export const saveWooCommerceUIConfig = (config: WooCommerceUIConfig): void => {
   try {
     localStorage.setItem('woo_ui_config', JSON.stringify(config));
@@ -86,14 +78,11 @@ export const saveWooCommerceUIConfig = (config: WooCommerceUIConfig): void => {
   }
 };
 
-// For backward compatibility with existing code
 export const getWooCommerceConfig = (): WooCommerceConfig => {
-  // Return hardcoded config for now to ensure compatibility
   return HARDCODED_WOO_CONFIG;
 };
 
 export const saveWooCommerceConfig = (config: WooCommerceConfig): void => {
-  // For compatibility with existing code - save as UI config
   saveWooCommerceUIConfig({
     features: config.features || DEFAULT_UI_CONFIG.features,
     url: config.url,
@@ -103,10 +92,8 @@ export const saveWooCommerceConfig = (config: WooCommerceConfig): void => {
   });
 };
 
-// Authentication parameters for public API calls
 export const WOO_API_AUTH_PARAMS = 'auth_handled_by_backend=true';
 
-// Test if the connection is available (calls backend)
 export const testWooCommerceConnection = async (): Promise<boolean> => {
   try {
     const response = await fetch('/api/woocommerce/test-connection');
