@@ -25,14 +25,22 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { 
-  WooCommerceConfig as WooCommerceConfigType, 
-  saveWooCommerceConfig, 
-  getWooCommerceConfig,
+  WooCommerceUIConfig, 
+  saveWooCommerceUIConfig, 
+  getWooCommerceUIConfig,
   HARDCODED_WOO_CONFIG,
   useWooProducts,
   useWooOrders,
-  fetchWooCommerceData
+  testWooCommerceConnection
 } from '@/utils/woocommerce';
+
+// We need to create a type for backward compatibility
+interface WooCommerceConfig {
+  url: string;
+  consumerKey: string;
+  consumerSecret: string;
+  version: string;
+}
 
 const WooCommerceConfig = () => {
   const { toast } = useToast();
@@ -44,7 +52,7 @@ const WooCommerceConfig = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [config, setConfig] = useState<WooCommerceConfigType>({
+  const [config, setConfig] = useState<WooCommerceConfig>({
     url: '',
     consumerKey: '',
     consumerSecret: '',
@@ -63,7 +71,7 @@ const WooCommerceConfig = () => {
   // Check for existing config
   useEffect(() => {
     // Check for hardcoded config first
-    const savedConfig = getWooCommerceConfig();
+    const savedConfig = getWooCommerceUIConfig();
     if (savedConfig) {
       if (savedConfig === HARDCODED_WOO_CONFIG) {
         // Using hardcoded credentials - mask them for display
@@ -128,7 +136,7 @@ const WooCommerceConfig = () => {
     }
     
     // Save config to localStorage
-    saveWooCommerceConfig(config);
+    saveWooCommerceUIConfig(config);
     setIsConfigured(true);
     
     setShowSuccess(true);
@@ -146,7 +154,7 @@ const WooCommerceConfig = () => {
     
     try {
       // Get actual config for testing (not the display version with hidden credentials)
-      const configToTest = testConfig || HARDCODED_WOO_CONFIG || getWooCommerceConfig();
+      const configToTest = testConfig || HARDCODED_WOO_CONFIG || getWooCommerceUIConfig();
       
       if (!configToTest) {
         throw new Error("No configuration found");

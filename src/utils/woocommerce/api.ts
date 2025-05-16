@@ -1,26 +1,22 @@
 
 /**
- * WooCommerce API utility functions
- * 
- * This file re-exports all API functions from their modular files
+ * WooCommerce API utility functions - now forwards to our backend proxy
  */
+import apiClient from '@/lib/apiClient';
+import { WOO_API_BASE_URL } from './config';
 
-// Re-export the API client functions
-export * from './apiClient';
-
-// Re-export product-related API functions
-export * from './productApi';
-
-// Re-export order-related API functions
-export * from './orderApi';
-
-// Re-export customer-related API functions
-export * from './customerApi';
-
-// Re-export B2BKing-related API functions
-export * from './b2bkingApi';
-
-// Re-export testWooCommerceConnection from config.ts with a specific name
-// This ensures we don't have conflicts with the one from apiClient.ts
-export { testWooCommerceConnection } from './config';
-
+// Re-export this function for backward compatibility
+export const fetchWooCommerceData = async (endpoint: string, params: Record<string, any> = {}) => {
+  try {
+    // API calls now go through our backend proxy
+    const fullEndpoint = endpoint.startsWith('/') 
+      ? `${WOO_API_BASE_URL}${endpoint}`
+      : `${WOO_API_BASE_URL}/${endpoint}`;
+      
+    const response = await apiClient.get(fullEndpoint, { params });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching WooCommerce data from ${endpoint}:`, error);
+    throw error;
+  }
+};

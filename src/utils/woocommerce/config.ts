@@ -6,6 +6,10 @@
  * all actual credential management is done on the server
  */
 
+// WooCommerce API base URL and version
+export const WOO_API_BASE_URL = '/api/woocommerce'; // Now points to our backend proxy
+export const WOO_API_VERSION = 'v3'; // WooCommerce API version
+
 // WooCommerce feature flags - no credentials needed on frontend
 export interface WooCommerceUIConfig {
   features: {
@@ -24,6 +28,15 @@ export const DEFAULT_UI_CONFIG: WooCommerceUIConfig = {
     customersEnabled: true,
     b2bkingEnabled: false
   }
+};
+
+// Hardcoded configuration for frontend reference only
+// This doesn't include actual credentials
+export const HARDCODED_WOO_CONFIG = {
+  url: 'https://staging.min.com/int',
+  consumerKey: '[Available on server only]',
+  consumerSecret: '[Available on server only]',
+  version: '3'
 };
 
 // Load UI configuration from localStorage if available
@@ -48,6 +61,13 @@ export const saveWooCommerceUIConfig = (config: WooCommerceUIConfig): void => {
     console.error('Error saving WooCommerce UI config:', error);
   }
 };
+
+// For backward compatibility with existing code
+export const getWooCommerceConfig = getWooCommerceUIConfig;
+export const saveWooCommerceConfig = saveWooCommerceUIConfig;
+
+// Authentication parameters for public API calls
+export const WOO_API_AUTH_PARAMS = 'auth_handled_by_backend=true';
 
 // Test if the connection is available (calls backend)
 export const testWooCommerceConnection = async (): Promise<boolean> => {

@@ -4,7 +4,11 @@
  */
 
 // Import config first to avoid circular dependencies
-import { WOO_API_BASE_URL, WOO_API_VERSION } from './config';
+import { 
+  WOO_API_BASE_URL, 
+  WOO_API_VERSION,
+  HARDCODED_WOO_CONFIG
+} from './config';
 
 // Re-export everything from the individual files
 export * from './config';
@@ -20,9 +24,6 @@ export * from './hooks';
 
 // Export direct access to the MIN API endpoint with correct URL
 export const MIN_API_URL = 'https://staging.min.com/int';
-
-// Re-export constants for convenient access
-export { WOO_API_VERSION, WOO_API_BASE_URL };
 
 // API endpoints for direct access
 export const WOO_API_ENDPOINTS = {
