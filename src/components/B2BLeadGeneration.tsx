@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { B2BLead, mergeLeadSources } from '@/utils/b2bUtils';
@@ -100,13 +101,6 @@ const B2BLeadGeneration = ({ wooCustomers = [], wooOrders = [], wooProducts = []
     setLeads(prev => [...newLeads, ...prev]);
     toast({ title: 'Import complete', description: `${newLeads.length} leads imported.` });
   };
-
-  if (productsError || customersError || ordersError) {
-    return <div className="p-4 text-red-500">Failed to load WooCommerce data. Please refresh or check connection.</div>;
-  }
-  if (isLoadingProducts || isLoadingCustomers || isLoadingOrders) {
-    return <div className="p-4">Loading...</div>;
-  }
 
   return (
     <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
