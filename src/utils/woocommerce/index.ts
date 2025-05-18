@@ -16,10 +16,10 @@ import {
 export * from './config';
 export * from './types';
 export * from './api';
-export * from './useProducts';
-export * from './useOrders';
-export * from './useCustomers';
-export * from './useStats';
+export * from './useWooProducts';
+export * from './useWooOrders';
+export * from './useWooCustomers';
+export * from './useWooStats';
 export * from './useB2BKing';
 export * from './b2bkingApi';
 export * from './hooks';

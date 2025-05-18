@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useWooProducts } from '@/utils/woocommerce/useProducts';
+import { useWooProducts } from '@/utils/woocommerce/useWooProducts';
 import DashboardHeader from '@/components/DashboardHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
