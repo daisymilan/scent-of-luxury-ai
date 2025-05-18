@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useWooProducts } from '@/utils/woocommerce/useWooProducts';
 import DashboardHeader from '@/components/DashboardHeader';
@@ -22,20 +21,17 @@ const InventoryPage = () => {
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-const { products: allProducts, isLoading, error } = useWooProducts();
+  const { products: allProducts, isLoading, error } = useWooProducts();
 
-  // Filter products based on search term
-  const filteredProducts = allProducts.filter(product => 
+  const filteredProducts = allProducts.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Handle search input changes
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
 
-  // Handle errors
   if (error && !errorDialogOpen) {
     setErrorMessage(`Failed to load inventory data: ${error.message}`);
     setErrorDialogOpen(true);
@@ -44,7 +40,7 @@ const { products: allProducts, isLoading, error } = useWooProducts();
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <DashboardHeader />
-      
+
       <main className="flex-1 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
@@ -62,7 +58,7 @@ const { products: allProducts, isLoading, error } = useWooProducts();
             <CardContent className="pt-6">
               <div className="flex gap-4">
                 <div className="flex items-center w-full max-w-sm space-x-2">
-                  <Input 
+                  <Input
                     type="text"
                     placeholder="Search products by name or SKU..."
                     value={searchTerm}
@@ -113,9 +109,9 @@ const { products: allProducts, isLoading, error } = useWooProducts();
                         <TableRow key={product.id}>
                           <TableCell>
                             {product.images && product.images.length > 0 ? (
-                              <img 
-                                src={product.images[0].src} 
-                                alt={product.name} 
+                              <img
+                                src={product.images[0].src}
+                                alt={product.name}
                                 className="h-12 w-12 object-cover rounded"
                               />
                             ) : (
@@ -138,10 +134,10 @@ const { products: allProducts, isLoading, error } = useWooProducts();
                             {product.stock_quantity !== null ? product.stock_quantity : 'N/A'}
                           </TableCell>
                           <TableCell className="text-right">
-                            <span 
+                            <span
                               className={`px-2 py-1 rounded text-xs ${
-                                product.stock_status === 'instock' 
-                                  ? 'bg-green-100 text-green-800' 
+                                product.stock_status === 'instock'
+                                  ? 'bg-green-100 text-green-800'
                                   : 'bg-red-100 text-red-800'
                               }`}
                             >
@@ -159,7 +155,6 @@ const { products: allProducts, isLoading, error } = useWooProducts();
         </div>
       </main>
 
-      {/* Error Dialog */}
       <ErrorDialog
         open={errorDialogOpen}
         onOpenChange={setErrorDialogOpen}
