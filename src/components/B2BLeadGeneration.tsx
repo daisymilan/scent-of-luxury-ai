@@ -1,26 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { B2BLead, mergeLeadSources } from '@/utils/b2bUtils';
-import { B2BLeadDisplay, SequenceStep } from './b2b/types';
+import { B2BLeadDisplay, SequenceStep, B2BLeadGenerationProps } from './b2b/types';
 import LeadTable from './b2b/LeadTable';
 import OutreachSidebar from './b2b/OutreachSidebar';
 import EmailDialog from './b2b/EmailDialog';
 import SequenceDialog from './b2b/SequenceDialog';
 import LeadDetailDialog from './b2b/LeadDetailDialog';
 import B2BLeadImport from './B2BLeadImport';
-import { useWooCustomers } from '@/utils/woocommerce/useWooCustomers';
-import { useWooOrders } from '@/utils/woocommerce/useWooOrders';
-import { useWooProducts } from '@/utils/woocommerce/useWooProducts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Upload } from 'lucide-react';
 
-const B2BLeadGeneration = () => {
+const B2BLeadGeneration = ({ wooCustomers = [], wooOrders = [], wooProducts = [] }: B2BLeadGenerationProps) => {
   const { toast } = useToast();
-  const { customers, isLoading: isLoadingCustomers, error: customersError } = useWooCustomers(100);
-  const { orders, isLoading: isLoadingOrders, error: ordersError } = useWooOrders(100);
-  const { products, isLoading: isLoadingProducts, error: productsError } = useWooProducts(100);
-
   const [leads, setLeads] = useState<B2BLeadDisplay[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLead, setSelectedLead] = useState<B2BLeadDisplay | null>(null);
@@ -34,12 +27,12 @@ const B2BLeadGeneration = () => {
   const [sequence, setSequence] = useState<SequenceStep[]>([]);
 
   useEffect(() => {
-    if (customers && orders) {
+    if (wooCustomers && wooOrders) {
       try {
-        const processedLeads = customers
+        const processedLeads = wooCustomers
           .filter(c => c.billing?.company)
           .map(customer => {
-            const customerOrders = orders.filter(o => o.customer_id === customer.id);
+            const customerOrders = wooOrders.filter(o => o.customer_id === customer.id);
             const totalSpent = customerOrders.reduce((sum, order) => sum + parseFloat(order.total || '0'), 0);
             const lastOrder = customerOrders.length > 0 ? new Date(customerOrders.sort((a, b) => new Date(b.date_created).getTime() - new Date(a.date_created).getTime())[0].date_created).toISOString().split('T')[0] : null;
             let score = 50;
@@ -75,7 +68,7 @@ const B2BLeadGeneration = () => {
         setLeads([]);
       }
     }
-  }, [customers, orders, toast]);
+  }, [wooCustomers, wooOrders, toast]);
 
   const handleImportSuccess = (importedLeads: Partial<B2BLead>[]) => {
     const newLeads = importedLeads.map((lead, index) => ({
