@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useAllWooProducts } from '@/utils/woocommerce';
+import { useWooProducts } from '@/utils/woocommerce/useProducts';
 import DashboardHeader from '@/components/DashboardHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,7 @@ const InventoryPage = () => {
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const { allProducts, isLoading, error } = useAllWooProducts();
+const { products: allProducts, isLoading, error } = useWooProducts();
 
   // Filter products based on search term
   const filteredProducts = allProducts.filter(product => 
