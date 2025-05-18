@@ -1,3 +1,4 @@
+
 /**
  * WooCommerce Configuration - Frontend portion only
  * 
@@ -94,12 +95,7 @@ export const saveWooCommerceConfig = (config: WooCommerceConfig): void => {
 
 export const WOO_API_AUTH_PARAMS = 'auth_handled_by_backend=true';
 
-export const testWooCommerceConnection = async (): Promise<boolean> => {
-  try {
-    const response = await fetch('/api/woocommerce/test-connection');
-    return response.ok;
-  } catch (error) {
-    console.error('WooCommerce connection test failed:', error);
-    return false;
-  }
-};
+// Import the testWooConnection function from wooFetch
+import { testWooConnection } from './wooFetch';
+
+export const testWooCommerceConnection = testWooConnection;

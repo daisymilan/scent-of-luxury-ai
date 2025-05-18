@@ -1,4 +1,6 @@
+
 import { useState, useEffect } from 'react';
+import { wooProxy } from './wooFetch';
 
 export const useWooCustomers = (
   limit: number = 10,
@@ -25,14 +27,10 @@ export const useWooCustomers = (
         if (search) params.search = search;
         if (role) params.role = role;
 
-        const res = await fetch('/api/woo-proxy', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ endpoint: 'customers', params })
+        const data = await wooProxy({
+          endpoint: 'customers', 
+          params
         });
-
-        if (!res.ok) throw new Error('Failed to load customers');
-        const data = await res.json();
 
         if (!Array.isArray(data)) {
           console.warn('Unexpected customers response format:', data);

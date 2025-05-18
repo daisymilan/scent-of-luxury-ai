@@ -1,5 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { WooProduct } from './types';
+import { wooProxy } from './wooFetch';
 
 export const useWooProducts = (
   limit: number = 100,
@@ -20,24 +22,18 @@ export const useWooProducts = (
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch('/api/woo-proxy', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            endpoint: 'products',
-            params: {
-              per_page: limit,
-              page,
-              orderby: orderBy,
-              order,
-              ...(category ? { category } : {}),
-              ...(searchTerm ? { search: searchTerm } : {})
-            }
-          })
+        // Use the new wooProxy utility
+        const data = await wooProxy({
+          endpoint: 'products',
+          params: {
+            per_page: limit,
+            page,
+            orderby: orderBy,
+            order,
+            ...(category ? { category } : {}),
+            ...(searchTerm ? { search: searchTerm } : {})
+          }
         });
-
-        if (!response.ok) throw new Error('Failed to load products');
-        const data = await response.json();
 
         if (!Array.isArray(data)) {
           console.warn('Unexpected products response format:', data);

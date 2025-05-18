@@ -1,4 +1,6 @@
+
 import { useState, useEffect } from 'react';
+import { wooProxy } from './wooFetch';
 
 export const useWooOrders = (
   limit: number = 10,
@@ -28,14 +30,10 @@ export const useWooOrders = (
         if (dateAfter) params.after = dateAfter;
         if (dateBefore) params.before = dateBefore;
 
-        const response = await fetch('/api/woo-proxy', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ endpoint: 'orders', params })
+        const data = await wooProxy({
+          endpoint: 'orders', 
+          params
         });
-
-        if (!response.ok) throw new Error('Failed to load orders');
-        const data = await response.json();
 
         if (!Array.isArray(data)) {
           console.warn('Unexpected orders response format:', data);
