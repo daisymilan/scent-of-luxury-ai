@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const response = await axios({
-      url: `${WOO_API_URL}/wp-json/wc/v3/${endpoint}`,
+      url: `${WOO_API_URL}/${endpoint}`,
       method,
       auth: { username: WOO_KEY, password: WOO_SECRET },
       data,
