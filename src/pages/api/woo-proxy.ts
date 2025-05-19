@@ -3,12 +3,25 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return res.status(200).end();
+  }
+
   // Only accept POST requests to the proxy endpoint
   if (req.method !== 'POST') {
     return res.status(405).json({ 
       error: `Method ${req.method} not allowed. This endpoint only accepts POST requests.` 
     });
   }
+
+  // Add CORS headers for all responses
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   const { endpoint = '', method = 'GET', data = null, params = {} } = req.body;
 
@@ -29,8 +42,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       url: `${WOO_API_URL}/${endpoint}`,
       method,
       auth: { username: WOO_KEY, password: WOO_SECRET },
-      data,
-      params,
+      data: method !== 'GET' ? data : undefined,
+      params: method === 'GET' ? { ...params } : undefined,
       headers: { 
         'Content-Type': 'application/json',
         'Accept': 'application/json'
@@ -58,6 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error(`🔍 WooCommerce endpoint not found: ${endpoint}`);
     } else if (statusCode === 405) {
       console.error(`⚠️ Method not allowed: ${method} for endpoint ${endpoint}`);
+      console.error('Request details:', { url: `${WOO_API_URL}/${endpoint}`, method, params });
     }
 
     // Log and return WooCommerce error response
@@ -65,7 +79,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(statusCode).json({
       error: err.message || 'WooCommerce API proxy failed',
       statusCode,
-      raw: rawData
+      raw: rawData,
+      requestDetails: {
+        endpoint,
+        method,
+        apiUrl: WOO_API_URL
+      }
     });
   }
 }

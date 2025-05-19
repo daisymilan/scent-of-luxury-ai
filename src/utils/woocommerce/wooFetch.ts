@@ -28,8 +28,11 @@ export const wooProxy = async (body: any, retryCount = 0) => {
       throw new Error('WooCommerce API URL not configured. Please check your environment variables.');
     }
     
-    // Ensure method is set properly
-    const method = body.method || 'GET';
+    // Ensure method is set properly and normalized to uppercase
+    const method = (body.method || 'GET').toUpperCase();
+    
+    // Verify that params is always an object
+    const params = body.params || {};
     
     // Change to use a POST request to the proxy endpoint, even for GET requests to WooCommerce
     const response = await fetch(`${API_BASE_URL}/api/woo-proxy`, {
@@ -38,6 +41,7 @@ export const wooProxy = async (body: any, retryCount = 0) => {
       body: JSON.stringify({
         ...body,
         method: method, // Make sure method is explicitly set
+        params: params, // Ensure params is defined
       }),
       // Add timeout handling with AbortController
       signal: AbortSignal.timeout(15000) // 15 seconds timeout
@@ -71,8 +75,15 @@ export const wooProxy = async (body: any, retryCount = 0) => {
           requestMethod: method,
           endpoint: body.endpoint,
           proxyUrl: `${API_BASE_URL}/api/woo-proxy`,
-          headers: response.headers
+          headers: Object.fromEntries([...response.headers.entries()]),
+          params: params
         });
+        
+        // For 405 errors, retry with a different method if it makes sense
+        if (method === 'GET' && retryCount < 1) {
+          console.log(`🔄 Retrying with POST method instead of GET for endpoint ${body.endpoint}`);
+          return await wooProxy({ ...body, method: 'POST' }, retryCount + 1);
+        }
       }
       
       throw new Error(

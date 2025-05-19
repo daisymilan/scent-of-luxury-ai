@@ -4,9 +4,10 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "env": {
-    "VITE_BACKEND_URL": "https://scentlux-api.vercel.app"
+    "VITE_BACKEND_URL": "${VITE_BACKEND_URL}"
   }
 }
