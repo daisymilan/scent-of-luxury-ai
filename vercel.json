@@ -7,8 +7,6 @@
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "env": {
-    "VITE_BACKEND_URL": {
-      "description": "Backend API URL for WooCommerce proxy"
-    }
+    "VITE_BACKEND_URL": "https://scentlux-api.vercel.app"
   }
 }
