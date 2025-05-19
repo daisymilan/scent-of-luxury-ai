@@ -1,7 +1,15 @@
+
 import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Only accept POST requests to the proxy endpoint
+  if (req.method !== 'POST') {
+    return res.status(405).json({ 
+      error: `Method ${req.method} not allowed. This endpoint only accepts POST requests.` 
+    });
+  }
+
   const { endpoint = '', method = 'GET', data = null, params = {} } = req.body;
 
   const WOO_API_URL = process.env.WOOCOMMERCE_API_URL;
@@ -11,18 +19,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!WOO_API_URL || !WOO_KEY || !WOO_SECRET) {
     return res.status(500).json({ error: 'WooCommerce API credentials not set' });
   }
+  
+  // Log request for debugging
+  console.log(`📤 WooCommerce proxy forwarding ${method} request to: ${WOO_API_URL}/${endpoint}`);
 
   try {
+    // Make the API request to WooCommerce
     const response = await axios({
       url: `${WOO_API_URL}/${endpoint}`,
       method,
       auth: { username: WOO_KEY, password: WOO_SECRET },
       data,
-      params
+      params,
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
     });
 
     res.status(200).json(response.data);
   } catch (err: any) {
+    const statusCode = err.response?.status || 500;
     const rawData = err.response?.data;
 
     // Catch unexpected HTML responses (e.g. login screen or Cloudflare page)
@@ -34,10 +51,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
+    // Detailed logging for specific error cases
+    if (statusCode === 401) {
+      console.error('🔐 WooCommerce authentication failed. Check API credentials.');
+    } else if (statusCode === 404) {
+      console.error(`🔍 WooCommerce endpoint not found: ${endpoint}`);
+    } else if (statusCode === 405) {
+      console.error(`⚠️ Method not allowed: ${method} for endpoint ${endpoint}`);
+    }
+
     // Log and return WooCommerce error response
-    console.error('WooCommerce API error:', err.response?.status, rawData);
-    return res.status(err.response?.status || 500).json({
+    console.error('WooCommerce API error:', statusCode, rawData);
+    return res.status(statusCode).json({
       error: err.message || 'WooCommerce API proxy failed',
+      statusCode,
       raw: rawData
     });
   }

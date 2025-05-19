@@ -28,45 +28,68 @@ export const wooProxy = async (body: any, retryCount = 0) => {
       throw new Error('WooCommerce API URL not configured. Please check your environment variables.');
     }
     
+    // Ensure method is set properly
+    const method = body.method || 'GET';
+    
+    // Change to use a POST request to the proxy endpoint, even for GET requests to WooCommerce
     const response = await fetch(`${API_BASE_URL}/api/woo-proxy`, {
-      method: 'POST',
+      method: 'POST', // Always use POST for the proxy request
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        ...body,
+        method: method, // Make sure method is explicitly set
+      }),
       // Add timeout handling with AbortController
       signal: AbortSignal.timeout(15000) // 15 seconds timeout
     });
 
     // Handle HTTP error responses
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error(`❌ WooCommerce API error (${response.status}):`, errorData);
+      let errorMessage = `WooCommerce API failed with status ${response.status}`;
+      let errorData = {};
+      
+      try {
+        errorData = await response.json();
+        console.error(`❌ WooCommerce API error (${response.status}):`, errorData);
+      } catch (e) {
+        // If we can't parse the response as JSON, just continue with the basic error
+        console.error(`❌ WooCommerce API returned non-JSON error response:`, await response.text().catch(() => 'No response body'));
+      }
       
       // Special handling for common error codes
       if (response.status === 404) {
         if (body.endpoint) {
-          throw new Error(`WooCommerce API endpoint '${body.endpoint}' not found. Please verify the endpoint path.`);
+          errorMessage = `WooCommerce API endpoint '${body.endpoint}' not found. Please verify the endpoint path.`;
         } else {
-          throw new Error('WooCommerce API proxy endpoint not found. Please check your backend server configuration.');
+          errorMessage = 'WooCommerce API proxy endpoint not found. Please check your backend server configuration.';
         }
       } else if (response.status === 401) {
-        throw new Error('WooCommerce API authentication failed. Please check your API credentials in environment variables.');
+        errorMessage = 'WooCommerce API authentication failed. Please check your API credentials in environment variables.';
+      } else if (response.status === 405) {
+        errorMessage = `Method Not Allowed: The server rejected the ${method} method for ${body.endpoint}. This could indicate a CORS issue, proxy configuration problem, or the endpoint doesn't support this method.`;
+        console.error(`❌ 405 Method Not Allowed Details:`, {
+          requestMethod: method,
+          endpoint: body.endpoint,
+          proxyUrl: `${API_BASE_URL}/api/woo-proxy`,
+          headers: response.headers
+        });
       }
       
       throw new Error(
-        errorData.error || 
-        `WooCommerce API failed with status ${response.status}`
+        (errorData as any)?.error || errorMessage
       );
     }
     
     const data = await response.json();
     console.log(`✅ WooCommerce API response from ${body.endpoint}:`, data);
     return data;
-  } catch (error) {
+  } catch (error: any) {
     // Handle specific error types
     
     // Network errors - server down, CORS issues, etc.
     if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
       console.error('🌐 Network error connecting to WooCommerce API. Check backend server status.');
+      console.error(`🌐 Attempted to connect to: ${API_BASE_URL}/api/woo-proxy`);
       
       // Attempt to retry for network errors
       if (retryCount < MAX_RETRIES) {
@@ -123,4 +146,3 @@ export const testWooConnection = async (): Promise<boolean> => {
 export const hasWooCommerceConfig = (): boolean => {
   return Boolean(API_BASE_URL);
 };
-
