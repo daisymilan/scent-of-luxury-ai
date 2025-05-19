@@ -1,4 +1,3 @@
-
 import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 
@@ -32,12 +31,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!WOO_API_URL || !WOO_KEY || !WOO_SECRET) {
     return res.status(500).json({ error: 'WooCommerce API credentials not set' });
   }
-  
+
   // Log request for debugging
   console.log(`📤 WooCommerce proxy forwarding ${method} request to: ${WOO_API_URL}/${endpoint}`);
 
   try {
-    // Make the API request to WooCommerce
     const response = await axios({
       url: `${WOO_API_URL}/${endpoint}`,
       method,
@@ -64,7 +62,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Detailed logging for specific error cases
     if (statusCode === 401) {
       console.error('🔐 WooCommerce authentication failed. Check API credentials.');
     } else if (statusCode === 404) {
@@ -74,7 +71,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error('Request details:', { url: `${WOO_API_URL}/${endpoint}`, method, params });
     }
 
-    // Log and return WooCommerce error response
     console.error('WooCommerce API error:', statusCode, rawData);
     return res.status(statusCode).json({
       error: err.message || 'WooCommerce API proxy failed',
