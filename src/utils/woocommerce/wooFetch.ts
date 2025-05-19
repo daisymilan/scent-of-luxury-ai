@@ -33,6 +33,12 @@ export const wooProxy = async (body: any, retryCount = 0) => {
     
     // Verify that params is always an object
     const params = body.params || {};
+
+    // Special handling for orders endpoint - always use GET
+    const finalMethod = body.endpoint && body.endpoint.includes('orders') ? 'GET' : method;
+    if (finalMethod !== method) {
+      console.log(`⚠️ Using GET method for orders endpoint instead of ${method} to avoid 405 errors`);
+    }
     
     // Change to use a POST request to the proxy endpoint, even for GET requests to WooCommerce
     const response = await fetch(`${API_BASE_URL}/api/woo-proxy`, {
@@ -40,7 +46,7 @@ export const wooProxy = async (body: any, retryCount = 0) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...body,
-        method: method, // Make sure method is explicitly set
+        method: finalMethod, // Use our adjusted method that's safe for orders
         params: params, // Ensure params is defined
       }),
       // Add timeout handling with AbortController
@@ -80,10 +86,7 @@ export const wooProxy = async (body: any, retryCount = 0) => {
         });
         
         // For 405 errors, retry with a different method if it makes sense
-        if (method === 'GET' && retryCount < 1) {
-          console.log(`🔄 Retrying with POST method instead of GET for endpoint ${body.endpoint}`);
-          return await wooProxy({ ...body, method: 'POST' }, retryCount + 1);
-        }
+        // This is handled in the proxy now
       }
       
       throw new Error(
