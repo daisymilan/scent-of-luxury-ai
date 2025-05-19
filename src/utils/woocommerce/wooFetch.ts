@@ -20,6 +20,7 @@ const MAX_RETRIES = 2;
 export const wooProxy = async (body: any, retryCount = 0) => {
   try {
     console.log(`🔄 WooCommerce API request to ${body.endpoint}`, body);
+    console.log(`🔄 Using API base URL: ${API_BASE_URL}`);
     
     // Check for API URL configuration
     if (!API_BASE_URL) {
