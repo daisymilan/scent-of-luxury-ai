@@ -1,58 +1,75 @@
+import type { NextApiRequest, NextApiResponse } from 'next';
+import axios from 'axios';
+import OAuth from 'oauth-1.0a';
+import crypto from 'crypto';
+import qs from 'querystring';
 
-import { useState, useEffect } from 'react';
-import { wooProxy } from './wooFetch';
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Only POST method is allowed' });
+  }
 
-export const useWooOrders = (
-  limit: number = 10,
-  page: number = 1,
-  status?: string,
-  customer?: number,
-  dateAfter?: string,
-  dateBefore?: string
-) => {
-  const [orders, setOrders] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const [totalOrders, setTotalOrders] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
+  const {
+    endpoint = '',
+    method = 'GET',
+    data = null,
+    params = {}
+  } = req.body;
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const params: Record<string, any> = {
-          per_page: limit,
-          page
-        };
-        if (status) params.status = status;
-        if (customer) params.customer = customer;
-        if (dateAfter) params.after = dateAfter;
-        if (dateBefore) params.before = dateBefore;
+  const WOO_API_URL = process.env.WOOCOMMERCE_API_URL || '';
+  const CONSUMER_KEY = process.env.WOOCOMMERCE_CONSUMER_KEY || '';
+  const CONSUMER_SECRET = process.env.WOOCOMMERCE_CONSUMER_SECRET || '';
 
-        const data = await wooProxy({
-          endpoint: 'orders', 
-          params
-        });
+  if (!WOO_API_URL || !CONSUMER_KEY || !CONSUMER_SECRET) {
+    return res.status(500).json({ error: 'Missing WooCommerce credentials' });
+  }
 
-        if (!Array.isArray(data)) {
-          console.warn('Unexpected orders response format:', data);
-          throw new Error('Unexpected WooCommerce API response format');
-        }
+  const oauth = new OAuth({
+    consumer: { key: CONSUMER_KEY, secret: CONSUMER_SECRET },
+    signature_method: 'HMAC-SHA1',
+    hash_function(base_string, key) {
+      return crypto.createHmac('sha1', key).update(base_string).digest('base64');
+    }
+  });
 
-        setOrders(data);
-        setTotalPages(1);
-        setTotalOrders(data.length);
-      } catch (err) {
-        console.error('Error fetching orders:', err);
-        setError(err instanceof Error ? err : new Error(String(err)));
-      } finally {
-        setIsLoading(false);
+  const urlBase = `${WOO_API_URL}/${endpoint}`;
+  const queryString = method === 'GET' && params ? `?${qs.stringify(params)}` : '';
+  const urlWithParams = `${urlBase}${queryString}`;
+
+  const requestData = {
+    url: urlWithParams,
+    method,
+  };
+
+  const authHeader = oauth.toHeader(oauth.authorize(requestData));
+
+  try {
+    const response = await axios({
+      method,
+      url: urlWithParams,
+      headers: {
+        ...authHeader,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      data: method !== 'GET' ? data : undefined,
+    });
+
+    res.status(200).json(response.data);
+  } catch (err: any) {
+    const statusCode = err.response?.status || 500;
+    const rawData = err.response?.data;
+
+    console.error('WooCommerce API error:', statusCode, rawData);
+    res.status(statusCode).json({
+      error: err.message,
+      statusCode,
+      raw: rawData,
+      requestDetails: {
+        endpoint,
+        method,
+        apiUrl: WOO_API_URL
       }
-    };
-
-    fetchOrders();
-  }, [limit, page, status, customer, dateAfter, dateBefore]);
-
-  return { orders, isLoading, error, totalOrders, totalPages };
-};
+    });
+  }
+}
