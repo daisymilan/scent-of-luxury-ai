@@ -32,18 +32,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   });
 
   const fullUrl = `${WOO_API_URL}/${endpoint}`;
-  const requestData = {
-    url: fullUrl,
-    method,
-    data: method !== 'GET' ? data : undefined
-  };
+const urlWithParams = method === 'GET' && Object.keys(params).length > 0
+  ? `${fullUrl}?${new URLSearchParams(params).toString()}`
+  : fullUrl;
 
-  const authHeader = oauth.toHeader(oauth.authorize(requestData));
+const requestData = {
+  url: urlWithParams,
+  method,
+};
+
+const authHeader = oauth.toHeader(oauth.authorize(requestData));
+
 
   try {
     const response = await axios({
       method,
-      url: fullUrl,
+      url: urlWithParams,
       headers: {
         ...authHeader,
         'Content-Type': 'application/json',
