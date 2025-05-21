@@ -1,77 +1,56 @@
-
 import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
+import OAuth from 'oauth-1.0a';
+import crypto from 'crypto';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    return res.status(200).end();
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Only POST method is allowed' });
   }
 
-  // Now accept both GET and POST requests to the proxy endpoint
-  if (req.method !== 'GET' && req.method !== 'POST') {
-    return res.status(405).json({ 
-      error: `Method ${req.method} not allowed. This endpoint only accepts GET and POST requests.` 
-    });
+  const {
+    endpoint = '',
+    method = 'GET',
+    data = null,
+    params = {}
+  } = req.body;
+
+  const WOO_API_URL = process.env.WOOCOMMERCE_API_URL || '';
+  const CONSUMER_KEY = process.env.WOOCOMMERCE_CONSUMER_KEY || '';
+  const CONSUMER_SECRET = process.env.WOOCOMMERCE_CONSUMER_SECRET || '';
+
+  if (!WOO_API_URL || !CONSUMER_KEY || !CONSUMER_SECRET) {
+    return res.status(500).json({ error: 'Missing WooCommerce credentials' });
   }
 
-  // Add CORS headers for all responses
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  const oauth = new OAuth({
+    consumer: { key: CONSUMER_KEY, secret: CONSUMER_SECRET },
+    signature_method: 'HMAC-SHA1',
+    hash_function(base_string, key) {
+      return crypto.createHmac('sha1', key).update(base_string).digest('base64');
+    }
+  });
 
-  // Extract WooCommerce request details - handle both GET and POST
-  let endpoint, method, data, params;
-  
-  if (req.method === 'GET') {
-    // For GET requests to the proxy, extract data from query parameters
-    endpoint = req.query.endpoint as string || '';
-    method = req.query.method as string || 'GET';
-    params = req.query.params ? JSON.parse(req.query.params as string) : {};
-    data = null;
-  } else {
-    // For POST requests, extract from body
-    const { endpoint: bodyEndpoint = '', method: bodyMethod = 'GET', data: bodyData = null, params: bodyParams = {} } = req.body;
-    endpoint = bodyEndpoint;
-    method = bodyMethod;
-    data = bodyData;
-    params = bodyParams;
-  }
+  const fullUrl = `${WOO_API_URL}/${endpoint}`;
+  const requestData = {
+    url: fullUrl,
+    method,
+    data: method !== 'GET' ? data : undefined
+  };
 
-  const WOO_API_URL = process.env.WOOCOMMERCE_API_URL;
-  const WOO_KEY = process.env.WOOCOMMERCE_CONSUMER_KEY;
-  const WOO_SECRET = process.env.WOOCOMMERCE_CONSUMER_SECRET;
-
-  if (!WOO_API_URL || !WOO_KEY || !WOO_SECRET) {
-    return res.status(500).json({ error: 'WooCommerce API credentials not set' });
-  }
-
-  // Log request for debugging
-  console.log(`📤 WooCommerce proxy forwarding ${method} request to: ${WOO_API_URL}/${endpoint}`);
-  console.log('Request params:', params);
-  console.log('Request method:', method);
-  console.log('Request origin:', req.headers.origin || 'Unknown');
+  const authHeader = oauth.toHeader(oauth.authorize(requestData));
 
   try {
-    // Always use GET for WooCommerce orders endpoint to avoid 405 errors
-    const finalMethod = endpoint.includes('orders') ? 'GET' : method;
-    if (finalMethod !== method) {
-      console.log(`⚠️ Overriding method ${method} to ${finalMethod} for endpoint ${endpoint} to avoid 405 errors`);
-    }
-
     const response = await axios({
-      url: `${WOO_API_URL}/${endpoint}`,
-      method: finalMethod,
-      auth: { username: WOO_KEY, password: WOO_SECRET },
-      data: finalMethod !== 'GET' ? data : undefined,
-      params: finalMethod === 'GET' ? { ...params } : undefined,
-      headers: { 
+      method,
+      url: fullUrl,
+      headers: {
+        ...authHeader,
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      }
+      },
+      params: method === 'GET' ? params : undefined,
+      data: method !== 'GET' ? data : undefined
     });
 
     res.status(200).json(response.data);
@@ -79,50 +58,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const statusCode = err.response?.status || 500;
     const rawData = err.response?.data;
 
-    // Catch unexpected HTML responses (e.g. login screen or Cloudflare page)
-    if (typeof rawData === 'string' && rawData.trim().startsWith('<!DOCTYPE')) {
-      console.error('❌ WooCommerce proxy error: Received HTML instead of JSON. Possible wrong API URL or missing credentials.');
-      return res.status(502).json({
-        error: 'WooCommerce returned an unexpected HTML response. Please check the API URL and credentials.',
-        debug: 'Starts with "<!DOCTYPE"'
-      });
-    }
-
-    if (statusCode === 401) {
-      console.error('🔐 WooCommerce authentication failed. Check API credentials.');
-    } else if (statusCode === 404) {
-      console.error(`🔍 WooCommerce endpoint not found: ${endpoint}`);
-    } else if (statusCode === 405) {
-      console.error(`⚠️ Method not allowed: ${method} for endpoint ${endpoint}`);
-      console.error('Request details:', { url: `${WOO_API_URL}/${endpoint}`, method, params });
-      
-      // If 405 error occurs for a method that isn't GET, try again with GET
-      if (method !== 'GET' && !req.headers['x-retry-with-get']) {
-        console.log('🔄 Retrying with GET method instead');
-        try {
-          const retryResponse = await axios({
-            url: `${WOO_API_URL}/${endpoint}`,
-            method: 'GET',
-            auth: { username: WOO_KEY, password: WOO_SECRET },
-            params: { ...params, ...(data || {}) },
-            headers: { 
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            }
-          });
-          return res.status(200).json({
-            data: retryResponse.data,
-            warning: 'Original request resulted in 405 Method Not Allowed, automatically retried with GET method'
-          });
-        } catch (retryErr: any) {
-          console.error('❌ Retry with GET failed:', retryErr.message);
-        }
-      }
-    }
-
     console.error('WooCommerce API error:', statusCode, rawData);
-    return res.status(statusCode).json({
-      error: err.message || 'WooCommerce API proxy failed',
+    res.status(statusCode).json({
+      error: err.message,
       statusCode,
       raw: rawData,
       requestDetails: {
