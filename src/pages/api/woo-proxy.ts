@@ -1,8 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
-import OAuth from 'oauth-1.0a';
-import crypto from 'crypto';
-import qs from 'querystring';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -10,50 +7,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const {
-    endpoint = '',
-    method = 'GET',
-    data = null,
-    params = {}
+    workflowUrl = '',
+    payload = {},
   } = req.body;
 
-  const WOO_API_URL = process.env.WOOCOMMERCE_API_URL || '';
-  const CONSUMER_KEY = process.env.WOOCOMMERCE_CONSUMER_KEY || '';
-  const CONSUMER_SECRET = process.env.WOOCOMMERCE_CONSUMER_SECRET || '';
-
-  if (!WOO_API_URL || !CONSUMER_KEY || !CONSUMER_SECRET) {
-    return res.status(500).json({ error: 'Missing WooCommerce credentials' });
+  if (!workflowUrl) {
+    return res.status(400).json({ error: 'Missing n8n workflow URL' });
   }
 
-  const oauth = new OAuth({
-    consumer: { key: CONSUMER_KEY, secret: CONSUMER_SECRET },
-    signature_method: 'HMAC-SHA1',
-    hash_function(base_string, key) {
-      return crypto.createHmac('sha1', key).update(base_string).digest('base64');
-    }
-  });
-
-  const apiBaseUrl = `${WOO_API_URL}/wp-json/wc/v3/${endpoint}`;
-
-  // Always put oauth params in the URL (WooCommerce expects this)
-  const requestData = {
-    url: apiBaseUrl,
-    method
-  };
-
-  const oauthParams = oauth.authorize(requestData);
-  const queryParams = { ...params, ...oauthParams };
-  const queryString = qs.stringify(queryParams);
-  const finalUrl = `${apiBaseUrl}?${queryString}`;
-
   try {
-    const response = await axios({
-      method,
-      url: finalUrl,
+    const response = await axios.post(workflowUrl, payload, {
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      data: method !== 'GET' ? data : undefined
+      }
     });
 
     res.status(200).json(response.data);
@@ -61,15 +27,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const statusCode = err.response?.status || 500;
     const rawData = err.response?.data;
 
-    console.error('WooCommerce API error:', statusCode, rawData);
+    console.error('n8n sync error:', statusCode, rawData);
     res.status(statusCode).json({
       error: err.message,
       statusCode,
       raw: rawData,
       requestDetails: {
-        endpoint,
-        method,
-        apiUrl: WOO_API_URL
+        workflowUrl,
+        payload
       }
     });
   }
