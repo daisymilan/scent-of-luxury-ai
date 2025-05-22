@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 import OAuth from 'oauth-1.0a';
 import crypto from 'crypto';
+import qs from 'querystring';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -31,29 +32,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   });
 
-  const fullUrl = `${WOO_API_URL}/${endpoint}`;
-const urlWithParams = method === 'GET' && Object.keys(params).length > 0
-  ? `${fullUrl}?${new URLSearchParams(params).toString()}`
-  : fullUrl;
+  const apiBaseUrl = `${WOO_API_URL}/wp-json/wc/v3/${endpoint}`;
 
-const requestData = {
-  url: urlWithParams,
-  method,
-};
+  // Always put oauth params in the URL (WooCommerce expects this)
+  const requestData = {
+    url: apiBaseUrl,
+    method
+  };
 
-const authHeader = oauth.toHeader(oauth.authorize(requestData));
-
+  const oauthParams = oauth.authorize(requestData);
+  const queryParams = { ...params, ...oauthParams };
+  const queryString = qs.stringify(queryParams);
+  const finalUrl = `${apiBaseUrl}?${queryString}`;
 
   try {
     const response = await axios({
       method,
-      url: urlWithParams,
+      url: finalUrl,
       headers: {
-        ...authHeader,
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      params: method === 'GET' ? params : undefined,
       data: method !== 'GET' ? data : undefined
     });
 
